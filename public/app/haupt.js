@@ -9,7 +9,7 @@
 
 import { heute as heuteTag } from "../kern/datum.js";
 import {
-  FRAGEN, EBENEN, ANSICHTEN, BAUSTEINE, aktiv, schalteBaustein, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
+  FRAGEN, EBENEN, ANSICHTEN, FARBWELTEN, BAUSTEINE, aktiv, schalteBaustein, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
   notiere, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   istDa, schalteDa, hatEintrag, ergaenze, entferne,
@@ -277,6 +277,26 @@ function einstellungen() {
   ans.append(reihe);
   k.append(ans);
 
+  const farbe = el("fieldset", "frage");
+  farbe.append(el("legend", "serif", "Farbwelt"));
+  const wahl = el("div", "farbwahl");
+  for (const [id, f] of Object.entries(FARBWELTEN)) {
+    const l = el("label", "farbe-option");
+    const i = Object.assign(document.createElement("input"), { type: "radio", name: "farbe", value: id, checked: z.farbe === id });
+    i.addEventListener("change", () => aendern(() => { z.farbe = id; }));
+    const feld = el("span", "farbe-feld");
+    feld.style.background = `linear-gradient(180deg, ${f.flaeche} 0 45%, ${f.papier} 45%)`;
+    for (const a of ["--moss", "--gelb", "--blau", "--magenta"]) {
+      const p = document.createElement("i");
+      p.style.background = `var(${a})`;
+      feld.append(p);
+    }
+    l.append(i, feld, el("span", null, f.name));
+    wahl.append(l);
+  }
+  farbe.append(wahl, el("p", "leise klein", "Gilt für die helle Darstellung. Im Dunkeln bleibt es beim warmen Braun."));
+  k.append(farbe);
+
   let gruppe = null, feld = null;
   for (const b of BAUSTEINE) {
     if (b.gruppe !== gruppe) {
@@ -467,7 +487,15 @@ function eigenerTracker(id) {
 
 /* ---- Zeichnen -------------------------------------------------------------- */
 
+/* Die Farbwelt hängt am Wurzelelement; die Browserleiste nimmt ihr Papier mit. */
+function farbeSetzen() {
+  document.documentElement.dataset.farbe = z.farbe;
+  const m = document.querySelector('meta[name="theme-color"][media*="light"]');
+  if (m) m.content = FARBWELTEN[z.farbe].papier;
+}
+
 function zeichne() {
+  farbeSetzen();
   const buehne = $("#buehne");
   const ansicht = wahlOffen || !gewaehlt(z).length ? null : ANSICHT[z.ansicht] || knopfAnsicht;
   buehne.dataset.ansicht = ansicht ? z.ansicht : "wahl";
@@ -500,3 +528,4 @@ if (navigator.serviceWorker && location.protocol !== "file:")
   addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
 zeichne();
+requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add("bereit")));

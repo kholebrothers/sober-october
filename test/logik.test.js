@@ -8,7 +8,7 @@ import {
   schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
   BAUSTEINE, aktiv, schalteBaustein,
-  istDa, schalteDa, hatEintrag, ergaenze, entferne,
+  istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -457,4 +457,13 @@ test("es gibt keinen Baustein „Freie Tage\" mehr; ein leerer Tag ist frei", ()
   assert.ok(!BAUSTEINE.some((b) => b.id === "freieTage"));
   const z = aus(JSON.stringify({ v: VERSION, bausteine: { freieTage: true, lauf: true } }));
   assert.deepEqual(z.bausteine, { lauf: true });
+});
+
+test("drei helle Farbwelten; die gewählte übersteht Speichern, Unbekanntes wird Papier", () => {
+  assert.deepEqual(Object.keys(FARBWELTEN), ["papier", "salbei", "flieder"]);
+  const z = neuerZustand();
+  assert.equal(z.farbe, "papier");
+  z.farbe = "flieder";
+  assert.equal(aus(JSON.stringify(z)).farbe, "flieder");
+  assert.equal(aus(JSON.stringify({ ...z, farbe: "neon" })).farbe, "papier");
 });
