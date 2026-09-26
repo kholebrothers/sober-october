@@ -10,9 +10,9 @@
 import { heute as heuteTag } from "../kern/datum.js";
 import {
   FRAGEN, EBENEN, ANSICHTEN, BAUSTEINE, aktiv, schalteBaustein, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
-  notiere, schalteOhne, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
+  notiere, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
-  istDa, schalteDa, hatEintrag,
+  istDa, schalteDa, hatEintrag, ergaenze, entferne,
   tagesKopf,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
@@ -67,10 +67,6 @@ const api = {
   serie: () => serie(z, heute()),
   lauf: () => lauf(z, heute()),
   eintragen,
-  ohne(v) {
-    const satz = aendern(() => schalteOhne(z, heute(), jetztZeit(), v));
-    if (satz) melde(satz);
-  },
   leitgedanke: () => leitgedankeAm(z, heute()),
   tagessatz: () => tagessatz(z, heute()),
   leitgedankeBearbeiten,
@@ -82,10 +78,6 @@ const api = {
     if (!istDa(z, heute()) && vonTag(z, heute()).length) { melde("Der Tag zählt schon — du hast heute etwas notiert."); return; }
     const satz = aendern(() => schalteDa(z, heute()));
     melde(mitMoment(istDa(z, heute()) ? "Du bist da. Der Tag zählt." : "Zurückgenommen.", satz));
-  },
-  frei() {
-    const satz = aendern(() => schalteFrei(z, heute()));
-    melde(mitMoment(istFrei(z, heute()) ? "Heute ist frei. Die Kette läuft weiter." : "Der freie Tag ist zurückgenommen.", satz));
   },
   aktiv: (id) => aktiv(z, id),
   neuerTracker: () => neuerTracker(),
@@ -120,10 +112,25 @@ function el(tag, klasse, text) {
   return e;
 }
 
+/* Schnell loggen: ein Tippen notiert sofort, ohne Fragen. Die Meldung
+   danach bietet zweierlei an — die Fragen, wenn man will, und das
+   Zurücknehmen, falls man sich vertippt hat. Beides ist freiwillig; tut man
+   nichts, bleibt der Eintrag, wie er ist. */
 function eintragen(v, art) {
   const V = verzichte(z)[v];
-  fragen(v, art, art === "habe" ? V.habe : V.drang);
+  let neu = [], id = null;
+  const satz = aendern(() => {
+    neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art });
+    id = z.ereignisse.at(-1).id;
+  });
+  melde(mitMoment(ebenenText(neu, `Notiert: ${art === "habe" ? V.habe : V.drang}.`), satz), [
+    ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)],
+    ["Zurück", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }],
+  ]);
 }
+
+const ebenenText = (neu, text) =>
+  aktiv(z, "ebenen") && neu.length ? `${text} Eine Ebene hat sich geöffnet: ${neu.map((e) => e.titel).join(", ")}.` : text;
 
 /* Begleitung, wenn man sie will: erst Raum, dann zurück zu den Fragen.
    Was schon ausgefüllt war, bleibt stehen. */
@@ -148,7 +155,8 @@ function begleiten(v, zurueck) {
   zeigeBogen(k);
 }
 
-function fragen(v, art, titel) {
+/** Die Fragen zu einem Eintrag, der schon notiert ist. */
+function fragen(v, art, titel, id) {
   const V = verzichte(z)[v];
   const f = el("form", "bogen-inhalt");
   faerbe(f, verzichte(z), v);
@@ -178,24 +186,21 @@ function fragen(v, art, titel) {
     }
     f.append(l);
   }
-  const speichern = (mitAntworten) => {
+  const speichern = () => {
     const antworten = {};
-    if (mitAntworten) for (const [k, w] of new FormData(f)) {
+    for (const [k, w] of new FormData(f)) {
       const t = String(w).trim();
       if (t) antworten[k] = antworten[k] ? antworten[k] + ", " + t : t;
     }
     let neu = [];
     bogen.close();
-    const satz = aendern(() => { neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art, antworten, begleitetSek }); });
-    if (!aktiv(z, "ebenen")) neu = [];
-    melde(mitMoment(neu.length ? `Notiert. Eine Ebene hat sich geöffnet: ${neu.map((e) => e.titel).join(", ")}.` : "Notiert.", satz));
+    aendern(() => { neu = ergaenze(z, id, { antworten, begleitetSek }); });
+    melde(ebenenText(neu, "Details sind dabei."));
   };
   const unten = el("div", "wahlreihe");
-  unten.append(knopf("notieren", "gross", () => speichern(true)),
-    knopf("nur notieren, ohne Fragen", "text", () => speichern(false)),
-    knopf("abbrechen", "text leise", () => bogen.close()));
+  unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));
   f.append(unten);
-  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(true); });
+  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
   zeigeBogen(f);
 }
 
@@ -314,13 +319,16 @@ function einstellungen() {
   zeigeBogen(k);
 }
 
+/* Die Meldung oben, optional mit Knöpfen ([Text, Handlung]). Mit Knöpfen
+   bleibt sie länger stehen, damit man sie erreicht. */
 let meldeTimer;
-function melde(text) {
+function melde(text, aktionen = []) {
   const m = $("#meldung");
-  m.textContent = text;
+  m.replaceChildren(el("span", null, text));
+  for (const [t, tun] of aktionen) m.append(knopf(t, "melde-knopf", () => { m.hidden = true; tun(); }));
   m.hidden = false;
   clearTimeout(meldeTimer);
-  meldeTimer = setTimeout(() => (m.hidden = true), 3600);
+  meldeTimer = setTimeout(() => (m.hidden = true), aktionen.length ? 7000 : 3600);
 }
 
 /* ---- Commitment wählen ----------------------------------------------------- */

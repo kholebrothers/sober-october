@@ -28,7 +28,6 @@ export function render(api) {
     const aktionen = el("div", "blatt-aktionen");
     aktionen.append(knopf("habe", "text", () => api.eintragen(v, "habe")));
     if (z.commitment[v].drang) aktionen.append(knopf("würde gern", "text", () => api.eintragen(v, "drang")));
-    if (!es.some((e) => e.art === "habe")) aktionen.append(knopf(ohne ? "✓ heute ohne" : "heute ohne", "text", () => api.ohne(v)));
     const liste = el("ul", "blatt-liste");
     for (const e of es.filter((e) => e.art !== "ohne")) liste.append(el("li", null, `${e.zeit} · ${wasText(api, e)}`));
     mitte.append(aktionen, liste);
