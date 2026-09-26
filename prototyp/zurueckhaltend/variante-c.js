@@ -54,9 +54,13 @@ export function render(api) {
     if (p.typ === "eintrag") {
       const { e } = p;
       const V = VERZICHTE[e.verzicht];
-      const was = e.art === "ohne" ? `ohne ${V.name}` : e.art === "habe" ? V.habe : e.wann === "vorhin" ? V.drangVorhin : V.drang;
+      const was = e.art === "ohne" ? `ohne ${V.name}` : e.art === "habe" ? V.habe : V.drang;
       li.innerHTML = `<span class="leise">${e.zeit}</span> ${was}`;
-      for (const w of Object.values(e.antworten)) li.append(Object.assign(document.createElement("span"), { className: "zitat", textContent: `„${w}"` }));
+      // Nur Freitext wird zitiert; eine Auswahl sind nicht die eigenen Worte.
+      for (const [k, w] of Object.entries(e.antworten)) {
+        const gewaehlt = k === "gefuehl" || k === "damit";
+        li.append(Object.assign(document.createElement("span"), { className: gewaehlt ? "zitat wahl" : "zitat", textContent: gewaehlt ? w : `„${w}"` }));
+      }
     } else if (p.typ === "spur") {
       li.innerHTML = `<span class="leise">Eine Spur öffnet sich.</span> `;
       const b = document.createElement("button");

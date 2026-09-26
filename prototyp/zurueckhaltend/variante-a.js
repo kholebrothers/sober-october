@@ -30,7 +30,7 @@ export function render(api) {
     liste.className = "va-liste";
     es.filter((e) => e.art !== "ohne").forEach((e) => {
       const li = document.createElement("li");
-      li.textContent = `${e.zeit} · ${e.art === "habe" ? V.habe : e.wann === "vorhin" ? V.drangVorhin : V.drang}`;
+      li.textContent = `${e.zeit} · ${e.art === "habe" ? V.habe : V.drang}`;
       liste.append(li);
     });
     mitte.append(liste);

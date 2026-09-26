@@ -1,33 +1,33 @@
 /* PROTOTYP, zum Wegwerfen. Texte, Fragen und Ebenen. Kein Produktivcode.
 
-   Die Fragen zum „habe"-Eintrag stammen aus smokefree/modul.js
+   „davor" und „statt" beim „habe"-Eintrag stammen aus smokefree/modul.js
    (FRAGEN_ZIGARETTE), die wiederum auf lifetracker RUECK zurückgehen.
    Die zum „würde gern"-Eintrag sind für diesen Prototyp neu. */
 
 import { hero } from "./geliehen/hero.js";
 
 export const VERZICHTE = {
-  kaffee: { name: "Kaffee", satz: "den Kaffee", habe: "Kaffee getrunken", drang: "würde gern Kaffee", drangVorhin: "hätte gern Kaffee gehabt" },
-  kippe:  { name: "Kippe",  satz: "die Kippe",  habe: "geraucht",        drang: "will rauchen",       drangVorhin: "wollte rauchen" },
-  video:  { name: "Video",  satz: "das Video",  habe: "Video geschaut",  drang: "würde gern schauen", drangVorhin: "hätte gern geschaut" },
+  kaffee: { name: "Kaffee", satz: "den Kaffee", habe: "Kaffee getrunken", drang: "würde gern Kaffee" },
+  kippe:  { name: "Kippe",  satz: "die Kippe",  habe: "geraucht",        drang: "will rauchen" },
+  video:  { name: "Video",  satz: "das Video",  habe: "Video geschaut",  drang: "würde gern schauen" },
 };
+
+/* Die vier Grundgefühle als Selbstauskunft, Mehrfachwahl. Eine Linse,
+   keine Diagnose: die App ordnet nichts zu, der Mensch wählt. */
+const GEFUEHLE = ["Angst", "Wut", "Trauer", "Freude", "weiß nicht"];
 
 export const FRAGEN = {
   habe: [
     { id: "davor", frage: "Was war kurz davor?", platz: "Telefonat, Feierabend, Warten …" },
-    { id: "jetzt", frage: "Wie ist es jetzt?", platz: "Ehrlich, nicht richtig." },
+    { id: "gefuehl", frage: "Was ist jetzt da?", wahl: GEFUEHLE, mehr: true },
     { id: "statt", frage: "Was hätte auch gepasst?", platz: "Oder: nichts." },
   ],
   drang: [
     { id: "davor", frage: "Was war kurz davor?", platz: "Aufgewacht, Pause, Langeweile …" },
+    { id: "gefuehl", frage: "Was ist gerade da?", wahl: GEFUEHLE, mehr: true },
     { id: "wo", frage: "Wo spürst du es?", platz: "Brust, Hände, Mund, nirgends …" },
     { id: "damit", frage: "Was machst du jetzt damit?",
-      wahl: ["abwarten", "etwas anderes", "nachgeben", "weiß nicht"] },
-  ],
-  drangVorhin: [
-    { id: "davor", frage: "Was war kurz davor?", platz: "Aufgewacht, Pause, Langeweile …" },
-    { id: "damit", frage: "Was ist daraus geworden?",
-      wahl: ["verging", "etwas anderes", "nachgegeben", "weiß nicht"] },
+      wahl: ["abwarten", "etwas anderes", "nachgeben", "ist schon vorbei", "weiß nicht"] },
   ],
 };
 

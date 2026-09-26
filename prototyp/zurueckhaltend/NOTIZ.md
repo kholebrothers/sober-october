@@ -12,6 +12,7 @@ Commitment zeigt, während alles andere erst freigeschaltet werden muss?
     open http://localhost:8000/prototyp/zurueckhaltend/
 
 - `?variant=A|B|C`, die schwarze Leiste unten oder `←`/`→` wechseln die Variante.
+  Ohne Angabe startet B.
 - `?demo=1` füllt vier Tage vor (Kaffee und Kippe gewählt), damit die Ebenen
   sofort zu sehen sind.
 - Leiste: `Tag +1` schiebt den simulierten Tag weiter, `Zustand` zeigt den
@@ -23,11 +24,16 @@ Gemeinsam für alle Varianten:
 
 - **Commitment wählen:** 1–3 Verzichte, je Verzicht optional „auch die Momente
   notieren, in denen ich gern würde". Freiwillig, jederzeit änderbar.
-- **„habe"-Eintrag** → drei Fragen (aus smokefree), alle überspringbar.
-- **„würde gern"-Eintrag** → zuerst *gerade jetzt* oder *vorhin*. „Jetzt" wird
-  **begleitet**: ein langsam atmender Kreis, eine Uhr und der Satz „Das darf da
-  sein.". Erst danach kommen die Fragen. Beim Rauchen heißt es „will rauchen" bzw.
-  „wollte rauchen".
+- **„habe"-Eintrag** → Fragen, alle überspringbar: Was war kurz davor? · Was
+  ist jetzt da? · Was hätte auch gepasst?
+- **„würde gern"-Eintrag** (beim Rauchen: „will rauchen") → direkt die Fragen:
+  Was war kurz davor? · Was ist gerade da? · Wo spürst du es? · Was machst du
+  jetzt damit? Oben steht ein leiser Link **„einen Moment begleiten"**: ein
+  langsam atmender Kreis, eine Uhr und der Satz „Das darf da sein.". Danach
+  geht es zurück zu den Fragen.
+- **Vier Grundgefühle** (Angst, Wut, Trauer, Freude, dazu „weiß nicht") als
+  Mehrfachwahl in beiden Bögen. Das ist eine Selbstauskunft, keine Zuordnung
+  durch die App.
 - **„heute ohne"** als Beobachtung. Der Kreis bleibt leer, solange nichts bekannt
   ist.
 - **Fünf Ebenen**, zwei Arten, an sie zu kommen:
@@ -55,9 +61,10 @@ dem Nutzer.
 
 1. **Zurückhaltung trägt.** Mit nur dem Commitment auf dem Schirm fehlt beim
    Eintragen nichts. Der Tag ist in allen drei Varianten in einem Blick erfasst.
-2. **„Gerade jetzt / vorhin" ist die richtige Gabelung.** Nur der Drang im
-   Moment verlangt nach Begleitung. Ein nachgetragener Drang braucht sie nicht.
-   Die Gabelung kostet einen Tipp.
+2. **Die Gabelung „gerade jetzt / vorhin" war ein unnötiger Zwischenschritt**
+   (Rückmeldung des Nutzers). Sie sollte nur entscheiden, ob begleitet wird.
+   Jetzt geht es direkt in die Fragen, und die Begleitung ist dort ein Angebot.
+   Ob ein Drang nachgetragen ist, zeigt die Antwort „ist schon vorbei".
 3. **Ein Drang darf nicht aussehen wie Konsum.** Im ersten Stand bekamen beide
    denselben Tonpunkt am Kreis. Das wurde korrigiert: Ein Drang zeichnet den
    Kreis jetzt gestrichelt. Das Datenmodell braucht dafür zwei getrennte Arten,
@@ -71,11 +78,26 @@ dem Nutzer.
    Plattform ausschließt. B und C verstecken das Gesperrte und umgehen es so.
 6. **C bringt Wissen in den Zusammenhang.** Die Spur steht direkt unter dem
    Eintrag, der sie geöffnet hat. Das fühlt sich am wenigsten nach Belohnung an.
-   Allerdings werden Chip-Antworten („etwas anderes") dort wie eigene Worte
-   zitiert. Die Regel „eigene Worte wörtlich" braucht deshalb die Trennung
-   zwischen Freitext und Auswahl.
+   Chip-Antworten wie „etwas anderes" wurden dort zuerst wie eigene Worte
+   zitiert. Jetzt steht nur Freitext in Anführungszeichen, eine Auswahl steht
+   schlicht daneben. Die Regel „eigene Worte wörtlich" braucht diese Trennung
+   auch im Datenmodell.
+
+## Rückmeldung des Nutzers (26.09.2026)
+
+- Alle drei Ansichten passen. **Standard ist B.**
+- „Gerade jetzt / vorhin" beim Drang: unnötiger Zwischenschritt. Er ist entfernt
+  (siehe Befund 2).
+- Die vier Grundgefühle abfragen: eingebaut, als Mehrfachwahl.
 
 ## Offen, für `/grill-with-docs`
+
+- **Grundgefühle:** Welches Modell genau ist gemeint, und wie heißt „Wut"
+  (Wut oder Ärger)? Gehört „weiß nicht" dazu? Sollen die Gefühle später im
+  Verlauf sichtbar werden, und bleibt es dann bei einer Linse ohne Deutung
+  (PLATTFORM.md: „Affekt-Modelle nur als Linse")?
+- **Wie viele Fragen?** Der Drang-Bogen hat jetzt vier Fragen. Passt „Wo spürst
+  du es?" neben den Gefühlen noch hinein?
 
 - **Verdient oder gewählt?** Ist „freischalten durch Benutzen" überhaupt mit
   „Bereitschaft genügt" vereinbar, oder ist es verdeckte Gamification? Und wäre
@@ -116,12 +138,12 @@ smokefree `90321b8`). In den Nachbar-Repos ist nichts verändert.
 
 Außerdem, abgeschrieben statt kopiert:
 
-- **Die Fragen zum „habe"-Eintrag** stammen aus `smokefree/modul.js`
+- **Zwei der drei Fragen zum „habe"-Eintrag** („davor", „statt") stammen aus `smokefree/modul.js`
   (`FRAGEN_ZIGARETTE`), die dort auf `lifetracker` `RUECK` zurückgehen.
 - **Palette, offener Kreis und Microcopy** folgen `mahlzeit/docs/GESTALT.md`,
   über `smokefree/index.html`.
 - **Die Haltung** („Ereignis, kein Versagen", „leer heißt unbekannt") folgt
   lifetracker, smokefree und `mahlzeit/docs/PLATTFORM.md`.
 
-Neu in diesem Prototyp: die Fragen zum Drang, die Begleitung und die fünf
-Ebenen samt Freischaltregeln.
+Neu in diesem Prototyp: die Fragen zum Drang, die Abfrage der Grundgefühle,
+die Begleitung und die fünf Ebenen samt Freischaltregeln.

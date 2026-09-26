@@ -21,14 +21,14 @@ const zustand = {
   phase: "wahl",
   wahl: { kaffee: null, kippe: null, video: null }, // null | { drang: bool }
   heute: START,
-  ereignisse: [], // { id, tag, zeit, verzicht, art: habe|drang|ohne, wann, antworten }
+  ereignisse: [], // { id, tag, zeit, verzicht, art: habe|drang|ohne, antworten }
   frei: {},       // ebeneId -> { tag, zeit, gesehen }
 };
 
 const $ = (s) => document.querySelector(s);
 const jetztZeit = () => new Date().toTimeString().slice(0, 5);
-let variante = new URLSearchParams(location.search).get("variant") || "A";
-if (!VARIANTEN[variante]) variante = "A";
+let variante = new URLSearchParams(location.search).get("variant") || "B";
+if (!VARIANTEN[variante]) variante = "B";
 
 /* ---- Was die Varianten benutzen -------------------------------------- */
 
@@ -95,28 +95,18 @@ function knopf(text, klasse, beiKlick) {
 
 function eintragen(v, art) {
   const V = VERZICHTE[v];
-  if (art === "habe") return fragen(v, "habe", null, V.habe);
-  // Beim Drang zuerst: jetzt oder vorhin? Das entscheidet, ob begleitet wird.
-  const k = document.createElement("div");
-  k.className = "bogen-inhalt";
-  k.innerHTML = `<p class="bogen-rubrik">${V.name}</p><h2>${V.drang}</h2>`;
-  const reihe = document.createElement("div");
-  reihe.className = "wahlreihe";
-  reihe.append(
-    knopf("gerade jetzt", "gross", () => begleiten(v)),
-    knopf("vorhin", "gross leise", () => fragen(v, "drang", "vorhin", V.drangVorhin)),
-  );
-  k.append(reihe, knopf("abbrechen", "text", () => bogen.close()));
-  zeigeBogen(k);
+  // Kein Zwischenschritt: beide gehen direkt in die Fragen. Die Begleitung
+  // ist dort ein Angebot, keine Station.
+  return fragen(v, art, art === "habe" ? V.habe : V.drang);
 }
 
-/* Der Würde-gern-Moment wird begleitet, nicht abgefragt: erst Raum, dann
-   Fragen. Die Welle ist ein langsam atmender Kreis — Attrappe. */
+/* Begleitung, wenn man sie will: erst Raum, dann zurück zu den Fragen.
+   Die Welle ist ein langsam atmender Kreis — Attrappe. */
 function begleiten(v) {
   const V = VERZICHTE[v];
   const k = document.createElement("div");
   k.className = "bogen-inhalt begleitung";
-  k.innerHTML = `<p class="bogen-rubrik">${V.name} · gerade jetzt</p>
+  k.innerHTML = `<p class="bogen-rubrik">${V.name}</p>
     <div class="welle" aria-hidden="true"></div>
     <p class="serif">Das darf da sein. Ein Drang steigt, und er fällt auch wieder.<br>Du musst nichts damit machen.</p>
     <p class="leise uhr">0:00</p>`;
@@ -126,19 +116,20 @@ function begleiten(v) {
     const s = Math.floor((Date.now() - beginn) / 1000);
     uhr.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }, 500);
-  k.append(knopf("weiter", "gross", () => { clearInterval(t); fragen(v, "drang", "jetzt", V.drang, Math.round((Date.now() - beginn) / 1000)); }));
+  k.append(knopf("weiter", "gross", () => { clearInterval(t); fragen(v, "drang", V.drang, Math.round((Date.now() - beginn) / 1000)); }));
   bogen.addEventListener("close", () => clearInterval(t), { once: true });
   zeigeBogen(k);
 }
 
-function fragen(v, art, wann, titel, begleitetSek) {
+function fragen(v, art, titel, begleitetSek) {
   const V = VERZICHTE[v];
-  const satz = art === "habe" ? FRAGEN.habe : wann === "vorhin" ? FRAGEN.drangVorhin : FRAGEN.drang;
+  const satz = FRAGEN[art];
   const f = document.createElement("form");
   f.className = "bogen-inhalt";
   f.method = "dialog";
   f.innerHTML = `<p class="bogen-rubrik">${V.name} · ${jetztZeit()}</p><h2>${titel}</h2>
     <p class="leise">Alles freiwillig. Ein Wort reicht, keins auch.</p>`;
+  if (art === "drang" && !begleitetSek) f.append(knopf("einen Moment begleiten", "text", () => begleiten(v)));
   for (const q of satz) {
     const l = document.createElement("label");
     l.className = "frage";
@@ -147,7 +138,7 @@ function fragen(v, art, wann, titel, begleitetSek) {
       const r = document.createElement("span");
       r.className = "chips";
       q.wahl.forEach((w) => {
-        r.insertAdjacentHTML("beforeend", `<label class="chip"><input type="radio" name="${q.id}" value="${w}"><span>${w}</span></label>`);
+        r.insertAdjacentHTML("beforeend", `<label class="chip"><input type="${q.mehr ? "checkbox" : "radio"}" name="${q.id}" value="${w}"><span>${w}</span></label>`);
       });
       l.append(r);
     } else {
@@ -157,8 +148,11 @@ function fragen(v, art, wann, titel, begleitetSek) {
   }
   const speichern = (mitAntworten) => {
     const antworten = {};
-    if (mitAntworten) for (const [k, w] of new FormData(f)) if (String(w).trim()) antworten[k] = String(w).trim();
-    zustand.ereignisse.push({ id: crypto.randomUUID(), tag: zustand.heute, zeit: jetztZeit(), verzicht: v, art, wann, antworten, begleitetSek });
+    if (mitAntworten) for (const [k, w] of new FormData(f)) {
+      if (!String(w).trim()) continue;
+      antworten[k] = antworten[k] ? antworten[k] + ", " + String(w).trim() : String(w).trim();
+    }
+    zustand.ereignisse.push({ id: crypto.randomUUID(), tag: zustand.heute, zeit: jetztZeit(), verzicht: v, art, antworten, begleitetSek });
     bogen.close();
     const neue = pruefeFrei();
     neu();
@@ -258,15 +252,15 @@ document.addEventListener("keydown", (e) => {
 if (new URLSearchParams(location.search).get("demo")) {
   zustand.wahl = { kaffee: { drang: true }, kippe: { drang: true }, video: null };
   zustand.phase = "tag";
-  const e = (tag, verzicht, art, antworten = {}, wann) => {
+  const e = (tag, verzicht, art, antworten = {}) => {
     zustand.heute = tag;
-    zustand.ereignisse.push({ id: crypto.randomUUID(), tag, zeit: "08:10", verzicht, art, wann, antworten });
+    zustand.ereignisse.push({ id: crypto.randomUUID(), tag, zeit: "08:10", verzicht, art, antworten });
     pruefeFrei(); // am Tag des Eintrags, damit die Ebenen dort aufgehen, wo sie verdient wurden
   };
-  e("2026-10-01", "kaffee", "drang", { davor: "aufgewacht", damit: "abwarten" }, "jetzt");
+  e("2026-10-01", "kaffee", "drang", { davor: "aufgewacht", gefuehl: "weiß nicht", damit: "abwarten" });
   e("2026-10-01", "kippe", "ohne");
-  e("2026-10-02", "kippe", "habe", { davor: "Feierabend, Kollege draußen", statt: "einfach mit raus, ohne" });
-  e("2026-10-03", "kippe", "drang", { davor: "nach dem Essen", damit: "etwas anderes" }, "vorhin");
+  e("2026-10-02", "kippe", "habe", { davor: "Feierabend, Kollege draußen", gefuehl: "Freude, Wut", statt: "einfach mit raus, ohne" });
+  e("2026-10-03", "kippe", "drang", { davor: "nach dem Essen", damit: "etwas anderes" });
   zustand.heute = "2026-10-04";
 }
 
