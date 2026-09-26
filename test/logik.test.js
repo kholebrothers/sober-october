@@ -7,6 +7,7 @@ import {
   serie, lauf, besterLauf, heatWochen, tagesAnteil, LEITER,
   schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
+  BAUSTEINE, aktiv, schalteBaustein,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -53,12 +54,41 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
   assert.ok(neu.some((e) => e.id === "routine"));
 });
 
-test("gewählte Ebenen öffnen sich nie von selbst", () => {
-  const z = mit("kaffee");
-  for (let d = 1; d <= 9; d++) notiere(z, { tag: `2026-10-0${d}`, zeit: "08:00", verzicht: "kaffee", art: "drang" });
-  assert.equal(stand(z, "verlauf"), "aus");
+test("die App fängt klein an: nur Leitgedanke und Abendruhe sind von selbst an", () => {
+  const z = neuerZustand();
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "abends"]);
+  schalteBaustein(z, "heatmap");
+  schalteBaustein(z, "leitgedanke", false);
+  schalteBaustein(z, "gibtsnicht", true);
+  assert.equal(aktiv(z, "heatmap"), true);
+  assert.equal(aktiv(z, "leitgedanke"), false);
+  assert.deepEqual(z.bausteine, { heatmap: true, leitgedanke: false });
+  assert.deepEqual(aus(JSON.stringify(z)).bausteine, z.bausteine);
 });
 
+test("Ebenen öffnen sich auch, wenn der Baustein aus ist — einschalten zeigt, was schon verdient ist", () => {
+  const z = mit("kaffee");
+  notiere(z, { tag: okt(1), zeit: "08:00", verzicht: "kaffee", art: "drang" });
+  assert.equal(aktiv(z, "ebenen"), false);
+  assert.equal(stand(z, "drang"), "frei");
+});
+
+test("ein Stand von live (vor den Bausteinen) fängt klein an", () => {
+  const live = { v: VERSION, commitment: { kaffee: { drang: true } }, ansicht: "knopf",
+    ereignisse: [{ id: "a", tag: okt(1), zeit: "08:00", verzicht: "kaffee", art: "habe", antworten: {} }], frei: {} };
+  const z = aus(JSON.stringify(live));
+  assert.deepEqual(z.bausteine, {});
+  assert.equal(aktiv(z, "lauf"), false);
+});
+
+test("ein Stand aus der Vorschau behält, was dort sichtbar war", () => {
+  const vorschau = { v: VERSION, commitment: { kaffee: { drang: true } }, ansicht: "blatt", abends: false,
+    ereignisse: [{ id: "a", tag: okt(1), zeit: "08:00", verzicht: "kaffee", art: "drang", antworten: {} }],
+    freieTage: [okt(2)], frei: { verlauf: { tag: okt(1) }, drang: { tag: okt(1), zeit: "08:00", gesehen: true } } };
+  const z = aus(JSON.stringify(vorschau));
+  assert.deepEqual(z.bausteine, { lauf: true, freieTage: true, heatmap: true, ebenen: true, abends: false });
+  assert.equal(z.frei.verlauf, undefined, "die Ebene „Dein Oktober\" gibt es nicht mehr, sie ist die Heatmap");
+});
 test("„heute ohne\" schaltet an und wieder aus", () => {
   const z = mit("video");
   schalteOhne(z, "2026-10-02", "20:00", "video");
@@ -276,16 +306,13 @@ test("ein freier Tag hält die Kette und steht als frei darin", () => {
   assert.deepEqual(fuerKern(z, okt(5)).eintraege.map((e) => e.date), [okt(1), okt(2), okt(3), okt(5)]);
 });
 
-test("freie Tage und „abends ruhiger\" überstehen Speichern; Unsinn wird verworfen", () => {
+test("freie Tage überstehen Speichern; Unsinn wird verworfen", () => {
   const z = mit("kippe");
   schalteFrei(z, okt(2));
-  z.abends = false;
   assert.deepEqual(aus(JSON.stringify(z)), z);
   const roh = { ...z, freieTage: [okt(2), "gestern", 7, okt(2)] };
   assert.deepEqual(aus(JSON.stringify(roh)).freieTage, [okt(2)]);
-  assert.equal(aus(JSON.stringify({ v: VERSION })).abends, true, "Standard: an");
 });
-
 test("der Satz zum Tag lädt ein und mahnt nie", () => {
   const z = mit("kaffee");
   assert.equal(tagessatz(z, okt(1)), "Eine Notiz, und der Tag zählt.");

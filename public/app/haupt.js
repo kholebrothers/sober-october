@@ -9,7 +9,7 @@
 
 import { heute as heuteTag } from "../kern/datum.js";
 import {
-  FRAGEN, EBENEN, ANSICHTEN, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
+  FRAGEN, EBENEN, ANSICHTEN, BAUSTEINE, aktiv, schalteBaustein, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
   notiere, schalteOhne, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   tagesKopf,
@@ -41,7 +41,7 @@ function aendern(f) {
   f();
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
-  if (!vor || !gewaehlt(z).length || wahlOffen) return "";
+  if (!vor || !gewaehlt(z).length || wahlOffen || !aktiv(z, "lauf")) return "";
   const m = moment(vor, stand());
   if (m.heuteNeu) document.querySelector(".glied[data-heute]")?.classList.add("pling");
   if (m.stufe) document.querySelector(".lauf")?.classList.add("blitz");
@@ -78,10 +78,7 @@ const api = {
     const satz = aendern(() => schalteFrei(z, heute()));
     melde(mitMoment(istFrei(z, heute()) ? "Heute ist frei. Die Kette läuft weiter." : "Der freie Tag ist zurückgenommen.", satz));
   },
-  einschalten(id) {
-    aendern(() => { z.frei[id] = { tag: heute(), zeit: jetztZeit(), gesehen: false }; });
-    oeffneEbene(id);
-  },
+  aktiv: (id) => aktiv(z, id),
   oeffneEbene,
   einstellungen,
   zeichne: () => zeichne(),
@@ -179,6 +176,7 @@ function fragen(v, art, titel) {
     let neu = [];
     bogen.close();
     const satz = aendern(() => { neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art, antworten, begleitetSek }); });
+    if (!aktiv(z, "ebenen")) neu = [];
     melde(mitMoment(neu.length ? `Notiert. Eine Ebene hat sich geöffnet: ${neu.map((e) => e.titel).join(", ")}.` : "Notiert.", satz));
   };
   const unten = el("div", "wahlreihe");
@@ -241,32 +239,56 @@ function leitgedankeBearbeiten() {
 
 /* ---- Einstellungen ------------------------------------------------------- */
 
+/* Die Einstellungen in drei Teilen: was du trackst, wie es aussieht, und
+   welche Bausteine dazukommen. Jeder Baustein sagt in einem Satz, was er
+   tut; er wirkt sofort, ohne Speichern-Knopf. */
 function einstellungen() {
-  const k = el("div", "bogen-inhalt");
-  k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)));
-  k.append(knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }),
-    knopf("Leitgedanken ändern", "text", () => leitgedankeBearbeiten()));
+  const k = el("div", "bogen-inhalt einstellungen");
+  k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)),
+    knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }));
 
   const ans = el("fieldset", "frage");
   ans.append(el("legend", "serif", "Ansicht"));
+  const reihe = el("div", "ansicht-wahl");
   for (const [id, text] of Object.entries(ANSICHTEN)) {
-    const l = el("label", "zeile");
+    const [name, erklaerung] = text.split(" — ");
+    const l = el("label", "ansicht-option");
     const i = Object.assign(document.createElement("input"), { type: "radio", name: "ansicht", value: id, checked: z.ansicht === id });
     i.addEventListener("change", () => aendern(() => { z.ansicht = id; }));
-    l.append(i, el("span", null, text));
-    ans.append(l);
+    l.append(i, el("span", "serif", name), el("span", "leise klein", erklaerung));
+    reihe.append(l);
   }
+  ans.append(reihe);
   k.append(ans);
 
-  const ruhe = el("label", "frage zeile");
-  const ri = Object.assign(document.createElement("input"), { type: "checkbox", checked: z.abends });
-  ri.addEventListener("change", () => { z.abends = ri.checked; sichern(z); tageszeitSetzen(); });
-  ruhe.append(ri, el("span", null, "Abends und nachts etwas ruhiger"));
-  k.append(ruhe);
+  let gruppe = null, feld = null;
+  for (const b of BAUSTEINE) {
+    if (b.gruppe !== gruppe) {
+      gruppe = b.gruppe;
+      feld = el("fieldset", "frage bausteine");
+      feld.append(el("legend", "serif", gruppe === "Darstellung" ? "Darstellung" : `Bausteine · ${gruppe}`));
+      k.append(feld);
+    }
+    const l = el("label", "baustein");
+    const i = Object.assign(document.createElement("input"), { type: "checkbox", checked: aktiv(z, b.id) });
+    i.addEventListener("change", () => {
+      aendern(() => schalteBaustein(z, b.id, i.checked));
+      if (b.id === "abends") tageszeitSetzen();
+      const y = bogen.scrollTop;
+      einstellungen();
+      bogen.scrollTop = y;
+    });
+    const t = el("span", "baustein-text");
+    t.append(el("span", null, b.titel), el("span", "leise klein", b.text));
+    l.append(i, t);
+    feld.append(l);
+    if (b.id === "leitgedanke" && aktiv(z, b.id))
+      feld.append(knopf("Leitgedanken ändern", "text klein baustein-mehr", () => leitgedankeBearbeiten()));
+  }
 
   const daten = el("div", "frage");
   daten.append(el("p", "serif", "Deine Daten"),
-    el("p", "leise", "Alles, was du notierst, liegt nur auf diesem Gerät, in diesem Browser. Nichts davon geht an einen Server."));
+    el("p", "leise klein", "Alles, was du notierst, liegt nur auf diesem Gerät, in diesem Browser. Nichts davon geht an einen Server."));
   const weg = knopf("Alles auf diesem Gerät löschen", "text", () => {
     if (weg.dataset.sicher) {
       loeschen();
@@ -402,12 +424,12 @@ document.addEventListener("visibilitychange", () => {
 /* Ein anderer Tab hat gespeichert. */
 addEventListener("storage", (e) => { if (e.key === "sober-october") { z = laden(); zeichne(); } });
 
-/* Abends ruhiger — dezent: nach Sonnenuntergang wird das Papier eine Spur
+/* Baustein „Abends ruhiger" — dezent: nach Sonnenuntergang wird das Papier eine Spur
    dunkler und die Schrift eine Spur weicher, ab 22 Uhr noch eine Spur mehr.
    Kein Umschalten ins Dunkle; wer dunkel will, stellt das System um. */
 function tageszeitSetzen() {
   const d = new Date();
-  const zeit = z.abends ? tageszeit(heute(), d.getHours() * 60 + d.getMinutes()) : "tag";
+  const zeit = aktiv(z, "abends") ? tageszeit(heute(), d.getHours() * 60 + d.getMinutes()) : "tag";
   document.documentElement.dataset.tageszeit = zeit;
 }
 tageszeitSetzen();

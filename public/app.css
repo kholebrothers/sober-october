@@ -168,16 +168,12 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 
 /* Ansicht Knopf */
 .ansicht-knopf { display:grid; gap:18px; justify-items:center; }
-.ansicht-knopf .kopf, .ansicht-knopf .kopf-flaeche { width:100%; margin:0; }
-.punkte { display:flex; gap:8px; }
-.punkt-knopf { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--e, var(--teal)); background:transparent; padding:0; }
-.punkt-knopf[data-neu="true"] { background:var(--e, var(--teal)); }
+.ansicht-knopf .kopf, .ansicht-knopf .oben, .ansicht-knopf .unten { width:100%; margin:0; }
 .reiter { display:flex; gap:18px; }
 .reiter .text { color:var(--leise); }
 .reiter .text[aria-selected="true"] { color:var(--ink); border-bottom:2px solid var(--v, var(--ink)); }
 .ansicht-knopf .zk { width:100%; --zk-hoehe:260px; --zk-grund:var(--surface); --zk-linie:var(--linie-stark); --zk-an:var(--clay); --zk-text:var(--ink); --zk-neben:var(--leise); }
 .drang-knopf { width:100%; padding:16px; border:1px dashed color-mix(in oklab, var(--teal) 45%, var(--linie-stark)); border-radius:16px; background:transparent; font:17px var(--serif); }
-.plus { margin-top:24px; display:grid; justify-items:center; gap:4px; }
 
 /* Ansicht Blatt */
 .blatt-zeile { display:grid; grid-template-columns:28px 1fr; gap:14px; align-items:start; padding:14px 0; border-top:1px solid var(--linie); }
@@ -187,13 +183,6 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .blatt-liste { list-style:none; margin:2px 0 0; padding:0; font-size:13px; color:var(--leise); }
 .blatt-aktionen { display:flex; flex-wrap:wrap; gap:2px 16px; font-size:14px; margin-top:2px; }
 .blatt-aktionen .text { padding:3px 0; }
-.blatt-mehr { margin-top:40px; border-top:1px solid var(--linie); padding-top:12px; }
-.blatt-mehr summary { color:var(--leise); cursor:pointer; font-size:14px; }
-.blatt-ebene { display:grid; padding:10px 0 4px; }
-.blatt-ebene .rubrik { color:var(--e); }
-.blatt-ebene[data-stand="zu"] .rubrik { color:var(--leise); }
-.blatt-ebene[data-stand="zu"] .blatt-titel { color:var(--leise); opacity:.7; }
-.blatt-titel { font-family:var(--serif); }
 
 /* Ansicht Faden */
 .ansicht-faden h1 { font-size:27px; margin-bottom:18px; }
@@ -203,15 +192,16 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .faden li { padding:6px 0 6px 16px; }
 .verben .leise.v-name { color:var(--v); }
 .faden-kopf { padding-top:18px !important; }
-.faden-spur, .faden-angebot, .faden-an { border-left:2px solid var(--e, var(--teal)); margin-left:-1.5px; }
+.faden-spur { border-left:2px solid var(--e, var(--teal)); margin-left:-1.5px; }
 .faden-eintrag { border-left:2px solid color-mix(in oklab, var(--v) 55%, transparent); margin-left:-1.5px; }
 
 /* Kopf und Lauf — aus lifetracker (.hero, .chain). Die Kette bricht nie um:
    die Glieder teilen sich die Breite und sind bei 9px gedeckelt, damit eine
    kurze Kette nicht zu Klötzen wird. */
-.kopf-flaeche { margin-bottom:14px; }
-.kopf-flaeche .kopf { margin-bottom:6px; }
-.lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; row-gap:10px; position:relative; border-radius:14px; }
+/* Oben: der Leitgedanke allein ist eine Zeile; mit dem Lauf ein Raster aus
+   Zahl, Text und der Kette darunter. */
+.oben { margin:0 0 16px; position:relative; }
+.oben.lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; row-gap:10px; border-radius:14px; }
 .lauf-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
 .lauf-zeile { font-size:17px; line-height:1.25; text-wrap:balance; }
 /* Der Leitgedanke ist ein Satz, kein Knopf: er sieht aus wie Text und lässt
@@ -267,7 +257,6 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 .hm-zelle[data-frei] { background:repeating-linear-gradient(135deg, var(--frei) 0 2px, var(--hm-leer) 2px 4px) !important; }
 .hm-legende { display:flex; align-items:center; justify-content:flex-end; gap:5px; font-size:11px; color:var(--leise); }
 .hm-legende .hm-zelle { width:11px; height:11px; aspect-ratio:auto; flex:none; }
-.blatt-oktober { margin:18px 0 6px; display:grid; gap:8px; }
 
 /* Rückblick in Wochen */
 .woche { display:grid; gap:4px; padding:10px 0 12px; border-top:1px solid var(--linie); }
@@ -279,3 +268,21 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 /* Aufgeräumt: der Satz des Commitments ist ein Satz, keine Überschrift. */
 .ansicht-blatt h1, .ansicht-faden h1 { font-size:20px; line-height:1.35; margin:0 0 10px; }
 .reiter { flex-wrap:wrap; justify-content:center; row-gap:4px; }
+
+/* Unten: Karten, eine je Baustein, mit Luft dazwischen. */
+.unten { display:grid; gap:14px; margin-top:32px; }
+.karte { display:grid; gap:10px; padding-top:14px; border-top:1px solid var(--linie); }
+.karte-kopf { display:flex; justify-content:space-between; align-items:baseline; }
+.ebene-knopf { display:grid; gap:1px; text-align:left; background:none; border:0; padding:6px 0; position:relative; }
+.ebene-knopf .rubrik { color:var(--e); }
+.ebene-knopf .punkt { position:absolute; right:0; top:50%; }
+
+/* Einstellungen */
+.ansicht-wahl { display:grid; gap:6px; }
+.ansicht-option { display:grid; grid-template-columns:auto 1fr; column-gap:10px; align-items:baseline; padding:4px 0; }
+.ansicht-option .klein { grid-column:2; }
+.bausteine { gap:2px; }
+.baustein { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:start; padding:6px 0; }
+.baustein input { margin-top:4px; accent-color:var(--moss); }
+.baustein-text { display:grid; gap:1px; }
+.baustein-mehr { padding:0 0 4px 26px !important; font-size:13px; }

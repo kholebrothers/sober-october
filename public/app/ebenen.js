@@ -4,8 +4,7 @@
    mögliche Spur", keine Anweisung, keine Diagnose). Sie sind fachlich
    nicht geprüft und stehen deshalb hier, getrennt von der Mechanik. */
 
-import { verzichte, tagesKopf, besterLauf, wochen, wasTraegt } from "./logik.js";
-import { heatmap } from "./ansichten/heatmap.js";
+import { verzichte, tagesKopf, wochen, wasTraegt } from "./logik.js";
 import { faerbe } from "./ansichten/teile.js";
 
 export function ebenenInhalt(id, z, heute) {
@@ -93,13 +92,6 @@ export function ebenenInhalt(id, z, heute) {
         d.append(ul);
       }
       p("Hier ist sichtbar, was du notiert hast. Eine Bewertung steht hier nicht.", "leise");
-      break;
-    }
-    case "verlauf": {
-      const best = besterLauf(z, heute);
-      if (best) p(`Längster Lauf bisher: ${best} ${best === 1 ? "Tag" : "Tage"} am Stück.`, "leise");
-      d.append(heatmap(z, heute));
-      p("Je voller das Kästchen, desto mehr von deinem Commitment ist an dem Tag notiert — auch ein „habe“ zählt, es ist ein Ereignis, kein Versagen. Ein leeres Kästchen heißt: nichts bekannt. Nicht: nicht geschafft.", "leise");
       break;
     }
   }

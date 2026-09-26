@@ -92,7 +92,7 @@ export function entferneEigenen(z, id) {
 export const hatNotizen = (z, id) => z.ereignisse.some((e) => e.verzicht === id);
 
 export const ANSICHTEN = {
-  knopf: "Knopf — ein Verzicht auf einmal",
+  knopf: "Knopf — ein Tracker auf einmal",
   blatt: "Blatt — alles auf einer Seite",
   faden: "Faden — Text und eigene Worte",
 };
@@ -122,9 +122,8 @@ export const FRAGEN = {
     Worte und werden nicht als Zitat gezeigt. */
 export const AUSWAHL = new Set(["gefuehl", "damit"]);
 
-/* Zwei Arten, an eine Ebene zu kommen: *verdient* (sie öffnet sich durch
-   Benutzen) oder *gewählt* (man schaltet sie selbst ein). Gewählte werden
-   in der Ansicht „Faden" angeboten, sobald `angebot` erfüllt ist. */
+/* Ebenen öffnen sich durch Benutzen. Was man selbst einschaltet, ist ein
+   Baustein (siehe BAUSTEINE); die Ebenen als Ganzes sind selbst einer. */
 export const EBENEN = [
   { id: "drang", art: "verdient", titel: "Wie ein Drang verläuft", rubrik: "Wissen · Nervensystem",
     bedingung: "öffnet sich, wenn du einen Würde-gern-Moment notiert hast",
@@ -135,18 +134,47 @@ export const EBENEN = [
   { id: "statt", art: "verdient", titel: "Etwas anderes an die Stelle", rubrik: "Neue Verhaltensweisen",
     bedingung: "öffnet sich, wenn du zweimal notiert hast, was auch gepasst hätte",
     erfuellt: (z) => z.ereignisse.filter((e) => e.antworten.statt || e.antworten.damit === "etwas anderes").length >= 2 },
-  { id: "verlauf", art: "gewaehlt", titel: "Dein Oktober", rubrik: "Verlauf",
-    bedingung: "einschalten, wenn du die Tage sehen willst",
-    angebot: (z) => notizTage(z) >= 2 },
   { id: "rueckblick", art: "verdient", titel: "Dein Oktober in Wochen", rubrik: "Rückblick",
     bedingung: "öffnet sich, wenn die erste Oktoberwoche vorbei ist",
     erfuellt: (z, tag) => notizTage(z) >= 1 && (oktober(tag).phase === "nach" || (oktober(tag).phase === "im" && oktober(tag).tag >= 8)) },
 ];
 
+/* ---- Bausteine ------------------------------------------------------------
+
+   Die App fängt klein an: die Tracker, und je Tracker „habe", „würde gern"
+   und „heute ohne". Alles andere ist ein Baustein, den man in den
+   Einstellungen dazunimmt oder weglässt. `standard` sagt, was ein neuer
+   Zustand von sich aus zeigt — nur der Leitgedanke und die Abendruhe, weil
+   beide nichts fordern. */
+export const BAUSTEINE = [
+  { id: "leitgedanke", gruppe: "Oben", titel: "Leitgedanke", standard: true,
+    text: "Ein eigener Satz, der dich begleitet." },
+  { id: "lauf", gruppe: "Oben", titel: "Lauf und Kette", standard: false,
+    text: "Tage dabei, die Kette auf der Fibonacci-Leiter, ein Satz zum Tag und kleine Momente an den Stufen." },
+  { id: "freieTage", gruppe: "Oben", titel: "Freie Tage", standard: false,
+    text: "Einen Tag bewusst frei nehmen — er hält die Kette." },
+  { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
+    text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
+  { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
+    text: "Ebenen, die sich durch Benutzen öffnen: wie ein Drang verläuft, Routinen, Neues an die Stelle, der Rückblick in Wochen." },
+  { id: "abends", gruppe: "Darstellung", titel: "Abends ruhiger", standard: true,
+    text: "Nach Sonnenuntergang wird die Seite eine Spur ruhiger." },
+];
+
+export function aktiv(z, id) {
+  if (id in z.bausteine) return z.bausteine[id];
+  return !!BAUSTEINE.find((b) => b.id === id)?.standard;
+}
+
+export function schalteBaustein(z, id, an = !aktiv(z, id)) {
+  if (!BAUSTEINE.some((b) => b.id === id)) return;
+  z.bausteine[id] = !!an;
+}
+
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], abends: true, leitgedanken: [] };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], leitgedanken: [], bausteine: {} };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -176,12 +204,24 @@ export function aus(text) {
     for (const eb of EBENEN) if (roh.frei[eb.id]) z.frei[eb.id] = roh.frei[eb.id];
   if (Array.isArray(roh.freieTage))
     z.freieTage = [...new Set(roh.freieTage.filter((t) => typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t)))].sort();
-  if (roh.abends === false) z.abends = false;
+
   if (Array.isArray(roh.leitgedanken))
     z.leitgedanken = roh.leitgedanken
       .filter((l) => l && typeof l.text === "string" && l.text.trim() && /^\d{4}-\d{2}-\d{2}$/.test(l.ab))
       .map((l) => ({ text: l.text.slice(0, LEIT_LAENGE), ab: l.ab }))
       .sort((a, b) => a.ab.localeCompare(b.ab));
+  if (roh.bausteine && typeof roh.bausteine === "object") {
+    for (const b of BAUSTEINE) if (typeof roh.bausteine[b.id] === "boolean") z.bausteine[b.id] = roh.bausteine[b.id];
+  } else {
+    // Ein Stand von vor den Bausteinen: was dort sichtbar war, bleibt es.
+    // Lauf und Kette gab es nur in der Vorschau (die schrieb `freieTage`),
+    // nie live — wer von dort kommt, fängt klein an.
+    if ("freieTage" in roh && z.ereignisse.length) z.bausteine.lauf = true;
+    if (z.freieTage.length) z.bausteine.freieTage = true;
+    if (roh.frei && roh.frei.verlauf) z.bausteine.heatmap = true;
+    if (EBENEN.some((eb) => z.frei[eb.id])) z.bausteine.ebenen = true;
+    if (roh.abends === false) z.bausteine.abends = false;
+  }
   return z;
 }
 
@@ -235,12 +275,8 @@ export function freischalten(z, tag, zeit) {
   return neu;
 }
 
-/** "zu" | "frei" (verdient, offen) | "an" (gewählt, eingeschaltet) | "aus" */
-export function stand(z, id) {
-  const eb = EBENEN.find((x) => x.id === id);
-  if (eb.art === "gewaehlt") return z.frei[id] ? "an" : "aus";
-  return z.frei[id] ? "frei" : "zu";
-}
+/** "zu" | "frei" */
+export const stand = (z, id) => (z.frei[id] ? "frei" : "zu");
 
 function neueId() {
   return (globalThis.crypto?.randomUUID?.() || String(Math.random()).slice(2)).replace(/-/g, "").slice(0, 12);

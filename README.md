@@ -8,29 +8,23 @@ Live: https://sober-october.khole.workers.dev
 
 Man wählt, was man im Oktober sein lässt: Kaffee, Kippe, Video (mit **Alles** alle drei auf einmal)
 und beliebig viele **eigene Tracker** mit selbst geschriebenem Namen, etwa „Alkohol“ oder „Zucker“ —
-jederzeit dazu, über ⋯ → „Tracker wählen oder hinzufügen“. Eigene lassen sich umbenennen und, solange
-nichts dazu notiert ist, entfernen. Die Namen bleiben im Gerät; an kur-core gingen nur die Schlüssel
-(`eigen`, `eigen-…`). Danach zeigt die Oberfläche nur dieses
-Commitment. Man notiert, wenn etwas geschehen ist („habe“) und, wenn man will, auch den Moment,
-in dem man gern würde („würde gern“, beim Rauchen „will rauchen“). Danach folgt eine kurze,
-überspringbare Reflexion mit den vier Grundgefühlen. Einen Drang kann man begleiten lassen.
-Alles Weitere ist eine **Ebene**, die sich erst öffnet: Wissen zu Nervensystem und Routinen,
-neue Verhaltensweisen, der Verlauf des Monats.
+jederzeit dazu, über ⋯ → „Tracker wählen oder hinzufügen“. Die Namen bleiben im Gerät; an kur-core
+gingen nur die Schlüssel (`eigen`, `eigen-…`).
 
-Im Kopf steht, wie in lifetracker, der **Lauf**: die Tage dabei (ein Leertag hält, zwei beenden)
-und die Kette, die auf der Fibonacci-Leiter 5, 8, 13, 21, 34 einrastet. Dabei ist, wer etwas
-notiert — auch ein „habe“. Die Ebene **Dein Oktober** zeigt die große Heatmap aus lifetracker
-(13 Wochen, den ganzen Oktober darin); in der Ansicht Blatt steht sie direkt auf der Seite.
+**Die App fängt klein an.** Zu sehen sind nur die Tracker, je mit „habe“, „würde gern“ und „heute
+ohne“, dazu dein Leitgedanke. Alles Weitere ist ein **Baustein**, den man unter ⋯ dazunimmt:
 
-Neben der Zahl steht dein **Leitgedanke**: ein eigener Satz, der dich begleitet, anfangs „Bereitschaft
-genügt.“ Antippen, und er lässt sich ändern; er gilt ab dem Tag und nie rückwirkend, frühere bleiben
-mit Datum stehen, und der Rückblick zeigt, welcher in welcher Woche galt. Er bleibt auf dem Gerät.
-Darunter der Satz zum Tag („Eine Notiz hält die Kette.“). Ist heute nichts
-notiert, lässt sich der Tag **frei nehmen**: bewusst genommen, nicht vergessen, er hält die Kette.
-Erreichen die Tage dabei eine Stufe der Leiter, gibt es einen **kleinen Moment** (ein Aufleuchten und
-ein Satz, je Stufe ein anderer). Nach der ersten Oktoberwoche öffnet sich der **Rückblick** in vier
-Abschnitten mit den eigenen Worten und dem, was trägt. Abends und nachts wird die Seite **dezent
-ruhiger** (nach Sonnenuntergang in Berlin, abschaltbar in ⋯). Vom Homescreen startet die App auch
+| Baustein | Wo | Was |
+|---|---|---|
+| Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
+| Lauf und Kette | oben | Tage dabei, die Kette auf der Fibonacci-Leiter 5, 8, 13, 21, 34, Satz zum Tag, kleine Momente |
+| Freie Tage | oben | einen Tag bewusst frei nehmen; er hält die Kette |
+| Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
+| Wissen und Rückblick | unten | Ebenen, die sich durch Benutzen öffnen; der Rückblick in Wochen |
+| Abends ruhiger *(an)* | Darstellung | nach Sonnenuntergang eine Spur ruhiger |
+
+Die Ansicht (Knopf, Blatt, Faden) ist davon unabhängig. Ebenen öffnen sich auch, wenn ihr Baustein
+aus ist — schaltet man ihn ein, ist da, was schon verdient ist. Vom Homescreen startet die App auch
 **ohne Netz** (Manifest und Service Worker; Symbole: `node tools/icons-bauen.js`).
 
 Die Haltung kommt aus lifetracker und smokefree: Ein Konsumereignis ist ein Ereignis, kein
@@ -58,11 +52,12 @@ ausgeliefert, wie es im Repo steht.
 
     public/index.html          die Seite
     public/app.css             Palette und Stil (mahlzeit/docs/GESTALT.md)
-    public/app/logik.js        Zustand, Oktober, Freischalten, fuerKern() — ohne DOM, getestet
+    public/app/logik.js        Zustand, Bausteine, Oktober, Lauf, Freischalten, fuerKern() — ohne DOM, getestet
     public/app/speicher.js     localStorage
     public/app/haupt.js        Verdrahtung: Wahl, Bogen, Einstellungen, render()
     public/app/ebenen.js       Inhalte der Ebenen (Texte ungeprüft, siehe dort)
-    public/app/ansichten/      knopf.js, blatt.js, faden.js
+    public/app/ansichten/      knopf.js, blatt.js, faden.js und teile.js (Kopfzeile, Helfer)
+    public/app/bausteine/      oben.js (Leitgedanke, Lauf, freie Tage), unten.js, heatmap.js
     public/kern/               aus kur-core kopiert: datum.js, uhr.js (Dev-Uhr); sonne.js aus lifetracker
     public/sw.js               Service Worker; SCHALE muss jede Datei nennen (test/pwa.test.js)
     public/knopf/              aus smokefree kopiert: der Zählknopf

@@ -1,4 +1,4 @@
-/* Die große Heatmap, aus lifetracker (heatmap() in public/app.js).
+/* Baustein „Heatmap" — die große Heatmap, aus lifetracker (heatmap() in public/app.js).
 
    Ein Kästchen je Tag, eine Spalte je Woche, Montag oben. Die Farbe sagt,
    wie viel von deinem Commitment an dem Tag notiert ist — nicht, ob etwas
@@ -6,9 +6,9 @@
    Flamme, und nie rot. Leere Tage außerhalb des Oktobers stehen blasser
    da, Tage im Oktober nach heute als Ring. */
 
-import { verzichte, heatWochen, tagesAnteil, tagesKopf, oktober, vonTag, istFrei } from "../logik.js";
+import { verzichte, heatWochen, tagesAnteil, tagesKopf, oktober, vonTag, istFrei, besterLauf } from "../logik.js";
 import { alsDatum } from "../../kern/datum.js";
-import { el } from "./teile.js";
+import { el } from "../ansichten/teile.js";
 
 const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const WOCHENTAGE = ["Mo", "", "Mi", "", "Fr", "", "So"];
@@ -98,4 +98,16 @@ export function heatmap(z, heute) {
   const d = el("div", "hm");
   d.append(kal, legende);
   return d;
+}
+
+/** Die Karte für unten: Überschrift, längster Lauf, Heatmap. */
+export function karte(api) {
+  const z = api.zustand, heute = api.heute();
+  const k = el("section", "karte");
+  const kopf = el("div", "karte-kopf");
+  kopf.append(el("p", "rubrik", "Dein Oktober"));
+  const best = besterLauf(z, heute);
+  if (best) kopf.append(el("span", "leise klein", `längster Lauf ${best}`));
+  k.append(kopf, heatmap(z, heute));
+  return k;
 }
