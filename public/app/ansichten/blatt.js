@@ -18,12 +18,13 @@ export function render(api) {
     const es = api.heuteVon(v);
     const ohne = es.some((e) => e.art === "ohne");
     const zeile = el("div", "blatt-zeile");
+    zeile.dataset.v = v;
     const kreis = el("span", "kreis");
     if (ohne) kreis.dataset.ohne = "";
     if (es.some((e) => e.art === "habe")) kreis.dataset.spur = "";
     if (es.some((e) => e.art === "drang")) kreis.dataset.drang = "";
     const mitte = el("div");
-    mitte.append(el("strong", null, V.name));
+    mitte.append(el("strong", "v-name", V.name));
     const liste = el("ul", "blatt-liste");
     for (const e of es.filter((e) => e.art !== "ohne")) liste.append(el("li", null, `${e.zeit} · ${wasText(api, e)}`));
     mitte.append(liste);
@@ -53,6 +54,7 @@ export function render(api) {
     const st = api.stand(e.id);
     const r = el("div", "blatt-ebene");
     r.dataset.stand = st;
+    r.dataset.ebene = e.id;
     r.append(el("span", "rubrik", e.rubrik), el("span", "blatt-titel", e.titel));
     if (st === "zu") r.append(el("span", "leise klein", e.bedingung));
     else if (st === "aus") r.append(knopf("einschalten", "text", () => api.einschalten(e.id)));

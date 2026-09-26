@@ -1,30 +1,59 @@
 /* =====================================================================
    Sober October — Stil
 
-   Palette aus mahlzeit/docs/GESTALT.md, Werte (hell und dunkel) über
-   smokefree/index.html. Zwei Regeln daraus sind inhaltlich:
-   Mist ist die Farbe des Unsicheren, und kein Verhalten wird je rot.
+   Palette: Flexoki (Steph Ango, stephango.com/flexoki) — Tinte auf warmem
+   Papier. Hell die 600er-Töne, dunkel die 400er. Die Namen der Variablen
+   sind geblieben, damit nichts anderes umziehen muss.
+
+   Zwei Regeln aus mahlzeit/docs/GESTALT.md gelten weiter: Mist ist die
+   Farbe des Unsicheren, und kein Verhalten wird je rot — Flexoki-Rot ist
+   deshalb gar nicht erst übernommen.
+
+   Farbe ist Orientierung, nicht Urteil. Jeder Verzicht hat eine eigene
+   (--v, über data-v), jede Art von Ebene eine (--e, über data-ebene), jedes
+   Grundgefühl eine. Sie erscheint leise: als Rand, als Punkt, als Hauch
+   von Grund — nie als Fläche, die laut wird.
    Zahlen bleiben in der Interface-Schrift, die App spricht in der Serife.
    ===================================================================== */
 
 :root {
-  --paper:#F5F1E8; --surface:#FFFDF7; --ink:#20231F; --leise:#6E7263;
-  --moss:#6E7762; --clay:#A66E55; --mist:#C8CFCD; --teal:#315D60;
-  --linie:#E2DDD0; --linie-stark:#CFC8B7; --hm-leer:#ECE7DB;
+  --paper:#F2F0E5; --surface:#FFFCF0; --ink:#100F0F; --leise:#6F6E69;
+  --linie:#E6E4D9; --linie-stark:#CECDC3; --hm-leer:#E6E4D9; --mist:#B7B5AC;
+  --moss:#66800B; --clay:#BC5215; --teal:#24837B;
+  --gelb:#AD8301; --blau:#205EA6; --lila:#5E409D; --magenta:#A02F6F;
+  --hauch:7%;
   --serif:"Source Serif 4", Georgia, serif;
   --sans:Inter, system-ui, -apple-system, sans-serif;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --paper:#171A16; --surface:#1F231D; --ink:#EAE6DA; --leise:#9AA08C;
-  --moss:#9BA789; --clay:#C98D72; --mist:#49524E; --teal:#79AFB2;
-  --linie:#2E332B; --linie-stark:#3E453A; --hm-leer:#2A2F27;
+  --paper:#100F0F; --surface:#1C1B1A; --ink:#CECDC3; --leise:#878580;
+  --linie:#282726; --linie-stark:#403E3C; --hm-leer:#282726; --mist:#575653;
+  --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
+  --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
+  --hauch:10%;
 }}
 :root[data-theme="dark"] {
-  --paper:#171A16; --surface:#1F231D; --ink:#EAE6DA; --leise:#9AA08C;
-  --moss:#9BA789; --clay:#C98D72; --mist:#49524E; --teal:#79AFB2;
-  --linie:#2E332B; --linie-stark:#3E453A; --hm-leer:#2A2F27;
+  --paper:#100F0F; --surface:#1C1B1A; --ink:#CECDC3; --leise:#878580;
+  --linie:#282726; --linie-stark:#403E3C; --hm-leer:#282726; --mist:#575653;
+  --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
+  --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
+  --hauch:10%;
 }
+
+/* Die Farbe je Verzicht. Nicht Orange (das ist „habe"), nicht Cyan (das ist
+   der Drang), nicht Grün (das ist „ohne") — die drei sagen, was geschah. */
+[data-v] { --v:var(--mist); }
+[data-v="kaffee"] { --v:var(--gelb); }
+[data-v="kippe"] { --v:var(--blau); }
+[data-v="video"] { --v:var(--lila); }
+[data-v="eigen"] { --v:var(--magenta); }
+[data-v="alles"] { --v:var(--moss); }
+/* Die Farbe je Art von Ebene: Wissen, neue Verhaltensweisen, Verlauf. */
+[data-ebene] { --e:var(--teal); }
+[data-ebene="drang"], [data-ebene="routine"] { --e:var(--blau); }
+[data-ebene="statt"] { --e:var(--moss); }
+[data-ebene="verlauf"] { --e:var(--gelb); }
 
 * { box-sizing:border-box; }
 body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 var(--sans); -webkit-text-size-adjust:100%; }
@@ -63,7 +92,9 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 /* Wahl */
 .wahl h1 { margin-bottom:4px; }
 .wahl-zeile { border:1px solid var(--linie); border-radius:14px; margin:12px 0; background:var(--surface); }
-.wahl-zeile[data-an="true"] { border-color:var(--moss); }
+.wahl-zeile[data-an="true"] { border-color:var(--v); background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); }
+.wahl-zeile[data-an="true"] .wahl-knopf::first-letter { color:var(--v); }
+.wahl-zeile[data-an="true"] input[type="checkbox"] { accent-color:var(--v); }
 .wahl-knopf { width:100%; text-align:left; background:none; border:0; padding:16px; font:500 18px var(--serif); }
 .wahl-zusatz { display:flex; gap:8px; align-items:center; padding:0 16px 14px; font-size:13px; }
 .wahl > .gross { margin-top:14px; width:100%; }
@@ -72,7 +103,12 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 
 /* Bogen */
 dialog#bogen { border:0; border-radius:18px; padding:0; width:min(420px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px -20px #0006; }
-dialog#bogen::backdrop { background:#20231F44; }
+dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transparent); }
+/* Ein Eintrag trägt oben die Farbe seines Verzichts, eine Ebene die ihre. */
+.bogen-inhalt[data-v] { box-shadow:inset 0 3px 0 var(--v); }
+.bogen-inhalt[data-v] > .rubrik:first-child { color:var(--v); }
+.bogen-inhalt[data-ebene] { box-shadow:inset 0 3px 0 var(--e); }
+.bogen-inhalt[data-ebene] > .rubrik:first-child { color:var(--e); }
 .bogen-inhalt { padding:22px 20px 18px; display:grid; gap:12px; }
 .bogen-inhalt > p { margin:0; }
 .wahlreihe { display:flex; gap:6px 14px; flex-wrap:wrap; align-items:center; }
@@ -85,7 +121,14 @@ dialog#bogen::backdrop { background:#20231F44; }
 .chip { position:relative; }
 .chip input { position:absolute; opacity:0; inset:0; margin:0; }
 .chip span { display:inline-block; padding:6px 12px; border:1px solid var(--linie-stark); border-radius:99px; font-size:13px; }
-.chip input:checked + span { border-color:var(--teal); color:var(--teal); background:color-mix(in srgb, var(--teal) 8%, transparent); }
+.chip { --c:var(--teal); }
+/* Die Grundgefühle, jedes in seiner Farbe. Wut ist Orange, nicht Rot. */
+.chip[data-wert="Angst"] { --c:var(--lila); }
+.chip[data-wert="Wut"] { --c:var(--clay); }
+.chip[data-wert="Trauer"] { --c:var(--blau); }
+.chip[data-wert="Freude"] { --c:var(--gelb); }
+.chip[data-wert="weiß nicht"] { --c:var(--leise); }
+.chip input:checked + span { border-color:var(--c); color:var(--c); background:color-mix(in oklab, var(--c) var(--hauch), transparent); }
 .chip input:focus-visible + span { outline:2px solid var(--teal); outline-offset:2px; }
 .begleitung { text-align:center; justify-items:center; }
 .welle { width:140px; height:140px; border-radius:50%; border:1.5px solid var(--mist); margin:10px; animation:atmen 9s ease-in-out infinite; }
@@ -104,24 +147,28 @@ dialog#bogen::backdrop { background:#20231F44; }
 .ansicht-knopf { display:grid; gap:18px; justify-items:center; }
 .ansicht-knopf .kopf, .ansicht-knopf .kopf-flaeche { width:100%; margin:0; }
 .punkte { display:flex; gap:8px; }
-.punkt-knopf { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--teal); background:transparent; padding:0; }
-.punkt-knopf[data-neu="true"] { background:var(--teal); }
+.punkt-knopf { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--e, var(--teal)); background:transparent; padding:0; }
+.punkt-knopf[data-neu="true"] { background:var(--e, var(--teal)); }
 .reiter { display:flex; gap:18px; }
 .reiter .text { color:var(--leise); }
-.reiter .text[aria-selected="true"] { color:var(--ink); border-bottom:1.5px solid var(--ink); }
+.reiter .text[aria-selected="true"] { color:var(--ink); border-bottom:2px solid var(--v, var(--ink)); }
 .ansicht-knopf .zk { width:100%; --zk-hoehe:260px; --zk-grund:var(--surface); --zk-linie:var(--linie-stark); --zk-an:var(--clay); --zk-text:var(--ink); --zk-neben:var(--leise); }
-.drang-knopf { width:100%; padding:16px; border:1px dashed var(--linie-stark); border-radius:16px; background:transparent; font:17px var(--serif); }
+.drang-knopf { width:100%; padding:16px; border:1px dashed color-mix(in oklab, var(--teal) 45%, var(--linie-stark)); border-radius:16px; background:transparent; font:17px var(--serif); }
 .plus { margin-top:24px; display:grid; justify-items:center; gap:4px; }
 
 /* Ansicht Blatt */
 .blatt-zeile { display:grid; grid-template-columns:28px 1fr auto; gap:14px; align-items:start; padding:16px 0; border-top:1px solid var(--linie); }
 .blatt-zeile strong { font:500 17px var(--serif); }
+/* Ein Punkt in der Farbe des Verzichts vor dem Namen. */
+.blatt-zeile .v-name::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--v); margin-right:8px; vertical-align:.12em; }
 .blatt-liste { list-style:none; margin:2px 0 0; padding:0; font-size:13px; color:var(--leise); }
 .blatt-aktionen { display:grid; justify-items:end; font-size:14px; }
 .blatt-aktionen .text { padding:3px 0; }
 .blatt-mehr { margin-top:40px; border-top:1px solid var(--linie); padding-top:12px; }
 .blatt-mehr summary { color:var(--leise); cursor:pointer; font-size:14px; }
 .blatt-ebene { display:grid; padding:10px 0 4px; }
+.blatt-ebene .rubrik { color:var(--e); }
+.blatt-ebene[data-stand="zu"] .rubrik { color:var(--leise); }
 .blatt-ebene[data-stand="zu"] .blatt-titel { color:var(--leise); opacity:.7; }
 .blatt-titel { font-family:var(--serif); }
 
@@ -131,8 +178,10 @@ dialog#bogen::backdrop { background:#20231F44; }
 .verb { font-family:var(--serif); font-size:16px; text-decoration:underline; text-decoration-color:var(--linie-stark); text-underline-offset:3px; }
 .faden { list-style:none; padding:0; margin:30px 0 0; border-left:1px solid var(--linie); }
 .faden li { padding:6px 0 6px 16px; }
+.verben .leise.v-name { color:var(--v); }
 .faden-kopf { padding-top:18px !important; }
-.faden-spur, .faden-angebot, .faden-an { border-left:2px solid var(--teal); margin-left:-1.5px; }
+.faden-spur, .faden-angebot, .faden-an { border-left:2px solid var(--e, var(--teal)); margin-left:-1.5px; }
+.faden-eintrag { border-left:2px solid color-mix(in oklab, var(--v) 55%, transparent); margin-left:-1.5px; }
 
 /* Kopf und Lauf — aus lifetracker (.hero, .chain). Die Kette bricht nie um:
    die Glieder teilen sich die Breite und sind bei 9px gedeckelt, damit eine

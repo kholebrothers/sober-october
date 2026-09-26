@@ -20,8 +20,10 @@ Nicht als Datei, aber inhaltlich übernommen:
   Neu geschrieben als Module (`logik.js`: `serie`, `lauf`, `besterLauf`, `heatWochen`;
   `ansichten/heatmap.js`). Anders als dort: „dabei" heißt *eine Notiz, gleich welche*, die
   Heatmap zeigt den eigenen Anteil statt des Teams, in Moos statt Flamme.
-- **Palette, offener Kreis, Microcopy, kein Rot**: `mahlzeit/docs/GESTALT.md`, Werte für hell und
-  dunkel über `smokefree/index.html`.
+- **Palette**: [Flexoki](https://stephango.com/flexoki) von Steph Ango (MIT), hell die 600er-,
+  dunkel die 400er-Töne; Flexoki-Rot ist bewusst nicht übernommen. Eine Farbe je Verzicht, je
+  Art von Ebene und je Grundgefühl, leise eingesetzt (Rand, Punkt, Hauch von Grund).
+- **Offener Kreis, Microcopy, kein Rot**: `mahlzeit/docs/GESTALT.md`.
 - **Haltung und Event-Denken** („Module interpretieren Events“, Häkchen heißt nur *Beobachtung
   liegt vor*): `mahlzeit/docs/PLATTFORM.md`.
 - **Kein Build-Schritt, Datenschlüssel sind unantastbar**: kur-core README.

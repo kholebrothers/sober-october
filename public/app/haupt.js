@@ -92,6 +92,7 @@ function eintragen(v, art) {
    Was schon ausgefüllt war, bleibt stehen. */
 function begleiten(v, zurueck) {
   const k = el("div", "bogen-inhalt begleitung");
+  k.dataset.v = v;
   k.append(
     el("p", "rubrik", verzichte(z)[v].name),
     Object.assign(el("div", "welle"), { ariaHidden: "true" }),
@@ -113,6 +114,7 @@ function begleiten(v, zurueck) {
 function fragen(v, art, titel) {
   const V = verzichte(z)[v];
   const f = el("form", "bogen-inhalt");
+  f.dataset.v = v;
   f.append(el("p", "rubrik", `${V.name} · ${jetztZeit()}`), el("h2", null, titel),
     el("p", "leise", "Alles freiwillig. Ein Wort reicht, keins auch."));
   let begleitetSek = 0;
@@ -128,6 +130,7 @@ function fragen(v, art, titel) {
       const r = el("span", "chips");
       for (const w of q.wahl) {
         const c = el("label", "chip");
+        c.dataset.wert = w;
         const i = Object.assign(document.createElement("input"), { type: q.mehr ? "checkbox" : "radio", name: q.id, value: w });
         c.append(i, el("span", null, w));
         r.append(c);
@@ -162,6 +165,7 @@ function oeffneEbene(id) {
   const e = EBENEN.find((x) => x.id === id);
   if (z.frei[id] && !z.frei[id].gesehen) aendern(() => { z.frei[id].gesehen = true; });
   const k = el("div", "bogen-inhalt ebene");
+  k.dataset.ebene = id;
   k.append(el("p", "rubrik", e.rubrik), el("h2", null, e.titel), ebenenInhalt(id, z, heute()),
     knopf("schließen", "text", () => bogen.close()));
   zeigeBogen(k);
@@ -223,8 +227,9 @@ function wahlSeite() {
   const umschalten = (id) => () => {
     if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: true };
   };
-  const zeile = (text, an, beiKlick) => {
+  const zeile = (id, text, an, beiKlick) => {
     const r = el("div", "wahl-zeile");
+    r.dataset.v = id;
     r.dataset.an = an;
     const b = knopf(an ? `✓ ${text}` : text, "wahl-knopf", () => aendern(beiKlick));
     b.setAttribute("aria-pressed", an);
@@ -240,15 +245,15 @@ function wahlSeite() {
   };
 
   for (const id of FEST) {
-    const r = zeile(V[id].name, !!z.commitment[id], umschalten(id));
+    const r = zeile(id, V[id].name, !!z.commitment[id], umschalten(id));
     if (z.commitment[id]) drangZusatz(r, id);
     s.append(r);
   }
 
-  s.append(zeile(`Alles — ${FEST.map((k) => V[k].name).join(", ")}`,
+  s.append(zeile("alles", `Alles — ${FEST.map((k) => V[k].name).join(", ")}`,
     FEST.every((k) => z.commitment[k]), () => schalteAlles(z)));
 
-  const eigen = zeile("Eigene Definition von Sober", !!z.commitment[EIGEN], umschalten(EIGEN));
+  const eigen = zeile(EIGEN, "Eigene Definition von Sober", !!z.commitment[EIGEN], umschalten(EIGEN));
   if (z.commitment[EIGEN]) {
     const l = el("label", "wahl-zusatz wahl-eigen");
     l.append(el("span", "leise", "Was heißt sober für dich? Was lässt du sein?"));
