@@ -6,7 +6,9 @@ Live: https://sober-october.khole.workers.dev
 
 ## Was die App ist
 
-Man wählt, was man im Oktober sein lässt (eins bis drei). Danach zeigt die Oberfläche nur dieses
+Man wählt, was man im Oktober sein lässt: Kaffee, Kippe, Video, mit **Alles** alle drei auf einmal,
+und/oder eine **eigene Definition von Sober** (ein selbst geschriebener Name, etwa „Alkohol“). Der
+Name bleibt im Gerät; an kur-core ginge nur der Schlüssel `eigen`. Danach zeigt die Oberfläche nur dieses
 Commitment. Man notiert, wenn etwas geschehen ist („habe“) und, wenn man will, auch den Moment,
 in dem man gern würde („würde gern“, beim Rauchen „will rauchen“). Danach folgt eine kurze,
 überspringbare Reflexion mit den vier Grundgefühlen. Einen Drang kann man begleiten lassen.

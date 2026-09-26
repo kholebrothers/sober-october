@@ -67,6 +67,8 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 .wahl-knopf { width:100%; text-align:left; background:none; border:0; padding:16px; font:500 18px var(--serif); }
 .wahl-zusatz { display:flex; gap:8px; align-items:center; padding:0 16px 14px; font-size:13px; }
 .wahl > .gross { margin-top:14px; width:100%; }
+.wahl-eigen { display:grid; gap:6px; align-items:stretch; padding-bottom:6px; }
+.wahl-eigen input { font:inherit; font-size:15px; padding:9px 11px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; }
 
 /* Bogen */
 dialog#bogen { border:0; border-radius:18px; padding:0; width:min(420px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px -20px #0006; }

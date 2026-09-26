@@ -4,7 +4,7 @@
    mögliche Spur", keine Anweisung, keine Diagnose). Sie sind fachlich
    nicht geprüft und stehen deshalb hier, getrennt von der Mechanik. */
 
-import { VERZICHTE, oktober, tagesKopf } from "./logik.js";
+import { verzichte, oktober, tagesKopf } from "./logik.js";
 import { verschiebe } from "../kern/datum.js";
 
 export function ebenenInhalt(id, z, heute) {
@@ -23,7 +23,7 @@ export function ebenenInhalt(id, z, heute) {
       const ul = document.createElement("ul");
       z.ereignisse.filter((e) => e.antworten.davor).slice(-8).forEach((e) => {
         const li = document.createElement("li");
-        li.textContent = `„${e.antworten.davor}“ · ${VERZICHTE[e.verzicht].name}, ${tagesKopf(e.tag)}`;
+        li.textContent = `„${e.antworten.davor}“ · ${verzichte(z)[e.verzicht].name}, ${tagesKopf(e.tag)}`;
         ul.append(li);
       });
       if (ul.children.length) d.append(ul);

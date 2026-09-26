@@ -9,8 +9,8 @@
 
 import { heute as heuteTag } from "../kern/datum.js";
 import {
-  VERZICHTE, FRAGEN, EBENEN, ANSICHTEN, gewaehlt, commitmentSatz, vonTag,
-  notiere, schalteOhne, stand, tagesZeile,
+  FRAGEN, EBENEN, ANSICHTEN, FEST, EIGEN, verzichte, gewaehlt, commitmentSatz, vonTag,
+  notiere, schalteOhne, schalteAlles, setzeEigen, stand, tagesZeile,
 } from "./logik.js";
 import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
@@ -37,7 +37,8 @@ function aendern(f) {
 
 const api = {
   get zustand() { return z; },
-  VERZICHTE, EBENEN,
+  get VERZICHTE() { return verzichte(z); },
+  EBENEN,
   heute,
   tagesZeile: () => tagesZeile(heute()),
   gewaehlt: () => gewaehlt(z),
@@ -81,7 +82,7 @@ function el(tag, klasse, text) {
 }
 
 function eintragen(v, art) {
-  const V = VERZICHTE[v];
+  const V = verzichte(z)[v];
   fragen(v, art, art === "habe" ? V.habe : V.drang);
 }
 
@@ -90,7 +91,7 @@ function eintragen(v, art) {
 function begleiten(v, zurueck) {
   const k = el("div", "bogen-inhalt begleitung");
   k.append(
-    el("p", "rubrik", VERZICHTE[v].name),
+    el("p", "rubrik", verzichte(z)[v].name),
     Object.assign(el("div", "welle"), { ariaHidden: "true" }),
     el("p", "serif", "Das darf da sein. Ein Drang steigt, und er fällt auch wieder."),
     el("p", "serif", "Du musst nichts damit machen."),
@@ -108,7 +109,7 @@ function begleiten(v, zurueck) {
 }
 
 function fragen(v, art, titel) {
-  const V = VERZICHTE[v];
+  const V = verzichte(z)[v];
   const f = el("form", "bogen-inhalt");
   f.append(el("p", "rubrik", `${V.name} · ${jetztZeit()}`), el("h2", null, titel),
     el("p", "leise", "Alles freiwillig. Ein Wort reicht, keins auch."));
@@ -215,25 +216,55 @@ function wahlSeite() {
   s.append(el("p", "rubrik", `Sober October · ${tagesZeile(heute())}`),
     el("h1", "serif", "Was lässt du im Oktober sein?"),
     el("p", "leise", "Eins reicht. Bereitschaft genügt."));
-  for (const [id, V] of Object.entries(VERZICHTE)) {
-    const an = !!z.commitment[id];
-    const zeile = el("div", "wahl-zeile");
-    zeile.dataset.an = an;
-    const b = knopf(an ? `✓ ${V.name}` : V.name, "wahl-knopf", () => aendern(() => {
-      if (an) delete z.commitment[id]; else z.commitment[id] = { drang: true };
-    }));
-    b.setAttribute("aria-pressed", an);
-    zeile.append(b);
-    if (an) {
-      const l = el("label", "leise wahl-zusatz");
-      const i = Object.assign(document.createElement("input"), { type: "checkbox", checked: z.commitment[id].drang });
-      i.addEventListener("change", () => aendern(() => { z.commitment[id].drang = i.checked; }));
-      l.append(i, " auch die Momente notieren, in denen ich gern würde");
-      zeile.append(l);
-    }
-    s.append(zeile);
-  }
+  const V = verzichte(z);
   const los = knopf("So ist es.", "gross", () => { wahlOffen = false; zeichne(); });
+  const umschalten = (id) => () => {
+    if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: true };
+  };
+  const zeile = (text, an, beiKlick) => {
+    const r = el("div", "wahl-zeile");
+    r.dataset.an = an;
+    const b = knopf(an ? `✓ ${text}` : text, "wahl-knopf", () => aendern(beiKlick));
+    b.setAttribute("aria-pressed", an);
+    r.append(b);
+    return r;
+  };
+  const drangZusatz = (r, id) => {
+    const l = el("label", "leise wahl-zusatz");
+    const i = Object.assign(document.createElement("input"), { type: "checkbox", checked: z.commitment[id].drang });
+    i.addEventListener("change", () => aendern(() => { z.commitment[id].drang = i.checked; }));
+    l.append(i, " auch die Momente notieren, in denen ich gern würde");
+    r.append(l);
+  };
+
+  for (const id of FEST) {
+    const r = zeile(V[id].name, !!z.commitment[id], umschalten(id));
+    if (z.commitment[id]) drangZusatz(r, id);
+    s.append(r);
+  }
+
+  s.append(zeile(`Alles — ${FEST.map((k) => V[k].name).join(", ")}`,
+    FEST.every((k) => z.commitment[k]), () => schalteAlles(z)));
+
+  const eigen = zeile("Eigene Definition von Sober", !!z.commitment[EIGEN], umschalten(EIGEN));
+  if (z.commitment[EIGEN]) {
+    const l = el("label", "wahl-zusatz wahl-eigen");
+    l.append(el("span", "leise", "Was heißt sober für dich? Was lässt du sein?"));
+    const i = Object.assign(document.createElement("input"), {
+      name: "eigen", value: z.eigen.name, placeholder: "Alkohol, Zucker, Social Media …", autocomplete: "off", maxLength: 60,
+    });
+    // Ohne neu zu zeichnen, damit der Cursor im Feld bleibt.
+    i.addEventListener("input", () => {
+      setzeEigen(z, i.value);
+      if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
+      los.disabled = !gewaehlt(z).length;
+    });
+    l.append(i);
+    eigen.append(l);
+    drangZusatz(eigen, EIGEN);
+  }
+  s.append(eigen);
+
   los.disabled = !gewaehlt(z).length;
   s.append(los, el("p", "leise", "Du kannst es jederzeit ändern. Was du notierst, bleibt auf diesem Gerät."));
   return s;

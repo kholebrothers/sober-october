@@ -25,6 +25,27 @@ export const VERZICHTE = {
   video:  { name: "Video",  satz: "das Video",  habe: "Video geschaut",  drang: "würde gern schauen" },
 };
 
+/** Die drei festen Verzichte, die „Alles" auf einmal wählt. */
+export const FEST = Object.keys(VERZICHTE);
+
+/* Die eigene Definition: ein Verzicht, dessen Namen der Mensch selbst
+   schreibt („Alkohol", „Zucker", „Social Media"). Der Name steht in
+   `z.eigen.name`, getrennt vom Commitment, damit er beim Abwählen nicht
+   verloren geht. Er bleibt auf dem Gerät, siehe fuerKern(). */
+export const EIGEN = "eigen";
+const EIGEN_LAENGE = 60;
+
+/** Der Name, wie er in Sätzen steht: „kein Alkohol" wird „Alkohol". */
+export function eigenerName(z) {
+  return String(z.eigen?.name || "").trim().replace(/^kein(e|en|em|er|es)?\s+/i, "").trim();
+}
+
+/** Alle Verzichte dieses Zustands — die festen und, immer, der eigene. */
+export function verzichte(z) {
+  const name = eigenerName(z) || "Eigenes";
+  return { ...VERZICHTE, [EIGEN]: { name, satz: name, habe: `${name} — ist geschehen`, drang: `würde gern: ${name}` } };
+}
+
 export const ANSICHTEN = {
   knopf: "Knopf — ein Verzicht auf einmal",
   blatt: "Blatt — alles auf einer Seite",
@@ -77,7 +98,7 @@ export const EBENEN = [
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, ansicht: "knopf", ereignisse: [], frei: {} };
+  return { v: VERSION, commitment: {}, eigen: { name: "" }, ansicht: "knopf", ereignisse: [], frei: {} };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -89,21 +110,39 @@ export function aus(text) {
   if (!roh || typeof roh !== "object" || roh.v !== VERSION) return neuerZustand();
   const z = neuerZustand();
   if (roh.commitment && typeof roh.commitment === "object")
-    for (const k of Object.keys(VERZICHTE))
+    for (const k of [...FEST, EIGEN])
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
+  if (roh.eigen && typeof roh.eigen.name === "string") z.eigen.name = roh.eigen.name.slice(0, EIGEN_LAENGE);
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
   if (Array.isArray(roh.ereignisse))
-    z.ereignisse = roh.ereignisse.filter((e) => e && VERZICHTE[e.verzicht] && ["habe", "drang", "ohne"].includes(e.art))
+    z.ereignisse = roh.ereignisse.filter((e) => e && (VERZICHTE[e.verzicht] || e.verzicht === EIGEN) && ["habe", "drang", "ohne"].includes(e.art))
       .map((e) => ({ ...e, antworten: e.antworten && typeof e.antworten === "object" ? e.antworten : {} }));
   if (roh.frei && typeof roh.frei === "object")
     for (const eb of EBENEN) if (roh.frei[eb.id]) z.frei[eb.id] = roh.frei[eb.id];
   return z;
 }
 
-export const gewaehlt = (z) => Object.keys(VERZICHTE).filter((k) => z.commitment[k]);
+/** Was gewählt ist. Die eigene Definition zählt erst, wenn sie einen Namen hat. */
+export const gewaehlt = (z) => [...FEST, EIGEN].filter((k) => z.commitment[k] && (k !== EIGEN || eigenerName(z)));
+
+/** Setzt den Namen der eigenen Definition, gekürzt auf eine Zeile. */
+export function setzeEigen(z, name) {
+  z.eigen.name = String(name).replace(/\s+/g, " ").slice(0, EIGEN_LAENGE);
+}
+
+/** „Alles": wählt die drei festen Verzichte — oder, wenn sie schon alle
+    gewählt sind, wieder ab. Die eigene Definition bleibt, wie sie ist. */
+export function schalteAlles(z) {
+  const alle = FEST.every((k) => z.commitment[k]);
+  for (const k of FEST) {
+    if (alle) delete z.commitment[k];
+    else if (!z.commitment[k]) z.commitment[k] = { drang: true };
+  }
+}
 
 export function commitmentSatz(z) {
-  const n = gewaehlt(z).map((k) => VERZICHTE[k].satz);
+  const V = verzichte(z);
+  const n = gewaehlt(z).map((k) => V[k].satz);
   if (!n.length) return "";
   const liste = n.length > 1 ? n.slice(0, -1).join(", ") + " und " + n.at(-1) : n[0];
   return `Im Oktober lasse ich ${liste} sein.`;
@@ -181,7 +220,9 @@ export function tagesKopf(tag) {
 /**
  * Was später auf den Server darf: die Teilnahme. Einstellung `commitment`
  * als kurzer Text, und je Tag mit irgendeiner Notiz ein `dabei: true`.
- * Keine Einträge, keine Antworten, keine Zählungen.
+ * Keine Einträge, keine Antworten, keine Zählungen. Von der eigenen
+ * Definition nur der Schlüssel `eigen`, nicht ihr Name: der kann so
+ * persönlich sein wie eine Antwort.
  */
 export function fuerKern(z, heute) {
   const tage = [...new Set(z.ereignisse.map((e) => e.tag))].sort();

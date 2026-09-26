@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   neuerZustand, aus, notiere, schalteOhne, stand, oktober, tagesZeile,
   commitmentSatz, fuerKern, vonTag, VERSION, tagesKopf,
+  gewaehlt, schalteAlles, setzeEigen, verzichte, FEST,
 } from "../public/app/logik.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
 
@@ -108,4 +109,52 @@ test("fuerKern liefert nur Teilnahme — und nur Werte, die kur-core annimmt", (
 test("Tagesköpfe: im Oktober die Nummer, sonst das Datum", () => {
   assert.equal(tagesKopf("2026-10-07"), "Tag 7");
   assert.match(tagesKopf("2026-09-26"), /26/);
+});
+
+test("„Alles\" wählt die drei festen Verzichte und wieder ab", () => {
+  const z = mit("kippe");
+  schalteAlles(z);
+  assert.deepEqual(gewaehlt(z), FEST);
+  assert.equal(z.commitment.kippe.drang, true);
+  schalteAlles(z);
+  assert.deepEqual(gewaehlt(z), []);
+});
+
+test("„Alles\" lässt die eigene Definition stehen", () => {
+  const z = mit("eigen");
+  setzeEigen(z, "Alkohol");
+  schalteAlles(z);
+  schalteAlles(z);
+  assert.deepEqual(gewaehlt(z), ["eigen"]);
+});
+
+test("die eigene Definition zählt erst mit Namen", () => {
+  const z = mit("eigen");
+  assert.deepEqual(gewaehlt(z), []);
+  setzeEigen(z, "  keinen   Zucker ");
+  assert.deepEqual(gewaehlt(z), ["eigen"]);
+  assert.equal(verzichte(z).eigen.name, "Zucker");
+  assert.equal(commitmentSatz(z), "Im Oktober lasse ich Zucker sein.");
+  z.commitment.kaffee = { drang: false };
+  assert.equal(commitmentSatz(z), "Im Oktober lasse ich den Kaffee und Zucker sein.");
+});
+
+test("die eigene Definition übersteht Speichern, der Name bleibt beim Abwählen", () => {
+  const z = mit("eigen");
+  setzeEigen(z, "Alkohol");
+  notiere(z, { tag: "2026-10-01", zeit: "20:00", verzicht: "eigen", art: "drang" });
+  const zurueck = aus(JSON.stringify(z));
+  assert.deepEqual(zurueck, z);
+  delete zurueck.commitment.eigen;
+  assert.equal(aus(JSON.stringify(zurueck)).eigen.name, "Alkohol");
+  assert.equal(verzichte(zurueck).eigen.name, "Alkohol");
+});
+
+test("der Name der eigenen Definition geht nicht an kur-core", () => {
+  const z = mit("eigen");
+  setzeEigen(z, "Alkohol");
+  notiere(z, { tag: "2026-10-01", zeit: "20:00", verzicht: "eigen", art: "habe" });
+  const k = fuerKern(z, "2026-10-01");
+  assert.ok(!JSON.stringify(k).includes("Alkohol"));
+  assert.equal(k.einstellungen[0].wert, "eigen");
 });
