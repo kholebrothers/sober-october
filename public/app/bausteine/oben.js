@@ -9,7 +9,7 @@ import { el, knopf } from "../ansichten/teile.js";
 
 export function oben(api) {
   const leit = api.aktiv("leitgedanke"), lauf = api.aktiv("lauf");
-  const frei = api.aktiv("freieTage") && !api.heuteVon().length;
+  const frei = api.aktiv("freieTage") && !api.hatEintrag();
   if (!leit && !lauf && !frei) return null;
 
   const h = el("div", lauf ? "oben lauf" : "oben");
@@ -36,11 +36,18 @@ export function oben(api) {
   return h;
 }
 
+/* Die Zahl ist zugleich der Knopf „Ich bin da" (aus lifetracker): antippen,
+   und der Tag zählt. Zählt er schon — durch „da" oder eine Notiz —, trägt
+   sie einen Ring. */
 function zahl(api) {
   const n = api.serie();
-  const z = el("div", n ? "lauf-zahl an" : "lauf-zahl");
-  z.append(el("span", "n", String(n)), el("span", "u", n === 1 ? "Tag dabei" : "Tage dabei"));
-  return z;
+  const heute = api.hatEintrag();
+  const b = knopf("", n ? "lauf-zahl an" : "lauf-zahl", () => api.da());
+  b.append(el("span", "n", String(n)), el("span", "u", n === 1 ? "Tag dabei" : "Tage dabei"));
+  b.setAttribute("aria-pressed", heute);
+  b.setAttribute("aria-label", heute ? `${n} Tage dabei — heute zählt` : `${n} Tage dabei — antippen: heute bin ich da`);
+  b.title = heute ? "Heute zählt" : "Heute bin ich da";
+  return b;
 }
 
 /* Die Kette rastet auf der Fibonacci-Leiter ein (5, 8, 13, 21, 34). Sie

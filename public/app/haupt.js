@@ -12,6 +12,7 @@ import {
   FRAGEN, EBENEN, ANSICHTEN, BAUSTEINE, aktiv, schalteBaustein, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
   notiere, schalteOhne, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
+  istDa, schalteDa, hatEintrag,
   tagesKopf,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
@@ -74,6 +75,14 @@ const api = {
   tagessatz: () => tagessatz(z, heute()),
   leitgedankeBearbeiten,
   istFrei: () => istFrei(z, heute()),
+  hatEintrag: () => hatEintrag(z, heute()),
+  /* „Ich bin da": die Zahl oben. Steht heute schon eine Notiz, zählt der Tag
+     ohnehin — dann gibt es nichts umzuschalten, nur das zu sagen. */
+  da() {
+    if (!istDa(z, heute()) && vonTag(z, heute()).length) { melde("Der Tag zählt schon — du hast heute etwas notiert."); return; }
+    const satz = aendern(() => schalteDa(z, heute()));
+    melde(mitMoment(istDa(z, heute()) ? "Du bist da. Der Tag zählt." : "Zurückgenommen.", satz));
+  },
   frei() {
     const satz = aendern(() => schalteFrei(z, heute()));
     melde(mitMoment(istFrei(z, heute()) ? "Heute ist frei. Die Kette läuft weiter." : "Der freie Tag ist zurückgenommen.", satz));

@@ -174,7 +174,7 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], leitgedanken: [], bausteine: {} };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {} };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -202,8 +202,9 @@ export function aus(text) {
       .map((e) => ({ ...e, antworten: e.antworten && typeof e.antworten === "object" ? e.antworten : {} }));
   if (roh.frei && typeof roh.frei === "object")
     for (const eb of EBENEN) if (roh.frei[eb.id]) z.frei[eb.id] = roh.frei[eb.id];
-  if (Array.isArray(roh.freieTage))
-    z.freieTage = [...new Set(roh.freieTage.filter((t) => typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t)))].sort();
+  const tagListe = (l) => (Array.isArray(l) ? [...new Set(l.filter((t) => typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t)))].sort() : []);
+  z.freieTage = tagListe(roh.freieTage);
+  z.daTage = tagListe(roh.daTage);
 
   if (Array.isArray(roh.leitgedanken))
     z.leitgedanken = roh.leitgedanken
@@ -330,7 +331,20 @@ export function schalteFrei(z, tag) {
   else z.freieTage = [...z.freieTage, tag].sort();
 }
 
-export const dabei = (z, tag) => istFrei(z, tag) || z.ereignisse.some((e) => e.tag === tag);
+/* „Ich bin da" — aus lifetracker (NICHTS, Stufe 0): der kleinste
+   vollständige Eintrag des Tages. Ein Tippen auf die Zahl oben, und der
+   Tag zählt; jede andere Notiz zählt ihn genauso. */
+export const istDa = (z, tag) => z.daTage.includes(tag);
+
+export function schalteDa(z, tag) {
+  if (istDa(z, tag)) z.daTage = z.daTage.filter((t) => t !== tag);
+  else z.daTage = [...z.daTage, tag].sort();
+}
+
+/** Etwas steht an dem Tag: eine Notiz oder „ich bin da" — nicht „frei". */
+export const hatEintrag = (z, tag) => istDa(z, tag) || z.ereignisse.some((e) => e.tag === tag);
+
+export const dabei = (z, tag) => istFrei(z, tag) || hatEintrag(z, tag);
 
 /** Tage dabei, von heute (oder gestern, solange heute leer ist) zurück. */
 export function serie(z, heute) {
@@ -363,7 +377,7 @@ export function lauf(z, heute) {
   const tage = [];
   for (let i = 0; i < fenster; i++) {
     const tag = verschiebe(heute, i - (weit - 1));
-    const st = i >= weit ? "kommt" : istFrei(z, tag) && !vonTag(z, tag).length ? "frei" : dabei(z, tag) ? "dabei" : "leer";
+    const st = i >= weit ? "kommt" : istFrei(z, tag) && !hatEintrag(z, tag) ? "frei" : dabei(z, tag) ? "dabei" : "leer";
     tage.push({ tag, heute: tag === heute, stand: st });
   }
   return { weit, fenster, tage, dabeiTage: tage.filter((t) => t.stand === "dabei" || t.stand === "frei").length };
@@ -371,7 +385,7 @@ export function lauf(z, heute) {
 
 /** Der längste Lauf (ohne Lücke), so weit die Notizen zurückreichen. */
 export function besterLauf(z, heute) {
-  const tage = [...new Set([...z.ereignisse.map((e) => e.tag), ...z.freieTage])].filter((t) => t <= heute).sort();
+  const tage = [...new Set([...z.ereignisse.map((e) => e.tag), ...z.freieTage, ...z.daTage])].filter((t) => t <= heute).sort();
   let best = 0, run = 0, vor = null;
   for (const t of tage) {
     run = vor && verschiebe(vor, 1) === t ? run + 1 : 1;
@@ -387,11 +401,12 @@ export function besterLauf(z, heute) {
    rückt der Anfang mit. Tage nach heute stehen leer. */
 export const HEAT_WOCHEN = 13;
 
-/** Wie voll ein Tag war: Anteil der gewählten Verzichte mit einer Notiz. */
+/** Wie voll ein Tag war: Anteil der gewählten Verzichte mit einer Notiz.
+    Nur „ich bin da" ist der hellste Ton: dabei, ohne Einzelheiten. */
 export function tagesAnteil(z, tag) {
   const gew = gewaehlt(z);
   const da = new Set(vonTag(z, tag).map((e) => e.verzicht));
-  if (!da.size) return 0;
+  if (!da.size) return istDa(z, tag) ? 0.2 : 0;
   return Math.min(1, da.size / Math.max(1, gew.length));
 }
 
@@ -451,8 +466,9 @@ export const begleitetSeit = (z, heute) => {
    nicht um Menge — ab der ersten Notiz zählt der Tag, alles weitere ist
    Zugabe. Einladen, nie mahnen. */
 export function tagessatz(z, heute) {
-  if (istFrei(z, heute) && !vonTag(z, heute).length) return "Heute ist frei — genommen, nicht vergessen.";
+  if (istFrei(z, heute) && !hatEintrag(z, heute)) return "Heute ist frei — genommen, nicht vergessen.";
   const n = vonTag(z, heute).length;
+  if (!n && istDa(z, heute)) return "Der Tag zählt. Du bist da.";
   if (n) return `Der Tag zählt. ${n === 1 ? "Eine Notiz" : n + " Notizen"}\u00a0— alles weitere ist Zugabe.`;
   const st = serie(z, heute);
   if (st >= 1 && !dabei(z, verschiebe(heute, -1))) return "Gestern blieb leer. Heute reicht wieder eine Notiz.";
@@ -540,7 +556,7 @@ export function wasTraegt(z, n = 3) {
  * persönlich sein wie eine Antwort.
  */
 export function fuerKern(z, heute) {
-  const tage = [...new Set([...z.ereignisse.map((e) => e.tag), ...z.freieTage])].sort();
+  const tage = [...new Set([...z.ereignisse.map((e) => e.tag), ...z.freieTage, ...z.daTage])].sort();
   return {
     einstellungen: gewaehlt(z).length ? [{ schluessel: "commitment", wert: gewaehlt(z).join(","), ab: heute }] : [],
     eintraege: tage.map((date) => ({ date, habit: "dabei", value: true })),

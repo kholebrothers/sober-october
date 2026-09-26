@@ -218,10 +218,13 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 .frei-knopf { padding:0 !important; font-size:13px; }
 .frei-knopf[aria-pressed="true"] { color:var(--leise); }
 .kette-zeile { grid-column:1 / -1; }
-.lauf-zahl { display:flex; flex-direction:column; align-items:center; width:54px; color:var(--leise); }
-.lauf-zahl .n { font:500 30px/1 var(--serif); font-variant-numeric:tabular-nums; color:var(--linie-stark); }
+.lauf-zahl { display:flex; flex-direction:column; align-items:center; justify-content:center; width:58px; height:58px; padding:0;
+  color:var(--leise); background:none; border:1.5px dashed var(--linie-stark); border-radius:50%; }
+/* Heute zählt: der Ring wird durchgezogen und bekommt einen Hauch Moos. */
+.lauf-zahl[aria-pressed="true"] { border-style:solid; border-color:var(--moss); background:color-mix(in oklab, var(--moss) var(--hauch), transparent); }
+.lauf-zahl .n { font:500 24px/1 var(--serif); font-variant-numeric:tabular-nums; color:var(--linie-stark); }
 .lauf-zahl.an .n { color:var(--moss); }
-.lauf-zahl .u { font-size:10.5px; line-height:1.2; text-align:center; letter-spacing:.03em; }
+.lauf-zahl .u { font-size:9px; line-height:1.1; text-align:center; letter-spacing:.03em; margin-top:1px; max-width:36px; }
 .kette-zeile { display:flex; align-items:center; gap:10px; min-width:0; }
 .kette-zeile .klein { flex:none; font-size:11.5px; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .kette { flex:1; min-width:0; display:flex; align-items:center; gap:1.1%; }
