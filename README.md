@@ -20,7 +20,10 @@ und die Kette, die auf der Fibonacci-Leiter 5, 8, 13, 21, 34 einrastet. Dabei is
 notiert — auch ein „habe“. Die Ebene **Dein Oktober** zeigt die große Heatmap aus lifetracker
 (13 Wochen, den ganzen Oktober darin); in der Ansicht Blatt steht sie direkt auf der Seite.
 
-Neben der Zahl steht der **Leitgedanke** des Tages („Eine Notiz hält die Kette.“). Ist heute nichts
+Neben der Zahl steht dein **Leitgedanke**: ein eigener Satz, der dich begleitet, anfangs „Bereitschaft
+genügt.“ Antippen, und er lässt sich ändern; er gilt ab dem Tag und nie rückwirkend, frühere bleiben
+mit Datum stehen, und der Rückblick zeigt, welcher in welcher Woche galt. Er bleibt auf dem Gerät.
+Darunter der Satz zum Tag („Eine Notiz hält die Kette.“). Ist heute nichts
 notiert, lässt sich der Tag **frei nehmen**: bewusst genommen, nicht vergessen, er hält die Kette.
 Erreichen die Tage dabei eine Stufe der Leiter, gibt es einen **kleinen Moment** (ein Aufleuchten und
 ein Satz, je Stufe ein anderer). Nach der ersten Oktoberwoche öffnet sich der **Rückblick** in vier

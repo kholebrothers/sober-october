@@ -11,7 +11,8 @@ import { heute as heuteTag } from "../kern/datum.js";
 import {
   FRAGEN, EBENEN, ANSICHTEN, FEST, EIGEN, verzichte, gewaehlt, commitmentSatz, vonTag,
   notiere, schalteOhne, schalteAlles, setzeEigen, stand, tagesZeile, serie, lauf,
-  leitgedanke, istFrei, schalteFrei, moment,
+  leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
+  tagesKopf,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -68,7 +69,9 @@ const api = {
     const satz = aendern(() => schalteOhne(z, heute(), jetztZeit(), v));
     if (satz) melde(satz);
   },
-  leitgedanke: () => leitgedanke(z, heute()),
+  leitgedanke: () => leitgedankeAm(z, heute()),
+  tagessatz: () => tagessatz(z, heute()),
+  leitgedankeBearbeiten,
   istFrei: () => istFrei(z, heute()),
   frei() {
     const satz = aendern(() => schalteFrei(z, heute()));
@@ -196,12 +199,52 @@ function oeffneEbene(id) {
   zeigeBogen(k);
 }
 
+/* ---- Der Leitgedanke ------------------------------------------------------ */
+
+function leitgedankeBearbeiten() {
+  const jetzt = leitgedankeAm(z, heute());
+  const f = el("form", "bogen-inhalt leit-bogen");
+  f.append(el("p", "rubrik", "Dein Leitgedanke"),
+    el("h2", null, `„${jetzt.text}“`));
+  const seit = begleitetSeit(z, heute());
+  f.append(el("p", "leise", seit
+    ? `Begleitet dich seit ${tagesKopf(jetzt.ab)}${seit > 1 ? ` — ${seit} Tage` : ""}.`
+    : "Der Satz, mit dem die App anfängt. Er darf deiner bleiben."));
+  const l = el("label", "frage");
+  l.append(el("span", "serif", "Ein Satz, der dich begleitet. Er darf bleiben, er darf sich ändern."));
+  const i = Object.assign(document.createElement("input"), { name: "leit", value: jetzt.text, autocomplete: "off", maxLength: 120,
+    placeholder: LEITGEDANKE });
+  l.append(i);
+  f.append(l);
+
+  const frueher = z.leitgedanken.filter((x) => x.ab <= heute()).slice(0, -1).reverse();
+  if (frueher.length) {
+    const d = el("details", "leit-frueher");
+    d.append(el("summary", "leise", "Frühere Leitgedanken"));
+    for (const x of frueher) d.append(el("p", "zitat", `„${x.text}“ · ab ${tagesKopf(x.ab)}`));
+    f.append(d);
+  }
+
+  const speichern = () => {
+    let neu = false;
+    aendern(() => { neu = setzeLeitgedanke(z, i.value, heute()); });
+    bogen.close();
+    if (neu) melde("Dein Leitgedanke gilt ab heute.");
+  };
+  const unten = el("div", "wahlreihe");
+  unten.append(knopf("so soll er lauten", "gross", speichern), knopf("bleibt, wie er ist", "text leise", () => bogen.close()));
+  f.append(unten);
+  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
+  zeigeBogen(f);
+}
+
 /* ---- Einstellungen ------------------------------------------------------- */
 
 function einstellungen() {
   const k = el("div", "bogen-inhalt");
   k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)));
-  k.append(knopf("Commitment ändern", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }));
+  k.append(knopf("Commitment ändern", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }),
+    knopf("Leitgedanken ändern", "text", () => leitgedankeBearbeiten()));
 
   const ans = el("fieldset", "frage");
   ans.append(el("legend", "serif", "Ansicht"));

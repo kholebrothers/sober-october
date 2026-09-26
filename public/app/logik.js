@@ -101,7 +101,7 @@ export const EBENEN = [
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigen: { name: "" }, ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], abends: true };
+  return { v: VERSION, commitment: {}, eigen: { name: "" }, ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], abends: true, leitgedanken: [] };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -125,6 +125,11 @@ export function aus(text) {
   if (Array.isArray(roh.freieTage))
     z.freieTage = [...new Set(roh.freieTage.filter((t) => typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t)))].sort();
   if (roh.abends === false) z.abends = false;
+  if (Array.isArray(roh.leitgedanken))
+    z.leitgedanken = roh.leitgedanken
+      .filter((l) => l && typeof l.text === "string" && l.text.trim() && /^\d{4}-\d{2}-\d{2}$/.test(l.ab))
+      .map((l) => ({ text: l.text.slice(0, LEIT_LAENGE), ab: l.ab }))
+      .sort((a, b) => a.ab.localeCompare(b.ab));
   return z;
 }
 
@@ -322,24 +327,52 @@ export function heatWochen(heute) {
   return wochen;
 }
 
-/* ---- Der Leitgedanke — aus lifetracker (tagLine, tagSub) ------------------
+/* ---- Der Leitgedanke --------------------------------------------------------
 
-   Ein Satz statt einer stummen Zahl: was der Tag gerade ist. Es geht um
-   Dranbleiben, nicht um Menge — ab der ersten Notiz zählt der Tag, alles
-   weitere ist Zugabe. Einladen, nie mahnen. */
+   Ein eigener Satz, der begleitet — über Tage, Wochen, den ganzen Monat.
+   Er darf bleiben, er darf sich ändern. Wie die Einstellungen in lifetracker
+   gilt er *ab* einem Tag und wirkt nie rückwirkend: ein neuer Satz ersetzt
+   den alten nicht, er löst ihn ab, und der Rückblick weiß, welcher Satz in
+   welcher Woche galt. Solange keiner geschrieben ist, gilt der der App. */
+export const LEITGEDANKE = "Bereitschaft genügt.";
+const LEIT_LAENGE = 120;
 
-export function leitgedanke(z, heute) {
-  const unterLeer = "Alles freiwillig. Nichts muss.";
-  if (istFrei(z, heute) && !vonTag(z, heute).length)
-    return { zeile: "Heute ist frei.", unter: "Nicht vergessen, sondern genommen. Die Kette läuft weiter." };
+/** {text, ab} — der Satz, der an `tag` galt; ab: null, wenn es der der App ist. */
+export function leitgedankeAm(z, tag) {
+  const bis = z.leitgedanken.filter((l) => l.ab <= tag);
+  return bis.length ? bis.at(-1) : { text: LEITGEDANKE, ab: null };
+}
+
+/** Ein neuer Satz ab `tag`. Derselbe Satz noch einmal ändert nichts; am
+    selben Tag zweimal geändert, gilt nur der letzte. Leer heißt: zurück zu
+    dem der App. */
+export function setzeLeitgedanke(z, text, tag) {
+  const t = String(text).replace(/\s+/g, " ").trim().slice(0, LEIT_LAENGE) || LEITGEDANKE;
+  if (leitgedankeAm(z, tag).text === t) return false;
+  z.leitgedanken = z.leitgedanken.filter((l) => l.ab < tag);
+  if (!(t === LEITGEDANKE && !z.leitgedanken.length)) z.leitgedanken.push({ text: t, ab: tag });
+  return true;
+}
+
+/** Wie viele Tage der Satz schon begleitet, heute eingeschlossen. */
+export const begleitetSeit = (z, heute) => {
+  const l = leitgedankeAm(z, heute);
+  return l.ab ? tageZwischen(l.ab, heute) + 1 : null;
+};
+
+/* ---- Der Satz zum Tag — aus lifetracker (tagLine) -------------------------
+
+   Unter dem Leitgedanken: was der Tag gerade ist. Es geht um Dranbleiben,
+   nicht um Menge — ab der ersten Notiz zählt der Tag, alles weitere ist
+   Zugabe. Einladen, nie mahnen. */
+export function tagessatz(z, heute) {
+  if (istFrei(z, heute) && !vonTag(z, heute).length) return "Heute ist frei — genommen, nicht vergessen.";
   const n = vonTag(z, heute).length;
-  if (n) return { zeile: "Der Tag zählt.",
-    unter: `Heute ${n === 1 ? "eine Notiz" : n + " Notizen"}\u00a0— alles weitere ist Zugabe.` };
+  if (n) return `Der Tag zählt. ${n === 1 ? "Eine Notiz" : n + " Notizen"}\u00a0— alles weitere ist Zugabe.`;
   const st = serie(z, heute);
-  if (st >= 1 && !dabei(z, verschiebe(heute, -1)))
-    return { zeile: "Gestern blieb leer. Heute reicht wieder eine Notiz.", unter: unterLeer };
-  if (st >= 1) return { zeile: "Eine Notiz hält die Kette.", unter: unterLeer };
-  return { zeile: "Eine Notiz, und der Tag zählt.", unter: unterLeer };
+  if (st >= 1 && !dabei(z, verschiebe(heute, -1))) return "Gestern blieb leer. Heute reicht wieder eine Notiz.";
+  if (st >= 1) return "Eine Notiz hält die Kette.";
+  return "Eine Notiz, und der Tag zählt.";
 }
 
 /* ---- Kleine Momente -------------------------------------------------------
@@ -392,7 +425,7 @@ export function wochen(z, heute) {
     }
     const saetze = es.filter((e) => e.antworten.statt || e.antworten.davor)
       .map((e) => ({ tag: e.tag, v: e.verzicht, text: e.antworten.statt || e.antworten.davor, statt: !!e.antworten.statt }));
-    aus.push({ titel, von, bis, tage: tage.length, dabei: tage.filter((t) => dabei(z, t)).length,
+    aus.push({ titel, von, bis, tage: tage.length, leitgedanke: leitgedankeAm(z, tage.at(-1)).text, dabei: tage.filter((t) => dabei(z, t)).length,
       frei: tage.filter((t) => istFrei(z, t)).length, je, saetze });
   }
   return aus;

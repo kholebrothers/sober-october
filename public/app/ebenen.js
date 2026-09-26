@@ -53,6 +53,10 @@ export function ebenenInhalt(id, z, heute) {
         satz.textContent = `An ${w.dabei} von ${w.tage} ${w.tage === 1 ? "Tag" : "Tagen"} dabei` +
           (w.frei ? `, ${w.frei === 1 ? "einer" : w.frei} davon frei genommen.` : ".");
         b.append(kopf, satz);
+        const lg = document.createElement("p");
+        lg.className = "leise woche-leit";
+        lg.textContent = `Leitgedanke: „${w.leitgedanke}“`;
+        b.append(lg);
         const ul = document.createElement("ul");
         ul.className = "woche-je";
         for (const [v, n] of Object.entries(w.je)) {

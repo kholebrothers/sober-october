@@ -5,7 +5,8 @@ import {
   commitmentSatz, fuerKern, vonTag, VERSION, tagesKopf,
   gewaehlt, schalteAlles, setzeEigen, verzichte, FEST,
   serie, lauf, besterLauf, heatWochen, tagesAnteil, LEITER,
-  schalteFrei, istFrei, leitgedanke, moment, wochen, wasTraegt,
+  schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
+  leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -247,16 +248,48 @@ test("freie Tage und „abends ruhiger\" überstehen Speichern; Unsinn wird verw
   assert.equal(aus(JSON.stringify({ v: VERSION })).abends, true, "Standard: an");
 });
 
-test("der Leitgedanke lädt ein und mahnt nie", () => {
+test("der Satz zum Tag lädt ein und mahnt nie", () => {
   const z = mit("kaffee");
-  assert.equal(leitgedanke(z, okt(1)).zeile, "Eine Notiz, und der Tag zählt.");
+  assert.equal(tagessatz(z, okt(1)), "Eine Notiz, und der Tag zählt.");
   notizAn(z, okt(1));
-  assert.equal(leitgedanke(z, okt(1)).zeile, "Der Tag zählt.");
-  assert.match(leitgedanke(z, okt(1)).unter, /eine Notiz/);
-  assert.equal(leitgedanke(z, okt(2)).zeile, "Eine Notiz hält die Kette.");
-  assert.equal(leitgedanke(z, okt(3)).zeile, "Gestern blieb leer. Heute reicht wieder eine Notiz.");
+  assert.match(tagessatz(z, okt(1)), /^Der Tag zählt\. Eine Notiz/);
+  assert.equal(tagessatz(z, okt(2)), "Eine Notiz hält die Kette.");
+  assert.equal(tagessatz(z, okt(3)), "Gestern blieb leer. Heute reicht wieder eine Notiz.");
   schalteFrei(z, okt(3));
-  assert.equal(leitgedanke(z, okt(3)).zeile, "Heute ist frei.");
+  assert.match(tagessatz(z, okt(3)), /^Heute ist frei/);
+});
+
+test("der Leitgedanke: anfangs der der App, dann deiner, ab einem Tag", () => {
+  const z = mit("kaffee");
+  assert.deepEqual(leitgedankeAm(z, okt(1)), { text: "Bereitschaft genügt.", ab: null });
+  assert.equal(begleitetSeit(z, okt(1)), null);
+  assert.equal(setzeLeitgedanke(z, "Bereitschaft genügt.", okt(1)), false, "derselbe Satz ändert nichts");
+  assert.deepEqual(z.leitgedanken, []);
+  assert.equal(setzeLeitgedanke(z, "  Ein Tag nach   dem anderen. ", okt(3)), true);
+  assert.equal(leitgedankeAm(z, okt(2)).text, LEITGEDANKE, "nie rückwirkend");
+  assert.equal(leitgedankeAm(z, okt(9)).text, "Ein Tag nach dem anderen.");
+  assert.equal(begleitetSeit(z, okt(9)), 7);
+  setzeLeitgedanke(z, "Atmen.", okt(10));
+  setzeLeitgedanke(z, "Atmen. Weiter.", okt(10));
+  assert.deepEqual(z.leitgedanken.map((l) => l.text), ["Ein Tag nach dem anderen.", "Atmen. Weiter."],
+    "am selben Tag zweimal geändert: nur der letzte");
+  setzeLeitgedanke(z, "", okt(12));
+  assert.equal(leitgedankeAm(z, okt(12)).text, LEITGEDANKE, "leer heißt: zurück zu dem der App");
+  assert.deepEqual(aus(JSON.stringify(z)).leitgedanken, z.leitgedanken, "übersteht Speichern");
+});
+
+test("der Rückblick weiß, welcher Leitgedanke in welcher Woche galt", () => {
+  const z = mit("kaffee");
+  notizAn(z, okt(1), okt(9));
+  setzeLeitgedanke(z, "Atmen.", okt(8));
+  assert.deepEqual(wochen(z, okt(9)).map((w) => w.leitgedanke), [LEITGEDANKE, "Atmen."]);
+});
+
+test("der Leitgedanke bleibt auf dem Gerät", () => {
+  const z = mit("kaffee");
+  setzeLeitgedanke(z, "Mein Geheimnis", okt(1));
+  notizAn(z, okt(1));
+  assert.ok(!JSON.stringify(fuerKern(z, okt(1))).includes("Geheimnis"));
 });
 
 test("kleine Momente: heute kommt dazu, die Serie erreicht eine Stufe", () => {

@@ -2,8 +2,9 @@
    Sober October — Stil
 
    Palette: Flexoki (Steph Ango, stephango.com/flexoki) — Tinte auf warmem
-   Papier. Hell die 600er-Töne, dunkel die 400er. Die Namen der Variablen
-   sind geblieben, damit nichts anderes umziehen muss.
+   Papier. Hell die 600er-Töne, dunkel die 400er. Der dunkle Grund ist nicht
+   Flexoki-Schwarz, sondern ein warmes Braun — abends angenehmer; die Akzente
+   bleiben Flexoki. Die Namen der Variablen sind geblieben.
 
    Zwei Regeln aus mahlzeit/docs/GESTALT.md gelten weiter: Mist ist die
    Farbe des Unsicheren, und kein Verhalten wird je rot — Flexoki-Rot ist
@@ -27,33 +28,33 @@
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --paper:#100F0F; --surface:#1C1B1A; --ink:#CECDC3; --leise:#878580;
-  --linie:#282726; --linie-stark:#403E3C; --hm-leer:#282726; --mist:#575653;
+  --paper:#1F1914; --surface:#2A221C; --ink:#E6DCCB; --leise:#A6988A;
+  --linie:#372D25; --linie-stark:#4A3E33; --hm-leer:#342B23; --mist:#6B5E51;
   --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
   --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
-  --hauch:10%; --frei:#6F6E69;
+  --hauch:10%; --frei:#857566;
 }}
 :root[data-theme="dark"] {
-  --paper:#100F0F; --surface:#1C1B1A; --ink:#CECDC3; --leise:#878580;
-  --linie:#282726; --linie-stark:#403E3C; --hm-leer:#282726; --mist:#575653;
+  --paper:#1F1914; --surface:#2A221C; --ink:#E6DCCB; --leise:#A6988A;
+  --linie:#372D25; --linie-stark:#4A3E33; --hm-leer:#342B23; --mist:#6B5E51;
   --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
   --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
-  --hauch:10%; --frei:#6F6E69;
+  --hauch:10%; --frei:#857566;
 }
 
 /* Abends ruhiger, dezent (aus lifetracker, Nachtmodus — hier ohne den
    Sprung ins Dunkle). Hell: das Papier rückt um eine Flexoki-Stufe nach
-   unten, die Schrift wird weicher. Dunkel: nur die Schrift wird weicher. */
+   unten, die Schrift wird weicher. Dunkel: Schrift weicher, das Braun eine Spur tiefer. */
 @media (prefers-color-scheme: light) {
   :root[data-tageszeit="abend"]:not([data-theme="dark"]) { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
   :root[data-tageszeit="nacht"]:not([data-theme="dark"]) { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --leise:#6F6E69; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
 }
 @media (prefers-color-scheme: dark) {
-  :root[data-tageszeit="nacht"]:not([data-theme="light"]) { --ink:#B7B5AC; }
+  :root[data-tageszeit="nacht"]:not([data-theme="light"]) { --ink:#CFC4B3; --paper:#1B1511; }
 }
 :root[data-theme="light"][data-tageszeit="abend"] { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
 :root[data-theme="light"][data-tageszeit="nacht"] { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
-:root[data-theme="dark"][data-tageszeit="nacht"] { --ink:#B7B5AC; }
+:root[data-theme="dark"][data-tageszeit="nacht"] { --ink:#CFC4B3; --paper:#1B1511; }
 body { transition:background-color 1.2s ease, color 1.2s ease; }
 
 /* Die Farbe je Verzicht. Nicht Orange (das ist „habe"), nicht Cyan (das ist
@@ -206,6 +207,14 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; row-gap:10px; position:relative; border-radius:14px; }
 .lauf-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
 .lauf-zeile { font-size:17px; line-height:1.25; text-wrap:balance; }
+/* Der Leitgedanke ist ein Satz, kein Knopf: er sieht aus wie Text und lässt
+   sich antippen. Ein zarter Unterstrich verrät es. */
+button.leitgedanke { background:none; border:0; padding:0; text-align:left; color:var(--ink);
+  text-decoration:underline; text-decoration-color:var(--linie-stark); text-decoration-thickness:1px; text-underline-offset:4px; }
+.leit-bogen h2 { font-style:italic; }
+.leit-frueher summary { cursor:pointer; font-size:13px; }
+.leit-frueher .zitat { margin:6px 0 0; font-size:14px; }
+.woche .woche-leit { font-size:12.5px; font-style:italic; }
 /* Die beiden Angaben trennt der Abstand, kein Zeichen (aus lifetracker). */
 .lauf-unter { font-size:13px; line-height:1.4; display:flex; flex-wrap:wrap; column-gap:12px; row-gap:2px; }
 .frei-knopf { padding:0 !important; font-size:13px; }

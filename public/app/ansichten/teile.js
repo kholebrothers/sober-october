@@ -32,20 +32,23 @@ export function kopf(api, rechts) {
 }
 
 /** Der Lauf aus dem Kopf von lifetracker: die Zahl der Tage dabei, daneben
-    der Leitgedanke des Tages, darunter die Kette, die auf der
-    Fibonacci-Leiter einrastet (5, 8, 13, 21, 34). */
+    dein Leitgedanke (antippen, um ihn zu ändern) und der Satz zum Tag,
+    darunter die Kette, die auf der Fibonacci-Leiter einrastet
+    (5, 8, 13, 21, 34). */
 export function laufZeile(api) {
   const n = api.serie();
   const l = api.lauf();
-  const g = api.leitgedanke();
+  const leit = api.leitgedanke();
   const h = el("div", "lauf");
   const zahl = el("div", n ? "lauf-zahl an" : "lauf-zahl");
   zahl.append(el("span", "n", String(n)), el("span", "u", n === 1 ? "Tag dabei" : "Tage dabei"));
 
   const text = el("div", "lauf-text");
-  text.append(el("span", "lauf-zeile serif", g.zeile));
+  const lk = knopf(leit.text, "lauf-zeile leitgedanke serif", () => api.leitgedankeBearbeiten());
+  lk.setAttribute("aria-label", `Dein Leitgedanke: ${leit.text} — ändern`);
+  text.append(lk);
   const unter = el("span", "lauf-unter leise");
-  unter.append(el("span", null, g.unter));
+  unter.append(el("span", null, api.tagessatz()));
   // Frei nehmen geht nur, solange heute nichts notiert ist — mit einer Notiz
   // zählt der Tag ohnehin.
   if (!api.heuteVon().length) {
