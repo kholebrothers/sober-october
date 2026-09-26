@@ -79,6 +79,8 @@ const api = {
     melde(mitMoment(istFrei(z, heute()) ? "Heute ist frei. Die Kette läuft weiter." : "Der freie Tag ist zurückgenommen.", satz));
   },
   aktiv: (id) => aktiv(z, id),
+  neuerTracker: () => neuerTracker(),
+  springeZu: null,
   oeffneEbene,
   einstellungen,
   zeichne: () => zeichne(),
@@ -376,6 +378,45 @@ function wahlSeite() {
   los.disabled = !gewaehlt(z).length;
   s.append(los, el("p", "leise klein", "Du kannst jederzeit Tracker dazunehmen oder abwählen. Was du notierst, bleibt auf diesem Gerät."));
   return s;
+}
+
+/* Ein neuer Tracker, aus jeder Ansicht heraus über „+". Er ist gleich
+   gewählt; die Knopf-Ansicht springt auf ihn. */
+function neuerTracker() {
+  const f = el("form", "bogen-inhalt");
+  f.append(el("p", "rubrik", "Neuer Tracker"), el("h2", null, "Was lässt du noch sein?"));
+  const i = Object.assign(document.createElement("input"), { name: "neu", placeholder: "z. B. Alkohol, Zucker, Social Media", autocomplete: "off", maxLength: 60 });
+  i.setAttribute("aria-label", "Name des Trackers");
+  const l = el("label", "frage");
+  l.append(i);
+  f.append(l);
+  const aus = FEST.filter((k) => !z.commitment[k]);
+  if (aus.length) {
+    const r = el("div", "wahlreihe");
+    r.append(el("span", "leise klein", "Oder wieder dazu:"));
+    for (const k of aus) r.append(knopf(verzichte(z)[k].name, "chip-knopf", () => {
+      aendern(() => { z.commitment[k] = { drang: true }; });
+      bogen.close();
+      api.springeZu = k;
+      zeichne();
+    }));
+    f.append(r);
+  }
+  const hinzu = () => {
+    let id = null;
+    aendern(() => { id = fuegeEigenenHinzu(z, i.value); });
+    if (!id) { i.focus(); return; }
+    bogen.close();
+    api.springeZu = id;
+    zeichne();
+    melde(`${verzichte(z)[id].name} ist dabei.`);
+  };
+  const unten = el("div", "wahlreihe");
+  unten.append(knopf("hinzufügen", "gross", hinzu), knopf("abbrechen", "text leise", () => bogen.close()));
+  f.append(unten);
+  f.addEventListener("submit", (e) => { e.preventDefault(); hinzu(); });
+  zeigeBogen(f);
+  i.focus();
 }
 
 /* Ein eigener Tracker: umbenennen, oder entfernen, solange nichts notiert ist. */

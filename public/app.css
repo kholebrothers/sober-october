@@ -169,7 +169,8 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 /* Ansicht Knopf */
 .ansicht-knopf { display:grid; gap:18px; justify-items:center; }
 .ansicht-knopf .kopf, .ansicht-knopf .oben, .ansicht-knopf .unten { width:100%; margin:0; }
-.reiter { display:flex; gap:18px; }
+.reiter { display:flex; align-items:center; justify-content:center; gap:14px; width:100%; }
+.reiter-tabs { display:flex; flex-wrap:wrap; justify-content:center; gap:4px 18px; }
 .reiter .text { color:var(--leise); }
 .reiter .text[aria-selected="true"] { color:var(--ink); border-bottom:2px solid var(--v, var(--ink)); }
 .ansicht-knopf .zk { width:100%; --zk-hoehe:260px; --zk-grund:var(--surface); --zk-linie:var(--linie-stark); --zk-an:var(--clay); --zk-text:var(--ink); --zk-neben:var(--leise); }
@@ -267,7 +268,6 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 
 /* Aufgeräumt: der Satz des Commitments ist ein Satz, keine Überschrift. */
 .ansicht-blatt h1, .ansicht-faden h1 { font-size:20px; line-height:1.35; margin:0 0 10px; }
-.reiter { flex-wrap:wrap; justify-content:center; row-gap:4px; }
 
 /* Unten: Karten, eine je Baustein, mit Luft dazwischen. */
 .unten { display:grid; gap:14px; margin-top:32px; }
@@ -286,3 +286,8 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 .baustein input { margin-top:4px; accent-color:var(--moss); }
 .baustein-text { display:grid; gap:1px; }
 .baustein-mehr { padding:0 0 4px 26px !important; font-size:13px; }
+
+/* Das „+" für einen weiteren Tracker: leise, am Ende der Liste. */
+.plus-tracker { color:var(--leise) !important; font-size:14px; }
+.reiter .plus-tracker { font-size:18px; line-height:1; padding:4px 8px !important; border:1px solid var(--linie-stark); border-radius:99px; }
+.ansicht-blatt > .plus-tracker { margin-top:4px; border-top:1px solid var(--linie); width:100%; padding-top:12px !important; }

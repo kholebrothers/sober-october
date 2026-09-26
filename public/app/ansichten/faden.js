@@ -5,7 +5,7 @@
    in den Faden, an dem Tag, an dem sie sich geöffnet haben. */
 
 import { AUSWAHL, tagesKopf } from "../logik.js";
-import { el, knopf, kopf, wasText, faerbe } from "./teile.js";
+import { el, knopf, kopf, wasText, faerbe, plusTracker } from "./teile.js";
 import { oben, unten } from "../bausteine/index.js";
 
 export function render(api) {
@@ -24,6 +24,7 @@ export function render(api) {
     if (z.commitment[v].drang) p.append(" · ", knopf(V.drang, "text verb", () => api.eintragen(v, "drang")));
     verben.append(p);
   }
+  verben.append(plusTracker(api, "+ weiterer Tracker"));
   s.append(verben);
 
   const posten = z.ereignisse.map((e) => ({ tag: e.tag, zeit: e.zeit, e }));

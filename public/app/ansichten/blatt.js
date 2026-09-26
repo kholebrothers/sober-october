@@ -3,7 +3,7 @@
    Aktionen darunter und dem, was heute notiert ist. Oben und unten stehen
    die eingeschalteten Bausteine. */
 
-import { el, knopf, kopf, wasText, faerbe } from "./teile.js";
+import { el, knopf, kopf, wasText, faerbe, plusTracker } from "./teile.js";
 import { oben, unten } from "../bausteine/index.js";
 
 export function render(api) {
@@ -35,6 +35,7 @@ export function render(api) {
     zeile.append(kreis, mitte);
     s.append(zeile);
   }
+  s.append(plusTracker(api, "+ weiterer Tracker"));
   const u = unten(api);
   if (u) s.append(u);
   return s;

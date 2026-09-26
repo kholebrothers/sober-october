@@ -36,6 +36,14 @@ export function kopf(api, rechts) {
   return k;
 }
 
+/** Das „+" für einen weiteren Tracker, in jeder Ansicht an derselben Stelle
+    der Liste: am Ende. */
+export function plusTracker(api, text = "+ Tracker") {
+  const b = knopf(text, "text plus-tracker", () => api.neuerTracker());
+  b.setAttribute("aria-label", "Weiteren Tracker hinzufügen");
+  return b;
+}
+
 /** Wie ein Eintrag in einer Zeile heißt. */
 export function wasText(api, e) {
   const V = api.VERZICHTE[e.verzicht];
