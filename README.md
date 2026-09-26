@@ -73,8 +73,9 @@ geschaltet wird, mit dem Branchnamen als Alias. Zu einem offenen PR schreibt er 
 Kommentar. Schlagen die Tests fehl, wird nichts hochgeladen.
 
 **Einmal einrichten:** Im Cloudflare-Dashboard (Konto z3e) unter *My Profile → API Tokens* einen
-Token anlegen, Vorlage „Edit Cloudflare Workers“ oder mindestens *Workers Scripts:Edit* und
-*Account Settings:Read*. Danach:
+Token anlegen mit *Account · Workers Scripts · Edit*, *Account · Account Settings · Read* und
+*User · User Details · Read* (dieselben Rechte wie bei Andreas Webseite), beschränkt auf das Konto
+z3e. Danach:
 
     gh secret set CLOUDFLARE_API_TOKEN -R kholebrothers/sober-october
 
