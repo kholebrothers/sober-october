@@ -1,0 +1,16 @@
+{
+  "name": "sober-october",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sober October — ein freiwilliges Commitment für den Oktober. Bereitschaft genügt.",
+  "scripts": {
+    "test": "TZ=Europe/Berlin node --test test/*.test.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "vorschau": "wrangler versions upload --preview-alias"
+  },
+  "devDependencies": {
+    "wrangler": "^4.141.0"
+  }
+}

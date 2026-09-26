@@ -1,0 +1,23 @@
+// Sober October auf Cloudflare Workers: nur statische Dateien aus public/, kein Worker-Code,
+// keine Datenbank. Die Daten liegen vorerst nur im Browser (public/app/speicher.js).
+//
+//   live:     https://sober-october.khole.workers.dev          (npm run deploy, main)
+//   vorschau: https://<alias>-sober-october.khole.workers.dev  (npm run vorschau -- <alias>, jeder andere Branch)
+//
+// Eine Vorschau ist eine hochgeladene Version, die nicht live geschaltet wird. Weil es keine
+// Bindungen gibt, kann sie nichts Gemeinsames verändern; jede Adresse hat ihren eigenen Browser-Speicher.
+// Kommt später der Teilnahme-Server nach dem Muster von kur-core (D1), braucht die Vorschau eine
+// eigene D1 — sonst schreiben Vorschauen in die Live-Daten.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sober-october",
+  "account_id": "2d0480b2b42b2779b9f237299c26524d",
+  "compatibility_date": "2026-09-26",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "single-page-application"
+  }
+}

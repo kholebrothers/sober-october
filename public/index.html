@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sober October</title>
+<meta name="description" content="Ein freiwilliges Commitment für den Oktober: kein Kaffee, keine Kippe, kein Video. Bereitschaft genügt.">
+<meta name="theme-color" content="#F5F1E8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171A16" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%236E7762' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="knopf/knopf.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<main id="buehne"></main>
+<dialog id="bogen" aria-label="Eintrag"></dialog>
+<p id="meldung" role="status" aria-live="polite" hidden></p>
+<noscript><p style="padding:20px">Sober October braucht JavaScript.</p></noscript>
+<!-- Die Dev-Uhr muss vor der App laufen; auf der Live-Adresse tut sie nichts. -->
+<script type="module" src="kern/uhr.js"></script>
+<script type="module" src="app/haupt.js"></script>
+</body>
+</html>
