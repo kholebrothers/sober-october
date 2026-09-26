@@ -8,7 +8,7 @@ import {
   schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
   BAUSTEINE, aktiv, schalteBaustein,
-  istDa, schalteDa, hatEintrag,
+  istDa, schalteDa, hatEintrag, ergaenze, entferne,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -87,7 +87,7 @@ test("ein Stand aus der Vorschau behält, was dort sichtbar war", () => {
     ereignisse: [{ id: "a", tag: okt(1), zeit: "08:00", verzicht: "kaffee", art: "drang", antworten: {} }],
     freieTage: [okt(2)], frei: { verlauf: { tag: okt(1) }, drang: { tag: okt(1), zeit: "08:00", gesehen: true } } };
   const z = aus(JSON.stringify(vorschau));
-  assert.deepEqual(z.bausteine, { lauf: true, freieTage: true, heatmap: true, ebenen: true, abends: false });
+  assert.deepEqual(z.bausteine, { lauf: true, heatmap: true, ebenen: true, abends: false });
   assert.equal(z.frei.verlauf, undefined, "die Ebene „Dein Oktober\" gibt es nicht mehr, sie ist die Heatmap");
 });
 test("„heute ohne\" schaltet an und wieder aus", () => {
@@ -320,7 +320,7 @@ test("der Satz zum Tag lädt ein und mahnt nie", () => {
   notizAn(z, okt(1));
   assert.match(tagessatz(z, okt(1)), /^Der Tag zählt\. Eine Notiz/);
   assert.equal(tagessatz(z, okt(2)), "Eine Notiz hält die Kette.");
-  assert.equal(tagessatz(z, okt(3)), "Gestern blieb leer. Heute reicht wieder eine Notiz.");
+  assert.equal(tagessatz(z, okt(3)), "Gestern war frei. Heute reicht wieder eine Notiz.");
   schalteFrei(z, okt(3));
   assert.match(tagessatz(z, okt(3)), /^Heute ist frei/);
 });
@@ -434,4 +434,27 @@ test("„ich bin da\" an einem freien Tag: der Tag steht als dabei, nicht als fr
   schalteDa(z, okt(1));
   assert.equal(lauf(z, okt(1)).tage[0].stand, "dabei");
   assert.equal(tagessatz(z, okt(1)), "Der Tag zählt. Du bist da.");
+});
+
+test("schnell loggen: erst notieren, Details später, oder zurücknehmen", () => {
+  const z = mit("kaffee");
+  notiere(z, { tag: okt(1), zeit: "08:00", verzicht: "kaffee", art: "habe" });
+  const id = z.ereignisse.at(-1).id;
+  assert.deepEqual(z.ereignisse[0].antworten, {});
+  ergaenze(z, id, { antworten: { davor: "Büro" } });
+  const neu = ergaenze(z, id, { antworten: { statt: "Tee" } });
+  assert.deepEqual(z.ereignisse[0].antworten, { davor: "Büro", statt: "Tee" }, "Details kommen dazu, nichts geht verloren");
+  assert.deepEqual(neu, []);
+  notiere(z, { tag: okt(2), zeit: "08:00", verzicht: "kaffee", art: "habe" });
+  const offen = ergaenze(z, z.ereignisse.at(-1).id, { antworten: { statt: "Wasser" } });
+  assert.deepEqual(offen.map((e) => e.id), ["statt"], "Details können eine Ebene öffnen");
+  assert.equal(entferne(z, id), true);
+  assert.equal(entferne(z, id), false);
+  assert.equal(z.ereignisse.length, 1);
+});
+
+test("es gibt keinen Baustein „Freie Tage\" mehr; ein leerer Tag ist frei", () => {
+  assert.ok(!BAUSTEINE.some((b) => b.id === "freieTage"));
+  const z = aus(JSON.stringify({ v: VERSION, bausteine: { freieTage: true, lauf: true } }));
+  assert.deepEqual(z.bausteine, { lauf: true });
 });

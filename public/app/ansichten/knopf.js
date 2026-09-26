@@ -1,6 +1,8 @@
 /* Ansicht „Knopf" — der Standard.
    Ein Tracker auf einmal, ein Zählknopf aus smokefree/knopf (Richtung
-   `verbrauchen`), darunter der leisere Würde-gern-Knopf und „heute ohne".
+   `verbrauchen`), darunter der leisere Würde-gern-Knopf. Ein Tippen
+   notiert sofort; die Fragen kommen nur, wenn man „Details" wählt. Kein
+   „heute ohne": kein Eintrag heißt ohnehin ohne.
    Oben und unten stehen nur die Bausteine, die eingeschaltet sind. */
 
 import { zaehlknopf } from "../../knopf/knopf.js";
@@ -50,10 +52,6 @@ export function render(api) {
     const d = knopf(V.drang, "drang-knopf", () => api.eintragen(v, "drang"));
     if (n) d.append(" ", el("span", "leise", `· ${n}× heute`));
     s.append(d);
-  }
-  if (!habe) {
-    const ohne = es.some((e) => e.art === "ohne");
-    s.append(knopf(ohne ? `✓ heute ohne ${V.name}` : `heute ohne ${V.name}`, "text", () => api.ohne(v)));
   }
   const u = unten(api);
   if (u) s.append(u);

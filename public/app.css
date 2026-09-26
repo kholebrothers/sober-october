@@ -164,7 +164,9 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .zitat { display:block; font-family:var(--serif); font-style:italic; color:var(--ink); }
 .zitat.wahl { font-family:var(--sans); font-style:normal; font-size:13px; color:var(--leise); }
 
-#meldung { position:fixed; left:50%; top:max(16px, env(safe-area-inset-top)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
+#meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; top:max(16px, env(safe-area-inset-top)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
+#meldung[hidden] { display:none; }
+.melde-knopf { background:none; border:0; padding:4px 0; color:inherit; font-size:14px; font-weight:600; text-decoration:underline; text-underline-offset:3px; opacity:.9; }
 
 /* Ansicht Knopf */
 .ansicht-knopf { display:grid; gap:18px; justify-items:center; }
@@ -233,8 +235,8 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 /* Ein ausgelassener Tag ist ein graues Rund, ein Tag, den es noch nicht gibt, nur ein Ring. */
 .glied[data-stand="kommt"] { background:none; border-color:var(--linie-stark); }
 .glied[data-heute] { border-color:var(--leise); }
-/* Frei genommen ist nicht leer geblieben: ein warmes Grau, weder Farbe noch Lücke. */
-.glied[data-stand="frei"] { background:var(--frei); }
+/* Ein Tag ohne Eintrag ist ein freier Tag: ein warmes Grau, keine Lücke. */
+.glied[data-stand="frei"], .glied[data-stand="leer"] { background:var(--frei); }
 
 /* Kleine Momente. Heute kommt dazu: das Glied pulsiert einmal. Eine Stufe
    ist gesprengt: der Kopf leuchtet kurz auf. Sonst passiert nichts. */

@@ -11,14 +11,15 @@ und beliebig viele **eigene Tracker** mit selbst geschriebenem Namen, etwa „Al
 jederzeit dazu, über ⋯ → „Tracker wählen oder hinzufügen“. Die Namen bleiben im Gerät; an kur-core
 gingen nur die Schlüssel (`eigen`, `eigen-…`).
 
-**Die App fängt klein an.** Zu sehen sind nur die Tracker, je mit „habe“, „würde gern“ und „heute
-ohne“, dazu dein Leitgedanke. Alles Weitere ist ein **Baustein**, den man unter ⋯ dazunimmt:
+**Die App fängt klein an.** Zu sehen sind nur die Tracker, je mit „habe“ und „würde gern“, dazu dein
+Leitgedanke. **Loggen ist ein Tippen:** es notiert sofort; die Meldung danach bietet „Details“ (die
+Fragen, freiwillig) und „Zurück“ (vertippt). Einen Knopf „heute ohne“ oder „frei nehmen“ gibt es
+nicht: ein Tag ohne Eintrag ist ein freier Tag. Alles Weitere ist ein **Baustein**, den man unter ⋯ dazunimmt:
 
 | Baustein | Wo | Was |
 |---|---|---|
 | Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
 | Lauf und Kette | oben | Tage dabei, die Kette auf der Fibonacci-Leiter 5, 8, 13, 21, 34, Satz zum Tag, kleine Momente. Die Zahl ist zugleich „Ich bin da“: antippen, und der Tag zählt — jede andere Notiz zählt ihn genauso |
-| Freie Tage | oben | einen Tag bewusst frei nehmen; er hält die Kette |
 | Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
 | Wissen und Rückblick | unten | Ebenen, die sich durch Benutzen öffnen; der Rückblick in Wochen |
 | Abends ruhiger *(an)* | Darstellung | nach Sonnenuntergang eine Spur ruhiger |

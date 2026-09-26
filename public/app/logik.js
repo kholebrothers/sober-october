@@ -151,8 +151,6 @@ export const BAUSTEINE = [
     text: "Ein eigener Satz, der dich begleitet." },
   { id: "lauf", gruppe: "Oben", titel: "Lauf und Kette", standard: false,
     text: "Tage dabei, die Kette auf der Fibonacci-Leiter, ein Satz zum Tag und kleine Momente an den Stufen." },
-  { id: "freieTage", gruppe: "Oben", titel: "Freie Tage", standard: false,
-    text: "Einen Tag bewusst frei nehmen — er hält die Kette." },
   { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
   { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
@@ -218,7 +216,6 @@ export function aus(text) {
     // Lauf und Kette gab es nur in der Vorschau (die schrieb `freieTage`),
     // nie live — wer von dort kommt, fängt klein an.
     if ("freieTage" in roh && z.ereignisse.length) z.bausteine.lauf = true;
-    if (z.freieTage.length) z.bausteine.freieTage = true;
     if (roh.frei && roh.frei.verlauf) z.bausteine.heatmap = true;
     if (EBENEN.some((eb) => z.frei[eb.id])) z.bausteine.ebenen = true;
     if (roh.abends === false) z.bausteine.abends = false;
@@ -259,7 +256,25 @@ export function notiere(z, { tag, zeit, verzicht, art, antworten = {}, begleitet
   return freischalten(z, tag, zeit);
 }
 
-/** „heute ohne" an- oder ausschalten. */
+/** Details nachtragen: erst schnell notieren, die Fragen später, wenn man
+    will. Gibt wie notiere() die Ebenen zurück, die sich dadurch öffnen. */
+export function ergaenze(z, id, { antworten = {}, begleitetSek } = {}) {
+  const e = z.ereignisse.find((x) => x.id === id);
+  if (!e) return [];
+  e.antworten = { ...e.antworten, ...antworten };
+  if (begleitetSek) e.begleitetSek = (e.begleitetSek || 0) + begleitetSek;
+  return freischalten(z, e.tag, e.zeit);
+}
+
+/** Vertippt: ein Eintrag geht wieder weg. */
+export function entferne(z, id) {
+  const vorher = z.ereignisse.length;
+  z.ereignisse = z.ereignisse.filter((e) => e.id !== id);
+  return z.ereignisse.length < vorher;
+}
+
+/** „heute ohne" an- oder ausschalten. Die Oberfläche bietet es nicht mehr an
+    — kein Eintrag heißt ohnehin „ohne" —, alte Einträge bleiben lesbar. */
 export function schalteOhne(z, tag, zeit, verzicht) {
   const da = z.ereignisse.findIndex((e) => e.tag === tag && e.verzicht === verzicht && e.art === "ohne");
   if (da >= 0) z.ereignisse.splice(da, 1);
@@ -322,8 +337,9 @@ export function tagesKopf(tag) {
    Der laufende Tag zählt erst, wenn etwas drin steht — sonst stünde die
    Serie jeden Morgen auf null. */
 
-/* Ein freier Tag ist bewusst genommen, nicht vergessen: er hält die Kette
-   wie eine Notiz und bekommt seine eigene Farbe (aus lifetracker, FEIER). */
+/* Frei ist, was nichts geloggt hat: dafür gibt es keinen Knopf mehr, ein
+   leerer Tag ist ein freier Tag. `freieTage` stammt aus einem früheren
+   Stand, in dem man ihn eigens nahm; solche Tage zählen weiter als dabei. */
 export const istFrei = (z, tag) => z.freieTage.includes(tag);
 
 export function schalteFrei(z, tag) {
@@ -471,7 +487,7 @@ export function tagessatz(z, heute) {
   if (!n && istDa(z, heute)) return "Der Tag zählt. Du bist da.";
   if (n) return `Der Tag zählt. ${n === 1 ? "Eine Notiz" : n + " Notizen"}\u00a0— alles weitere ist Zugabe.`;
   const st = serie(z, heute);
-  if (st >= 1 && !dabei(z, verschiebe(heute, -1))) return "Gestern blieb leer. Heute reicht wieder eine Notiz.";
+  if (st >= 1 && !dabei(z, verschiebe(heute, -1))) return "Gestern war frei. Heute reicht wieder eine Notiz.";
   if (st >= 1) return "Eine Notiz hält die Kette.";
   return "Eine Notiz, und der Tag zählt.";
 }

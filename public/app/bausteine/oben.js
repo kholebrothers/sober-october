@@ -1,4 +1,4 @@
-/* Die Bausteine oben: Leitgedanke, Lauf und Kette, freie Tage.
+/* Die Bausteine oben: Leitgedanke, Lauf und Kette.
 
    Jeder ist für sich abschaltbar, und zusammen stehen sie als eine Fläche
    da (aus lifetracker, .hero): links die Zahl, rechts der Leitgedanke und
@@ -9,8 +9,7 @@ import { el, knopf } from "../ansichten/teile.js";
 
 export function oben(api) {
   const leit = api.aktiv("leitgedanke"), lauf = api.aktiv("lauf");
-  const frei = api.aktiv("freieTage") && !api.hatEintrag();
-  if (!leit && !lauf && !frei) return null;
+  if (!leit && !lauf) return null;
 
   const h = el("div", lauf ? "oben lauf" : "oben");
   const text = el("div", "lauf-text");
@@ -22,12 +21,6 @@ export function oben(api) {
   }
   const unter = el("span", "lauf-unter leise");
   if (lauf) unter.append(el("span", null, api.tagessatz()));
-  if (frei) {
-    const an = api.istFrei();
-    const b = knopf(an ? "✓ heute frei" : "heute frei nehmen", "text frei-knopf", () => api.frei());
-    b.setAttribute("aria-pressed", an);
-    unter.append(b);
-  }
   if (unter.childNodes.length) text.append(unter);
 
   if (lauf) h.append(zahl(api));
@@ -61,7 +54,7 @@ function kette(api) {
     p.dataset.stand = t.stand;
     if (t.heute) p.dataset.heute = "";
     k.append(p);
-    if (t.stand !== "kommt") worte.push(t.stand === "dabei" ? "dabei" : t.stand === "frei" ? "frei" : t.heute ? "noch offen" : "nichts");
+    if (t.stand !== "kommt") worte.push(t.stand === "dabei" ? "dabei" : t.heute ? "noch offen" : "frei");
   }
   k.setAttribute("role", "img");
   k.setAttribute("aria-label", `Dein Lauf, Tag 1 bis heute: ${worte.join(", ")}` +
