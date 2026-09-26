@@ -4,6 +4,7 @@ import {
   neuerZustand, aus, notiere, schalteOhne, stand, oktober, tagesZeile,
   commitmentSatz, fuerKern, vonTag, VERSION, tagesKopf,
   gewaehlt, schalteAlles, setzeEigen, verzichte, FEST,
+  serie, lauf, besterLauf, heatWochen, tagesAnteil, LEITER,
 } from "../public/app/logik.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
 
@@ -157,4 +158,66 @@ test("der Name der eigenen Definition geht nicht an kur-core", () => {
   const k = fuerKern(z, "2026-10-01");
   assert.ok(!JSON.stringify(k).includes("Alkohol"));
   assert.equal(k.einstellungen[0].wert, "eigen");
+});
+
+const notizAn = (z, ...tage) => { for (const t of tage) schalteOhne(z, t, "12:00", "kaffee"); };
+const okt = (n) => `2026-10-${String(n).padStart(2, "0")}`;
+
+test("die Serie: ein Leertag hält, zwei beenden, heute zählt erst mit Notiz", () => {
+  const z = mit("kaffee");
+  notizAn(z, okt(1), okt(2), okt(4), okt(5));
+  assert.equal(serie(z, okt(5)), 4, "der 3. ist ein einzelner Leertag");
+  assert.equal(serie(z, okt(6)), 4, "heute noch leer: die Serie steht");
+  assert.equal(serie(z, okt(7)), 4, "heute offen, gestern leer: noch eine Lücke");
+  assert.equal(serie(z, okt(8)), 0, "zwei Leertage vor heute: vorbei");
+  notizAn(z, okt(8));
+  assert.equal(serie(z, okt(8)), 1);
+});
+
+test("die Kette rastet auf der Fibonacci-Leiter ein", () => {
+  assert.deepEqual(LEITER, [5, 8, 13, 21, 34]);
+  const z = mit("kaffee");
+  assert.equal(lauf(z, okt(1)).fenster, 5, "heute allein ist auch ein Anfang");
+  for (let d = 1; d <= 5; d++) notizAn(z, okt(d));
+  assert.equal(lauf(z, okt(5)).fenster, 5);
+  notizAn(z, okt(6));
+  const l = lauf(z, okt(6));
+  assert.deepEqual([l.weit, l.fenster, l.dabeiTage], [6, 8, 6]);
+  assert.deepEqual(l.tage.map((t) => t.stand), ["dabei", "dabei", "dabei", "dabei", "dabei", "dabei", "kommt", "kommt"]);
+  assert.equal(l.tage[5].heute, true);
+  for (let d = 7; d <= 31; d++) notizAn(z, okt(d));
+  assert.equal(lauf(z, okt(31)).fenster, 34, "der ganze Oktober passt hinein");
+});
+
+test("ein Leertag steht in der Kette als leer, nicht als kommt", () => {
+  const z = mit("kaffee");
+  notizAn(z, okt(1), okt(3));
+  assert.deepEqual(lauf(z, okt(3)).tage.slice(0, 3).map((t) => t.stand), ["dabei", "leer", "dabei"]);
+});
+
+test("der längste Lauf zählt Tage ohne Lücke", () => {
+  const z = mit("kaffee");
+  notizAn(z, okt(1), okt(2), okt(3), okt(5));
+  assert.equal(besterLauf(z, okt(9)), 3);
+});
+
+test("die Heatmap: 13 Wochen ab Montag, der Oktober ganz darin", () => {
+  for (const heute of ["2026-09-26", okt(15), "2026-12-20"]) {
+    const w = heatWochen(heute);
+    assert.equal(w.length, 13);
+    assert.ok(w.every((x) => x.length === 7));
+    assert.equal(new Date(w[0][0] + "T12:00").getDay(), 1, "Montag oben");
+    const alle = w.flat();
+    if (heute < "2026-11-01") assert.ok(alle.includes(okt(1)) && alle.includes(okt(31)), heute);
+    else assert.ok(alle.includes(heute));
+  }
+});
+
+test("wie voll ein Tag ist: Anteil der Verzichte mit Notiz, ein habe zählt mit", () => {
+  const z = mit("kaffee", "kippe");
+  assert.equal(tagesAnteil(z, okt(1)), 0);
+  notiere(z, { tag: okt(1), zeit: "08:00", verzicht: "kippe", art: "habe" });
+  assert.equal(tagesAnteil(z, okt(1)), 0.5);
+  schalteOhne(z, okt(1), "20:00", "kaffee");
+  assert.equal(tagesAnteil(z, okt(1)), 1);
 });

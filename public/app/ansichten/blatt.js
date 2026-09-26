@@ -4,6 +4,7 @@
    aufgehen. */
 
 import { el, knopf, kopf, wasText } from "./teile.js";
+import { heatmap } from "./heatmap.js";
 
 let mehrOffen = false;
 
@@ -32,6 +33,14 @@ export function render(api) {
     if (!es.some((e) => e.art === "habe")) aktionen.append(knopf(ohne ? "✓ heute ohne" : "heute ohne", "text", () => api.ohne(v)));
     zeile.append(kreis, mitte, aktionen);
     s.append(zeile);
+  }
+
+  // Alles auf einer Seite: ist „Dein Oktober" eingeschaltet, steht die
+  // Heatmap hier direkt, ohne Bogen.
+  if (api.stand("verlauf") === "an") {
+    const o = el("section", "blatt-oktober");
+    o.append(el("p", "rubrik", "Dein Oktober"), heatmap(z, api.heute()));
+    s.append(o);
   }
 
   const mehr = el("details", "blatt-mehr");

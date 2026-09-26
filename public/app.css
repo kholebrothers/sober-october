@@ -10,7 +10,7 @@
 :root {
   --paper:#F5F1E8; --surface:#FFFDF7; --ink:#20231F; --leise:#6E7263;
   --moss:#6E7762; --clay:#A66E55; --mist:#C8CFCD; --teal:#315D60;
-  --linie:#E2DDD0; --linie-stark:#CFC8B7;
+  --linie:#E2DDD0; --linie-stark:#CFC8B7; --hm-leer:#ECE7DB;
   --serif:"Source Serif 4", Georgia, serif;
   --sans:Inter, system-ui, -apple-system, sans-serif;
   color-scheme: light dark;
@@ -18,12 +18,12 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --paper:#171A16; --surface:#1F231D; --ink:#EAE6DA; --leise:#9AA08C;
   --moss:#9BA789; --clay:#C98D72; --mist:#49524E; --teal:#79AFB2;
-  --linie:#2E332B; --linie-stark:#3E453A;
+  --linie:#2E332B; --linie-stark:#3E453A; --hm-leer:#2A2F27;
 }}
 :root[data-theme="dark"] {
   --paper:#171A16; --surface:#1F231D; --ink:#EAE6DA; --leise:#9AA08C;
   --moss:#9BA789; --clay:#C98D72; --mist:#49524E; --teal:#79AFB2;
-  --linie:#2E332B; --linie-stark:#3E453A;
+  --linie:#2E332B; --linie-stark:#3E453A; --hm-leer:#2A2F27;
 }
 
 * { box-sizing:border-box; }
@@ -97,13 +97,12 @@ dialog#bogen::backdrop { background:#20231F44; }
 .ebene ul { margin:0 0 10px; padding-left:18px; font-family:var(--serif); }
 .zitat { display:block; font-family:var(--serif); font-style:italic; color:var(--ink); }
 .zitat.wahl { font-family:var(--sans); font-style:normal; font-size:13px; color:var(--leise); }
-.monat { display:grid; grid-template-columns:repeat(7, 22px); gap:10px; margin:6px 0 14px; }
 
 #meldung { position:fixed; left:50%; top:max(16px, env(safe-area-inset-top)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
 
 /* Ansicht Knopf */
 .ansicht-knopf { display:grid; gap:18px; justify-items:center; }
-.ansicht-knopf .kopf { width:100%; margin:0; }
+.ansicht-knopf .kopf, .ansicht-knopf .kopf-flaeche { width:100%; margin:0; }
 .punkte { display:flex; gap:8px; }
 .punkt-knopf { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--teal); background:transparent; padding:0; }
 .punkt-knopf[data-neu="true"] { background:var(--teal); }
@@ -134,3 +133,38 @@ dialog#bogen::backdrop { background:#20231F44; }
 .faden li { padding:6px 0 6px 16px; }
 .faden-kopf { padding-top:18px !important; }
 .faden-spur, .faden-angebot, .faden-an { border-left:2px solid var(--teal); margin-left:-1.5px; }
+
+/* Kopf und Lauf — aus lifetracker (.hero, .chain). Die Kette bricht nie um:
+   die Glieder teilen sich die Breite und sind bei 9px gedeckelt, damit eine
+   kurze Kette nicht zu Klötzen wird. */
+.kopf-flaeche { margin-bottom:14px; }
+.kopf-flaeche .kopf { margin-bottom:6px; }
+.lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; }
+.lauf-zahl { display:flex; flex-direction:column; align-items:center; width:54px; color:var(--leise); }
+.lauf-zahl .n { font:500 30px/1 var(--serif); font-variant-numeric:tabular-nums; color:var(--linie-stark); }
+.lauf-zahl.an .n { color:var(--moss); }
+.lauf-zahl .u { font-size:10.5px; line-height:1.2; text-align:center; letter-spacing:.03em; }
+.kette-zeile { display:flex; align-items:center; gap:10px; min-width:0; }
+.kette-zeile .klein { flex:none; font-size:11.5px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.kette { flex:1; min-width:0; display:flex; align-items:center; gap:1.1%; }
+.glied { flex:1 1 0; min-width:0; max-width:9px; aspect-ratio:1; border-radius:50%; background:var(--hm-leer); border:1.5px solid transparent; }
+.glied[data-stand="dabei"] { background:var(--moss); }
+/* Ein ausgelassener Tag ist ein graues Rund, ein Tag, den es noch nicht gibt, nur ein Ring. */
+.glied[data-stand="kommt"] { background:none; border-color:var(--linie-stark); }
+.glied[data-heute] { border-color:var(--leise); }
+
+/* Die große Heatmap — aus lifetracker (.hm-*): eine Spalte je Woche. */
+.hm { display:grid; gap:10px; }
+.hm-kal { display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px 6px; }
+.hm-monate { grid-column:2; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); font-size:10px; color:var(--leise); white-space:nowrap; }
+.hm-wt { grid-column:1; min-width:18px; display:grid; grid-template-rows:repeat(7,1fr); font-size:10px; color:var(--leise); align-items:center; }
+.hm-gitter { grid-column:2; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); grid-template-rows:repeat(7,auto); gap:3px; }
+.hm-zelle { width:100%; aspect-ratio:1; border-radius:3.5px; background:var(--hm-leer); border:1.5px solid transparent; }
+/* Leere Tage außerhalb des Oktobers treten zurück; notierte bleiben lesbar. */
+.hm-zelle[data-rand] { opacity:.45; }
+.hm-zelle[data-kommt] { background:none !important; border-color:var(--linie); }
+.hm-zelle[data-kommt][data-leer] { border-color:transparent; }
+.hm-zelle[data-heute] { border-color:var(--ink); }
+.hm-legende { display:flex; align-items:center; justify-content:flex-end; gap:5px; font-size:11px; color:var(--leise); }
+.hm-legende .hm-zelle { width:11px; height:11px; aspect-ratio:auto; flex:none; }
+.blatt-oktober { margin:18px 0 6px; display:grid; gap:8px; }

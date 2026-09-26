@@ -15,6 +15,11 @@ in dem man gern würde („würde gern“, beim Rauchen „will rauchen“). Dan
 Alles Weitere ist eine **Ebene**, die sich erst öffnet: Wissen zu Nervensystem und Routinen,
 neue Verhaltensweisen, der Verlauf des Monats.
 
+Im Kopf steht, wie in lifetracker, der **Lauf**: die Tage dabei (ein Leertag hält, zwei beenden)
+und die Kette, die auf der Fibonacci-Leiter 5, 8, 13, 21, 34 einrastet. Dabei ist, wer etwas
+notiert — auch ein „habe“. Die Ebene **Dein Oktober** zeigt die große Heatmap aus lifetracker
+(13 Wochen, den ganzen Oktober darin); in der Ansicht Blatt steht sie direkt auf der Seite.
+
 Die Haltung kommt aus lifetracker und smokefree: Ein Konsumereignis ist ein Ereignis, kein
 Versagen. Ein leerer Kreis heißt *unbekannt*, nicht *nicht geschafft*. Kein Verhalten wird rot.
 

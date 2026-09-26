@@ -15,7 +15,7 @@
    Werte, die `normalisiere()` aus kur-core/server/api.js annimmt.
    ===================================================================== */
 
-import { tageZwischen, tagNummer, alsDatum } from "../kern/datum.js";
+import { tageZwischen, tagNummer, alsDatum, verschiebe } from "../kern/datum.js";
 
 export const VERSION = 1;
 
@@ -213,6 +213,97 @@ export function tagesKopf(tag) {
   const o = oktober(tag);
   if (o.phase === "im") return `Tag ${o.tag}`;
   return alsDatum(tag).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+}
+
+/* ---- Der Lauf — aus lifetracker ----------------------------------------
+
+   Übernommen aus lifetracker/public/app.js (personStreak, kettenLauf,
+   bestStreak, heatmap). Die Regeln sind dieselben, nur „dabei" heißt hier
+   etwas anderes: dort ein Häkchen, hier eine Notiz, gleich welche — ein
+   „heute ohne", ein „habe", ein „würde gern". Wer notiert, ist dabei; ein
+   Konsum ist ein Ereignis, kein Bruch der Kette.
+
+   Ein einzelner Leertag beendet den Lauf nicht, zwei hintereinander schon.
+   Der laufende Tag zählt erst, wenn etwas drin steht — sonst stünde die
+   Serie jeden Morgen auf null. */
+
+export const dabei = (z, tag) => z.ereignisse.some((e) => e.tag === tag);
+
+/** Tage dabei, von heute (oder gestern, solange heute leer ist) zurück. */
+export function serie(z, heute) {
+  let d = dabei(z, heute) ? heute : verschiebe(heute, -1), n = 0, luecke = 0;
+  for (let i = 0; i < 400; i++) {
+    if (dabei(z, d)) { n++; luecke = 0; } else if (++luecke >= 2) break;
+    d = verschiebe(d, -1);
+  }
+  return n;
+}
+
+/* Die Kette zeigt den ganzen Lauf, rastet aber auf der Fibonacci-Leiter ein:
+   5, 8, 13, 21, 34. Sie springt eine Stufe, sobald der Lauf die alte sprengt;
+   die blassen Punkte hinter heute sind die Tage bis zur nächsten Stufe.
+   34 ist eine Stufe über den 31 Tagen des Oktobers: der Monat passt ganz
+   hinein. */
+export const LEITER = [5, 8, 13, 21, 34];
+
+/** {weit, fenster, tage: [{tag, stand: "dabei"|"leer"|"kommt", heute}]} */
+export function lauf(z, heute) {
+  const max = LEITER.at(-1);
+  let d = heute, luecke = 0, weit = 0, ab = 0;
+  if (!dabei(z, d)) { d = verschiebe(d, -1); ab = 1; }
+  for (let i = 0; i < max - ab; i++) {
+    if (dabei(z, d)) { luecke = 0; weit = ab + i + 1; } else if (++luecke >= 2) break;
+    d = verschiebe(d, -1);
+  }
+  weit = Math.max(weit, 1);                  // heute allein ist auch ein Anfang
+  const fenster = LEITER.find((l) => l >= weit) || max;
+  const tage = [];
+  for (let i = 0; i < fenster; i++) {
+    const tag = verschiebe(heute, i - (weit - 1));
+    tage.push({ tag, heute: tag === heute, stand: i >= weit ? "kommt" : dabei(z, tag) ? "dabei" : "leer" });
+  }
+  return { weit, fenster, tage, dabeiTage: tage.filter((t) => t.stand === "dabei").length };
+}
+
+/** Der längste Lauf (ohne Lücke), so weit die Notizen zurückreichen. */
+export function besterLauf(z, heute) {
+  const tage = [...new Set(z.ereignisse.map((e) => e.tag))].filter((t) => t <= heute).sort();
+  let best = 0, run = 0, vor = null;
+  for (const t of tage) {
+    run = vor && verschiebe(vor, 1) === t ? run + 1 : 1;
+    best = Math.max(best, run);
+    vor = t;
+  }
+  return best;
+}
+
+/* Die große Heatmap: eine Spalte je Woche (Montag oben), 13 Wochen, die den
+   Oktober ganz enthalten — vorher und mittendrin endet sie mit dem
+   31. Oktober, danach mit heute. Tage nach heute stehen leer. */
+export const HEAT_WOCHEN = 13;
+
+/** Wie voll ein Tag war: Anteil der gewählten Verzichte mit einer Notiz. */
+export function tagesAnteil(z, tag) {
+  const gew = gewaehlt(z);
+  const da = new Set(vonTag(z, tag).map((e) => e.verzicht));
+  if (!da.size) return 0;
+  return Math.min(1, da.size / Math.max(1, gew.length));
+}
+
+/** Wochen als Listen von Tagen (Mo–So), dazu der Tag, an dem sie endet. */
+export function heatWochen(heute) {
+  const { start } = oktober(heute);
+  const ende = [verschiebe(start, 30), heute].sort().at(-1);
+  const e = alsDatum(ende);
+  const letzterMontag = verschiebe(ende, -((e.getDay() + 6) % 7));
+  const erster = verschiebe(letzterMontag, -7 * (HEAT_WOCHEN - 1));
+  const wochen = [];
+  for (let w = 0; w < HEAT_WOCHEN; w++) {
+    const woche = [];
+    for (let i = 0; i < 7; i++) woche.push(verschiebe(erster, w * 7 + i));
+    wochen.push(woche);
+  }
+  return wochen;
 }
 
 /* ---- Richtung kur-core --------------------------------------------------- */

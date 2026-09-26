@@ -4,8 +4,8 @@
    mögliche Spur", keine Anweisung, keine Diagnose). Sie sind fachlich
    nicht geprüft und stehen deshalb hier, getrennt von der Mechanik. */
 
-import { verzichte, oktober, tagesKopf } from "./logik.js";
-import { verschiebe } from "../kern/datum.js";
+import { verzichte, tagesKopf, besterLauf } from "./logik.js";
+import { heatmap } from "./ansichten/heatmap.js";
 
 export function ebenenInhalt(id, z, heute) {
   const d = document.createElement("div");
@@ -40,23 +40,10 @@ export function ebenenInhalt(id, z, heute) {
       break;
     }
     case "verlauf": {
-      const reihe = document.createElement("div");
-      reihe.className = "monat";
-      const { start } = oktober(heute);
-      for (let i = 0; i < 31; i++) {
-        const tag = verschiebe(start, i);
-        const k = document.createElement("span");
-        k.className = "kreis klein";
-        k.title = `Tag ${i + 1}`;
-        const es = z.ereignisse.filter((e) => e.tag === tag);
-        if (es.some((e) => e.art === "ohne")) k.dataset.ohne = "";
-        if (es.some((e) => e.art === "habe")) k.dataset.spur = "";
-        if (es.some((e) => e.art === "drang")) k.dataset.drang = "";
-        if (tag === heute) k.dataset.heute = "";
-        reihe.append(k);
-      }
-      d.append(reihe);
-      p("Ein leerer Kreis heißt: nichts bekannt. Nicht: nicht geschafft. Gestrichelt: ein Würde-gern-Moment. Ein Punkt: etwas ist geschehen.", "leise");
+      const best = besterLauf(z, heute);
+      if (best) p(`Längster Lauf bisher: ${best} ${best === 1 ? "Tag" : "Tage"} am Stück.`, "leise");
+      d.append(heatmap(z, heute));
+      p("Je voller das Kästchen, desto mehr von deinem Commitment ist an dem Tag notiert — auch ein „habe“ zählt, es ist ein Ereignis, kein Versagen. Ein leeres Kästchen heißt: nichts bekannt. Nicht: nicht geschafft.", "leise");
       break;
     }
   }

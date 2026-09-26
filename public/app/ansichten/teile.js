@@ -25,7 +25,36 @@ export function kopf(api, rechts) {
   e.setAttribute("aria-label", "Einstellungen");
   r.append(e);
   k.append(r);
-  return k;
+  if (!api.gewaehlt().length) return k;
+  const f = el("div", "kopf-flaeche");
+  f.append(k, laufZeile(api));
+  return f;
+}
+
+/** Der Lauf aus dem Kopf von lifetracker: die Zahl der Tage dabei und die
+    Kette, die auf der Fibonacci-Leiter einrastet (5, 8, 13, 21, 34). */
+export function laufZeile(api) {
+  const n = api.serie();
+  const l = api.lauf();
+  const h = el("div", "lauf");
+  const zahl = el("div", n ? "lauf-zahl an" : "lauf-zahl");
+  zahl.append(el("span", "n", String(n)), el("span", "u", n === 1 ? "Tag dabei" : "Tage dabei"));
+  const kette = el("div", "kette");
+  const text = [];
+  for (const t of l.tage) {
+    const p = el("span", "glied");
+    p.dataset.stand = t.stand;
+    if (t.heute) p.dataset.heute = "";
+    kette.append(p);
+    if (t.stand !== "kommt") text.push(t.stand === "dabei" ? "dabei" : t.heute ? "noch offen" : "nichts");
+  }
+  kette.setAttribute("role", "img");
+  kette.setAttribute("aria-label", `Dein Lauf, Tag 1 bis heute: ${text.join(", ")}` +
+    (l.fenster > l.weit ? ` — dann noch ${l.fenster - l.weit} Tage bis ${l.fenster}` : ""));
+  const unten = el("div", "kette-zeile");
+  unten.append(kette, el("span", "leise klein", `${l.dabeiTage} von ${l.fenster} Tagen`));
+  h.append(zahl, unten);
+  return h;
 }
 
 /** Wie ein Eintrag in einer Zeile heißt. */

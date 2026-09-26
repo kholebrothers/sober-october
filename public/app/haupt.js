@@ -10,7 +10,7 @@
 import { heute as heuteTag } from "../kern/datum.js";
 import {
   FRAGEN, EBENEN, ANSICHTEN, FEST, EIGEN, verzichte, gewaehlt, commitmentSatz, vonTag,
-  notiere, schalteOhne, schalteAlles, setzeEigen, stand, tagesZeile,
+  notiere, schalteOhne, schalteAlles, setzeEigen, stand, tagesZeile, serie, lauf,
 } from "./logik.js";
 import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
@@ -45,6 +45,8 @@ const api = {
   commitmentSatz: () => commitmentSatz(z),
   heuteVon: (v) => vonTag(z, heute(), v),
   stand: (id) => stand(z, id),
+  serie: () => serie(z, heute()),
+  lauf: () => lauf(z, heute()),
   eintragen,
   ohne: (v) => aendern(() => schalteOhne(z, heute(), jetztZeit(), v)),
   einschalten(id) {

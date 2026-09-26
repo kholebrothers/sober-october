@@ -15,6 +15,11 @@ Nicht als Datei, aber inhaltlich übernommen:
 
 - **Fragen** „Was war kurz davor?“ und „Was hätte auch gepasst?“: `smokefree/modul.js`
   (`FRAGEN_ZIGARETTE`), dort aus lifetracker `RUECK`.
+- **Lauf, Fibonacci-Kette und große Heatmap**: `lifetracker/public/app.js` (`personStreak`,
+  `kettenLauf`, `bestStreak`, `heatmap`) und `style.css` (`.hero`, `.chain`, `.hm-*`), Stand `43ab26c`.
+  Neu geschrieben als Module (`logik.js`: `serie`, `lauf`, `besterLauf`, `heatWochen`;
+  `ansichten/heatmap.js`). Anders als dort: „dabei" heißt *eine Notiz, gleich welche*, die
+  Heatmap zeigt den eigenen Anteil statt des Teams, in Moos statt Flamme.
 - **Palette, offener Kreis, Microcopy, kein Rot**: `mahlzeit/docs/GESTALT.md`, Werte für hell und
   dunkel über `smokefree/index.html`.
 - **Haltung und Event-Denken** („Module interpretieren Events“, Häkchen heißt nur *Beobachtung
