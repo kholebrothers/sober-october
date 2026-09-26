@@ -1,30 +1,75 @@
 /* =====================================================================
    Sober October — Stil
 
-   Palette aus mahlzeit/docs/GESTALT.md, Werte (hell und dunkel) über
-   smokefree/index.html. Zwei Regeln daraus sind inhaltlich:
-   Mist ist die Farbe des Unsicheren, und kein Verhalten wird je rot.
+   Palette: Flexoki (Steph Ango, stephango.com/flexoki) — Tinte auf warmem
+   Papier. Hell die 600er-Töne, dunkel die 400er. Der dunkle Grund ist nicht
+   Flexoki-Schwarz, sondern ein warmes Braun — abends angenehmer; die Akzente
+   bleiben Flexoki. Die Namen der Variablen sind geblieben.
+
+   Zwei Regeln aus mahlzeit/docs/GESTALT.md gelten weiter: Mist ist die
+   Farbe des Unsicheren, und kein Verhalten wird je rot — Flexoki-Rot ist
+   deshalb gar nicht erst übernommen.
+
+   Farbe ist Orientierung, nicht Urteil. Jeder Verzicht hat eine eigene
+   (--v, über data-v), jede Art von Ebene eine (--e, über data-ebene), jedes
+   Grundgefühl eine. Sie erscheint leise: als Rand, als Punkt, als Hauch
+   von Grund — nie als Fläche, die laut wird.
    Zahlen bleiben in der Interface-Schrift, die App spricht in der Serife.
    ===================================================================== */
 
 :root {
-  --paper:#F5F1E8; --surface:#FFFDF7; --ink:#20231F; --leise:#6E7263;
-  --moss:#6E7762; --clay:#A66E55; --mist:#C8CFCD; --teal:#315D60;
-  --linie:#E2DDD0; --linie-stark:#CFC8B7;
+  --paper:#F2F0E5; --surface:#FFFCF0; --ink:#100F0F; --leise:#6F6E69;
+  --linie:#E6E4D9; --linie-stark:#CECDC3; --hm-leer:#E6E4D9; --mist:#B7B5AC;
+  --moss:#66800B; --clay:#BC5215; --teal:#24837B;
+  --gelb:#AD8301; --blau:#205EA6; --lila:#5E409D; --magenta:#A02F6F;
+  --hauch:7%; --frei:#B7B5AC;
   --serif:"Source Serif 4", Georgia, serif;
   --sans:Inter, system-ui, -apple-system, sans-serif;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --paper:#171A16; --surface:#1F231D; --ink:#EAE6DA; --leise:#9AA08C;
-  --moss:#9BA789; --clay:#C98D72; --mist:#49524E; --teal:#79AFB2;
-  --linie:#2E332B; --linie-stark:#3E453A;
+  --paper:#1F1914; --surface:#2A221C; --ink:#E6DCCB; --leise:#A6988A;
+  --linie:#372D25; --linie-stark:#4A3E33; --hm-leer:#342B23; --mist:#6B5E51;
+  --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
+  --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
+  --hauch:10%; --frei:#857566;
 }}
 :root[data-theme="dark"] {
-  --paper:#171A16; --surface:#1F231D; --ink:#EAE6DA; --leise:#9AA08C;
-  --moss:#9BA789; --clay:#C98D72; --mist:#49524E; --teal:#79AFB2;
-  --linie:#2E332B; --linie-stark:#3E453A;
+  --paper:#1F1914; --surface:#2A221C; --ink:#E6DCCB; --leise:#A6988A;
+  --linie:#372D25; --linie-stark:#4A3E33; --hm-leer:#342B23; --mist:#6B5E51;
+  --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
+  --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
+  --hauch:10%; --frei:#857566;
 }
+
+/* Abends ruhiger, dezent (aus lifetracker, Nachtmodus — hier ohne den
+   Sprung ins Dunkle). Hell: das Papier rückt um eine Flexoki-Stufe nach
+   unten, die Schrift wird weicher. Dunkel: Schrift weicher, das Braun eine Spur tiefer. */
+@media (prefers-color-scheme: light) {
+  :root[data-tageszeit="abend"]:not([data-theme="dark"]) { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
+  :root[data-tageszeit="nacht"]:not([data-theme="dark"]) { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --leise:#6F6E69; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-tageszeit="nacht"]:not([data-theme="light"]) { --ink:#CFC4B3; --paper:#1B1511; }
+}
+:root[data-theme="light"][data-tageszeit="abend"] { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
+:root[data-theme="light"][data-tageszeit="nacht"] { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
+:root[data-theme="dark"][data-tageszeit="nacht"] { --ink:#CFC4B3; --paper:#1B1511; }
+body { transition:background-color 1.2s ease, color 1.2s ease; }
+
+/* Die Farbe je Verzicht. Nicht Orange (das ist „habe"), nicht Cyan (das ist
+   der Drang), nicht Grün (das ist „ohne") — die drei sagen, was geschah. */
+[data-v] { --v:var(--mist); }
+[data-v="kaffee"] { --v:var(--gelb); }
+[data-v="kippe"] { --v:var(--blau); }
+[data-v="video"] { --v:var(--lila); }
+[data-v="eigen"] { --v:var(--magenta); }
+[data-v="alles"] { --v:var(--moss); }
+/* Die Farbe je Art von Ebene: Wissen, neue Verhaltensweisen, Verlauf. */
+[data-ebene] { --e:var(--teal); }
+[data-ebene="drang"], [data-ebene="routine"] { --e:var(--blau); }
+[data-ebene="statt"] { --e:var(--moss); }
+[data-ebene="verlauf"], [data-ebene="rueckblick"] { --e:var(--gelb); }
 
 * { box-sizing:border-box; }
 body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 var(--sans); -webkit-text-size-adjust:100%; }
@@ -60,17 +105,33 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 .kreis[data-heute] { box-shadow:0 0 0 2px var(--paper), 0 0 0 3px var(--linie-stark); }
 .punkt { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--teal); vertical-align:middle; }
 
-/* Wahl */
-.wahl h1 { margin-bottom:4px; }
-.wahl-zeile { border:1px solid var(--linie); border-radius:14px; margin:12px 0; background:var(--surface); }
-.wahl-zeile[data-an="true"] { border-color:var(--moss); }
-.wahl-knopf { width:100%; text-align:left; background:none; border:0; padding:16px; font:500 18px var(--serif); }
-.wahl-zusatz { display:flex; gap:8px; align-items:center; padding:0 16px 14px; font-size:13px; }
+/* Wahl — eine ruhige Liste: je Tracker eine Zeile, der Name links, der
+   Würde-gern-Schalter rechts. Darunter das Feld für eigene Tracker. */
+.wahl h1 { margin-bottom:6px; }
+.wahl-unterkopf { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+.wahl-liste { display:grid; gap:8px; }
+.wahl-zeile { display:flex; align-items:center; gap:8px; padding:0 10px 0 0; border:1px solid var(--linie); border-radius:12px; background:var(--surface); }
+.wahl-zeile[data-an="true"] { border-color:color-mix(in oklab, var(--v) 70%, var(--linie)); background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); }
+.wahl-knopf { flex:1; min-width:0; display:flex; align-items:center; gap:10px; text-align:left; background:none; border:0; padding:13px 0 13px 14px; font:500 17px var(--serif); }
+.wahl-haken { width:14px; flex:none; color:var(--v); font:600 14px var(--sans); }
+/* Ein leiser Schalter: Umriss, gefüllt nur, wenn an. */
+.chip-knopf { flex:none; border:1px solid var(--linie-stark); background:transparent; color:var(--leise); border-radius:99px; padding:4px 11px; font-size:13px; }
+.chip-knopf.klein { font-size:12px; padding:3px 9px; }
+.chip-knopf[aria-pressed="true"] { border-color:var(--v, var(--moss)); color:var(--v, var(--moss)); background:color-mix(in oklab, var(--v, var(--moss)) var(--hauch), transparent); }
+.wahl-unterkopf .chip-knopf { --v:var(--moss); }
+.wahl-neu { display:flex; gap:8px; align-items:center; margin:12px 0 4px; }
+.wahl-neu input { flex:1; min-width:0; font:inherit; font-size:15px; padding:10px 12px; border:1px dashed var(--linie-stark); border-radius:12px; background:transparent; color:var(--ink); }
+.wahl-neu input:focus { border-style:solid; }
 .wahl > .gross { margin-top:14px; width:100%; }
 
 /* Bogen */
 dialog#bogen { border:0; border-radius:18px; padding:0; width:min(420px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px -20px #0006; }
-dialog#bogen::backdrop { background:#20231F44; }
+dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transparent); }
+/* Ein Eintrag trägt oben die Farbe seines Verzichts, eine Ebene die ihre. */
+.bogen-inhalt[data-v] { box-shadow:inset 0 3px 0 var(--v); }
+.bogen-inhalt[data-v] > .rubrik:first-child { color:var(--v); }
+.bogen-inhalt[data-ebene] { box-shadow:inset 0 3px 0 var(--e); }
+.bogen-inhalt[data-ebene] > .rubrik:first-child { color:var(--e); }
 .bogen-inhalt { padding:22px 20px 18px; display:grid; gap:12px; }
 .bogen-inhalt > p { margin:0; }
 .wahlreihe { display:flex; gap:6px 14px; flex-wrap:wrap; align-items:center; }
@@ -83,7 +144,14 @@ dialog#bogen::backdrop { background:#20231F44; }
 .chip { position:relative; }
 .chip input { position:absolute; opacity:0; inset:0; margin:0; }
 .chip span { display:inline-block; padding:6px 12px; border:1px solid var(--linie-stark); border-radius:99px; font-size:13px; }
-.chip input:checked + span { border-color:var(--teal); color:var(--teal); background:color-mix(in srgb, var(--teal) 8%, transparent); }
+.chip { --c:var(--teal); }
+/* Die Grundgefühle, jedes in seiner Farbe. Wut ist Orange, nicht Rot. */
+.chip[data-wert="Angst"] { --c:var(--lila); }
+.chip[data-wert="Wut"] { --c:var(--clay); }
+.chip[data-wert="Trauer"] { --c:var(--blau); }
+.chip[data-wert="Freude"] { --c:var(--gelb); }
+.chip[data-wert="weiß nicht"] { --c:var(--leise); }
+.chip input:checked + span { border-color:var(--c); color:var(--c); background:color-mix(in oklab, var(--c) var(--hauch), transparent); }
 .chip input:focus-visible + span { outline:2px solid var(--teal); outline-offset:2px; }
 .begleitung { text-align:center; justify-items:center; }
 .welle { width:140px; height:140px; border-radius:50%; border:1.5px solid var(--mist); margin:10px; animation:atmen 9s ease-in-out infinite; }
@@ -95,34 +163,27 @@ dialog#bogen::backdrop { background:#20231F44; }
 .ebene ul { margin:0 0 10px; padding-left:18px; font-family:var(--serif); }
 .zitat { display:block; font-family:var(--serif); font-style:italic; color:var(--ink); }
 .zitat.wahl { font-family:var(--sans); font-style:normal; font-size:13px; color:var(--leise); }
-.monat { display:grid; grid-template-columns:repeat(7, 22px); gap:10px; margin:6px 0 14px; }
 
 #meldung { position:fixed; left:50%; top:max(16px, env(safe-area-inset-top)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
 
 /* Ansicht Knopf */
 .ansicht-knopf { display:grid; gap:18px; justify-items:center; }
-.ansicht-knopf .kopf { width:100%; margin:0; }
-.punkte { display:flex; gap:8px; }
-.punkt-knopf { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--teal); background:transparent; padding:0; }
-.punkt-knopf[data-neu="true"] { background:var(--teal); }
-.reiter { display:flex; gap:18px; }
+.ansicht-knopf .kopf, .ansicht-knopf .oben, .ansicht-knopf .unten { width:100%; margin:0; }
+.reiter { display:flex; align-items:center; justify-content:center; gap:14px; width:100%; }
+.reiter-tabs { display:flex; flex-wrap:wrap; justify-content:center; gap:4px 18px; }
 .reiter .text { color:var(--leise); }
-.reiter .text[aria-selected="true"] { color:var(--ink); border-bottom:1.5px solid var(--ink); }
+.reiter .text[aria-selected="true"] { color:var(--ink); border-bottom:2px solid var(--v, var(--ink)); }
 .ansicht-knopf .zk { width:100%; --zk-hoehe:260px; --zk-grund:var(--surface); --zk-linie:var(--linie-stark); --zk-an:var(--clay); --zk-text:var(--ink); --zk-neben:var(--leise); }
-.drang-knopf { width:100%; padding:16px; border:1px dashed var(--linie-stark); border-radius:16px; background:transparent; font:17px var(--serif); }
-.plus { margin-top:24px; display:grid; justify-items:center; gap:4px; }
+.drang-knopf { width:100%; padding:16px; border:1px dashed color-mix(in oklab, var(--teal) 45%, var(--linie-stark)); border-radius:16px; background:transparent; font:17px var(--serif); }
 
 /* Ansicht Blatt */
-.blatt-zeile { display:grid; grid-template-columns:28px 1fr auto; gap:14px; align-items:start; padding:16px 0; border-top:1px solid var(--linie); }
+.blatt-zeile { display:grid; grid-template-columns:28px 1fr; gap:14px; align-items:start; padding:14px 0; border-top:1px solid var(--linie); }
 .blatt-zeile strong { font:500 17px var(--serif); }
+/* Ein Punkt in der Farbe des Verzichts vor dem Namen. */
+.blatt-zeile .v-name::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--v); margin-right:8px; vertical-align:.12em; }
 .blatt-liste { list-style:none; margin:2px 0 0; padding:0; font-size:13px; color:var(--leise); }
-.blatt-aktionen { display:grid; justify-items:end; font-size:14px; }
+.blatt-aktionen { display:flex; flex-wrap:wrap; gap:2px 16px; font-size:14px; margin-top:2px; }
 .blatt-aktionen .text { padding:3px 0; }
-.blatt-mehr { margin-top:40px; border-top:1px solid var(--linie); padding-top:12px; }
-.blatt-mehr summary { color:var(--leise); cursor:pointer; font-size:14px; }
-.blatt-ebene { display:grid; padding:10px 0 4px; }
-.blatt-ebene[data-stand="zu"] .blatt-titel { color:var(--leise); opacity:.7; }
-.blatt-titel { font-family:var(--serif); }
 
 /* Ansicht Faden */
 .ansicht-faden h1 { font-size:27px; margin-bottom:18px; }
@@ -130,5 +191,103 @@ dialog#bogen::backdrop { background:#20231F44; }
 .verb { font-family:var(--serif); font-size:16px; text-decoration:underline; text-decoration-color:var(--linie-stark); text-underline-offset:3px; }
 .faden { list-style:none; padding:0; margin:30px 0 0; border-left:1px solid var(--linie); }
 .faden li { padding:6px 0 6px 16px; }
+.verben .leise.v-name { color:var(--v); }
 .faden-kopf { padding-top:18px !important; }
-.faden-spur, .faden-angebot, .faden-an { border-left:2px solid var(--teal); margin-left:-1.5px; }
+.faden-spur { border-left:2px solid var(--e, var(--teal)); margin-left:-1.5px; }
+.faden-eintrag { border-left:2px solid color-mix(in oklab, var(--v) 55%, transparent); margin-left:-1.5px; }
+
+/* Kopf und Lauf — aus lifetracker (.hero, .chain). Die Kette bricht nie um:
+   die Glieder teilen sich die Breite und sind bei 9px gedeckelt, damit eine
+   kurze Kette nicht zu Klötzen wird. */
+/* Oben: der Leitgedanke allein ist eine Zeile; mit dem Lauf ein Raster aus
+   Zahl, Text und der Kette darunter. */
+.oben { margin:0 0 16px; position:relative; }
+.oben.lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; row-gap:10px; border-radius:14px; }
+.lauf-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.lauf-zeile { font-size:17px; line-height:1.25; text-wrap:balance; }
+/* Der Leitgedanke ist ein Satz, kein Knopf: er sieht aus wie Text und lässt
+   sich antippen. Ein zarter Unterstrich verrät es. */
+button.leitgedanke { background:none; border:0; padding:0; text-align:left; color:var(--ink);
+  text-decoration:underline; text-decoration-color:var(--linie-stark); text-decoration-thickness:1px; text-underline-offset:4px; }
+.leit-bogen h2 { font-style:italic; }
+.leit-frueher summary { cursor:pointer; font-size:13px; }
+.leit-frueher .zitat { margin:6px 0 0; font-size:14px; }
+.woche .woche-leit { font-size:12.5px; font-style:italic; }
+/* Die beiden Angaben trennt der Abstand, kein Zeichen (aus lifetracker). */
+.lauf-unter { font-size:13px; line-height:1.4; display:flex; flex-wrap:wrap; column-gap:12px; row-gap:2px; }
+.frei-knopf { padding:0 !important; font-size:13px; }
+.frei-knopf[aria-pressed="true"] { color:var(--leise); }
+.kette-zeile { grid-column:1 / -1; }
+.lauf-zahl { display:flex; flex-direction:column; align-items:center; width:54px; color:var(--leise); }
+.lauf-zahl .n { font:500 30px/1 var(--serif); font-variant-numeric:tabular-nums; color:var(--linie-stark); }
+.lauf-zahl.an .n { color:var(--moss); }
+.lauf-zahl .u { font-size:10.5px; line-height:1.2; text-align:center; letter-spacing:.03em; }
+.kette-zeile { display:flex; align-items:center; gap:10px; min-width:0; }
+.kette-zeile .klein { flex:none; font-size:11.5px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.kette { flex:1; min-width:0; display:flex; align-items:center; gap:1.1%; }
+.glied { flex:1 1 0; min-width:0; max-width:9px; aspect-ratio:1; border-radius:50%; background:var(--hm-leer); border:1.5px solid transparent; }
+.glied[data-stand="dabei"] { background:var(--moss); }
+/* Ein ausgelassener Tag ist ein graues Rund, ein Tag, den es noch nicht gibt, nur ein Ring. */
+.glied[data-stand="kommt"] { background:none; border-color:var(--linie-stark); }
+.glied[data-heute] { border-color:var(--leise); }
+/* Frei genommen ist nicht leer geblieben: ein warmes Grau, weder Farbe noch Lücke. */
+.glied[data-stand="frei"] { background:var(--frei); }
+
+/* Kleine Momente. Heute kommt dazu: das Glied pulsiert einmal. Eine Stufe
+   ist gesprengt: der Kopf leuchtet kurz auf. Sonst passiert nichts. */
+.glied.pling { animation:pling .55s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pling { 0% { transform:scale(1); } 45% { transform:scale(1.7); } 100% { transform:scale(1); } }
+.lauf.blitz::after { content:""; position:absolute; inset:-8px -6px; border-radius:16px; pointer-events:none;
+  background:radial-gradient(circle at 12% 40%, color-mix(in oklab, var(--moss) 30%, transparent), transparent 65%);
+  animation:blitz .9s ease-out forwards; }
+@keyframes blitz { from { opacity:1; } to { opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .glied.pling, .lauf.blitz::after { animation:none; } .lauf.blitz::after { display:none; } }
+
+/* Die große Heatmap — aus lifetracker (.hm-*): eine Spalte je Woche. */
+.hm { display:grid; gap:10px; }
+.hm-kal { display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px 6px; }
+.hm-monate { grid-column:2; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); font-size:10px; color:var(--leise); white-space:nowrap; }
+.hm-wt { grid-column:1; min-width:18px; display:grid; grid-template-rows:repeat(7,1fr); font-size:10px; color:var(--leise); align-items:center; }
+.hm-gitter { grid-column:2; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); grid-template-rows:repeat(7,auto); gap:3px; }
+.hm-zelle { width:100%; aspect-ratio:1; border-radius:3.5px; background:var(--hm-leer); border:1.5px solid transparent; }
+/* Leere Tage außerhalb des Oktobers treten zurück; notierte bleiben lesbar. */
+.hm-zelle[data-rand] { opacity:.45; }
+.hm-zelle[data-kommt] { background:none !important; border-color:var(--linie); }
+.hm-zelle[data-kommt][data-leer] { border-color:transparent; }
+.hm-zelle[data-heute] { border-color:var(--ink); }
+.hm-zelle[data-frei] { background:repeating-linear-gradient(135deg, var(--frei) 0 2px, var(--hm-leer) 2px 4px) !important; }
+.hm-legende { display:flex; align-items:center; justify-content:flex-end; gap:5px; font-size:11px; color:var(--leise); }
+.hm-legende .hm-zelle { width:11px; height:11px; aspect-ratio:auto; flex:none; }
+
+/* Rückblick in Wochen */
+.woche { display:grid; gap:4px; padding:10px 0 12px; border-top:1px solid var(--linie); }
+.woche p { margin:0 !important; }
+.woche-je { list-style:none; padding:0 !important; margin:2px 0 4px !important; font-family:var(--sans) !important; font-size:13px; color:var(--leise); }
+.woche-je li::before { content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--v); margin-right:7px; vertical-align:.1em; }
+.woche .zitat { border-left:2px solid color-mix(in oklab, var(--v) 55%, transparent); padding-left:8px; font-size:14px; }
+
+/* Aufgeräumt: der Satz des Commitments ist ein Satz, keine Überschrift. */
+.ansicht-blatt h1, .ansicht-faden h1 { font-size:20px; line-height:1.35; margin:0 0 10px; }
+
+/* Unten: Karten, eine je Baustein, mit Luft dazwischen. */
+.unten { display:grid; gap:14px; margin-top:32px; }
+.karte { display:grid; gap:10px; padding-top:14px; border-top:1px solid var(--linie); }
+.karte-kopf { display:flex; justify-content:space-between; align-items:baseline; }
+.ebene-knopf { display:grid; gap:1px; text-align:left; background:none; border:0; padding:6px 0; position:relative; }
+.ebene-knopf .rubrik { color:var(--e); }
+.ebene-knopf .punkt { position:absolute; right:0; top:50%; }
+
+/* Einstellungen */
+.ansicht-wahl { display:grid; gap:6px; }
+.ansicht-option { display:grid; grid-template-columns:auto 1fr; column-gap:10px; align-items:baseline; padding:4px 0; }
+.ansicht-option .klein { grid-column:2; }
+.bausteine { gap:2px; }
+.baustein { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:start; padding:6px 0; }
+.baustein input { margin-top:4px; accent-color:var(--moss); }
+.baustein-text { display:grid; gap:1px; }
+.baustein-mehr { padding:0 0 4px 26px !important; font-size:13px; }
+
+/* Das „+" für einen weiteren Tracker: leise, am Ende der Liste. */
+.plus-tracker { color:var(--leise) !important; font-size:14px; }
+.reiter .plus-tracker { font-size:18px; line-height:1; padding:4px 8px !important; border:1px solid var(--linie-stark); border-radius:99px; }
+.ansicht-blatt > .plus-tracker { margin-top:4px; border-top:1px solid var(--linie); width:100%; padding-top:12px !important; }

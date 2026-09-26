@@ -4,8 +4,8 @@
    mögliche Spur", keine Anweisung, keine Diagnose). Sie sind fachlich
    nicht geprüft und stehen deshalb hier, getrennt von der Mechanik. */
 
-import { VERZICHTE, oktober, tagesKopf } from "./logik.js";
-import { verschiebe } from "../kern/datum.js";
+import { verzichte, tagesKopf, wochen, wasTraegt } from "./logik.js";
+import { faerbe } from "./ansichten/teile.js";
 
 export function ebenenInhalt(id, z, heute) {
   const d = document.createElement("div");
@@ -23,7 +23,7 @@ export function ebenenInhalt(id, z, heute) {
       const ul = document.createElement("ul");
       z.ereignisse.filter((e) => e.antworten.davor).slice(-8).forEach((e) => {
         const li = document.createElement("li");
-        li.textContent = `„${e.antworten.davor}“ · ${VERZICHTE[e.verzicht].name}, ${tagesKopf(e.tag)}`;
+        li.textContent = `„${e.antworten.davor}“ · ${verzichte(z)[e.verzicht].name}, ${tagesKopf(e.tag)}`;
         ul.append(li);
       });
       if (ul.children.length) d.append(ul);
@@ -39,24 +39,59 @@ export function ebenenInhalt(id, z, heute) {
       p("Eine mögliche Spur, von anderen: warmes Wasser statt Kaffee · fünf Minuten raus statt Kippe · ein Kapitel statt einer Folge.", "leise");
       break;
     }
-    case "verlauf": {
-      const reihe = document.createElement("div");
-      reihe.className = "monat";
-      const { start } = oktober(heute);
-      for (let i = 0; i < 31; i++) {
-        const tag = verschiebe(start, i);
-        const k = document.createElement("span");
-        k.className = "kreis klein";
-        k.title = `Tag ${i + 1}`;
-        const es = z.ereignisse.filter((e) => e.tag === tag);
-        if (es.some((e) => e.art === "ohne")) k.dataset.ohne = "";
-        if (es.some((e) => e.art === "habe")) k.dataset.spur = "";
-        if (es.some((e) => e.art === "drang")) k.dataset.drang = "";
-        if (tag === heute) k.dataset.heute = "";
-        reihe.append(k);
+    case "rueckblick": {
+      const V = verzichte(z);
+      const ws = wochen(z, heute);
+      if (!ws.length) p("Der Rückblick beginnt mit dem Oktober.", "leise");
+      for (const w of ws) {
+        const b = document.createElement("section");
+        b.className = "woche";
+        const kopf = document.createElement("p");
+        kopf.className = "rubrik";
+        kopf.textContent = `${w.titel} · ${w.von}.–${w.bis}. Oktober`;
+        const satz = document.createElement("p");
+        satz.textContent = `An ${w.dabei} von ${w.tage} ${w.tage === 1 ? "Tag" : "Tagen"} dabei` +
+          (w.frei ? `, ${w.frei === 1 ? "einer" : w.frei} davon frei genommen.` : ".");
+        b.append(kopf, satz);
+        const lg = document.createElement("p");
+        lg.className = "leise woche-leit";
+        lg.textContent = `Leitgedanke: „${w.leitgedanke}“`;
+        b.append(lg);
+        const ul = document.createElement("ul");
+        ul.className = "woche-je";
+        for (const [v, n] of Object.entries(w.je)) {
+          const teile = [];
+          if (n.ohne) teile.push(`${n.ohne}× ohne`);
+          if (n.habe) teile.push(`${n.habe}× ${V[v].habe}`);
+          if (n.drang) teile.push(`${n.drang}× ${V[v].drang}`);
+          if (!teile.length) continue;
+          const li = document.createElement("li");
+          faerbe(li, V, v);
+          li.textContent = `${V[v].name}: ${teile.join(", ")}`;
+          ul.append(li);
+        }
+        if (ul.children.length) b.append(ul);
+        for (const s of w.saetze.slice(-3)) {
+          const q = document.createElement("p");
+          q.className = "zitat";
+          faerbe(q, V, s.v);
+          q.textContent = `„${s.text}“`;
+          b.append(q);
+        }
+        d.append(b);
       }
-      d.append(reihe);
-      p("Ein leerer Kreis heißt: nichts bekannt. Nicht: nicht geschafft. Gestrichelt: ein Würde-gern-Moment. Ein Punkt: etwas ist geschehen.", "leise");
+      const traegt = wasTraegt(z);
+      if (traegt.length) {
+        p("Was trägt — in deinen Worten, nach Häufigkeit:", "leise");
+        const ul = document.createElement("ul");
+        for (const t of traegt) {
+          const li = document.createElement("li");
+          li.textContent = t.n > 1 ? `${t.text} (${t.n}×)` : t.text;
+          ul.append(li);
+        }
+        d.append(ul);
+      }
+      p("Hier ist sichtbar, was du notiert hast. Eine Bewertung steht hier nicht.", "leise");
       break;
     }
   }

@@ -1,5 +1,5 @@
-/* Was alle drei Ansichten teilen: der Kopf und ein paar Bausteine. Das
-   Layout darunter gehört jeder Ansicht selbst. */
+/* Was alle drei Ansichten teilen: die Kopfzeile und ein paar Helfer. Was
+   darüber hinaus oben und unten steht, sind Bausteine (../bausteine/). */
 
 export function el(tag, klasse, text) {
   const e = document.createElement(tag);
@@ -15,6 +15,14 @@ export function knopf(text, klasse, beiKlick) {
   return b;
 }
 
+/** Die Farbe eines Trackers an ein Element: data-v für die festen, dazu
+    --v direkt für die eigenen (die haben keine feste Regel im Stylesheet). */
+export function faerbe(e, V, v) {
+  e.dataset.v = V[v]?.eigen ? "eigen" : v;
+  if (V[v]?.farbe) e.style.setProperty("--v", V[v].farbe);
+  return e;
+}
+
 /** Die Kopfzeile: links der Tag, rechts optional etwas, dann „Einstellungen". */
 export function kopf(api, rechts) {
   const k = el("header", "kopf");
@@ -26,6 +34,14 @@ export function kopf(api, rechts) {
   r.append(e);
   k.append(r);
   return k;
+}
+
+/** Das „+" für einen weiteren Tracker, in jeder Ansicht an derselben Stelle
+    der Liste: am Ende. */
+export function plusTracker(api, text = "+ Tracker") {
+  const b = knopf(text, "text plus-tracker", () => api.neuerTracker());
+  b.setAttribute("aria-label", "Weiteren Tracker hinzufügen");
+  return b;
 }
 
 /** Wie ein Eintrag in einer Zeile heißt. */

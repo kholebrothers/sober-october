@@ -15,8 +15,20 @@ Nicht als Datei, aber inhaltlich übernommen:
 
 - **Fragen** „Was war kurz davor?“ und „Was hätte auch gepasst?“: `smokefree/modul.js`
   (`FRAGEN_ZIGARETTE`), dort aus lifetracker `RUECK`.
-- **Palette, offener Kreis, Microcopy, kein Rot**: `mahlzeit/docs/GESTALT.md`, Werte für hell und
-  dunkel über `smokefree/index.html`.
+- **Lauf, Fibonacci-Kette und große Heatmap**: `lifetracker/public/app.js` (`personStreak`,
+  `kettenLauf`, `bestStreak`, `heatmap`) und `style.css` (`.hero`, `.chain`, `.hm-*`), Stand `43ab26c`.
+  Neu geschrieben als Module (`logik.js`: `serie`, `lauf`, `besterLauf`, `heatWochen`;
+  `ansichten/heatmap.js`). Anders als dort: „dabei" heißt *eine Notiz, gleich welche*, die
+  Heatmap zeigt den eigenen Anteil statt des Teams, in Moos statt Flamme.
+- **Leitgedanke, freier Tag, Rückblick, Abendruhe, Offline-Start**: lifetracker (`tagLine`/`tagSub`,
+  `FEIER`, Kurviertel und „Was trägt“, `sonne`/`phase` und Nachtmodus, `public/sw.js`,
+  `manifest.webmanifest`, `tools/icons-bauen.js`). Angepasst: der Nachtmodus springt nicht ins
+  Dunkle, sondern rückt das Papier um eine Flexoki-Stufe; der Service Worker hat keine
+  `/api/`-Regel, weil es keinen Server gibt; die Symbole zeigen den offenen Kreis statt des Eis.
+- **Palette**: [Flexoki](https://stephango.com/flexoki) von Steph Ango (MIT), hell die 600er-,
+  dunkel die 400er-Töne; Flexoki-Rot ist bewusst nicht übernommen. Eine Farbe je Verzicht, je
+  Art von Ebene und je Grundgefühl, leise eingesetzt (Rand, Punkt, Hauch von Grund).
+- **Offener Kreis, Microcopy, kein Rot**: `mahlzeit/docs/GESTALT.md`.
 - **Haltung und Event-Denken** („Module interpretieren Events“, Häkchen heißt nur *Beobachtung
   liegt vor*): `mahlzeit/docs/PLATTFORM.md`.
 - **Kein Build-Schritt, Datenschlüssel sind unantastbar**: kur-core README.
