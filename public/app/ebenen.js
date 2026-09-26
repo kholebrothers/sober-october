@@ -6,6 +6,7 @@
 
 import { verzichte, tagesKopf, besterLauf, wochen, wasTraegt } from "./logik.js";
 import { heatmap } from "./ansichten/heatmap.js";
+import { faerbe } from "./ansichten/teile.js";
 
 export function ebenenInhalt(id, z, heute) {
   const d = document.createElement("div");
@@ -66,7 +67,7 @@ export function ebenenInhalt(id, z, heute) {
           if (n.drang) teile.push(`${n.drang}× ${V[v].drang}`);
           if (!teile.length) continue;
           const li = document.createElement("li");
-          li.dataset.v = v;
+          faerbe(li, V, v);
           li.textContent = `${V[v].name}: ${teile.join(", ")}`;
           ul.append(li);
         }
@@ -74,7 +75,7 @@ export function ebenenInhalt(id, z, heute) {
         for (const s of w.saetze.slice(-3)) {
           const q = document.createElement("p");
           q.className = "zitat";
-          q.dataset.v = s.v;
+          faerbe(q, V, s.v);
           q.textContent = `„${s.text}“`;
           b.append(q);
         }

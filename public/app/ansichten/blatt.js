@@ -3,7 +3,7 @@
    Ebenen sind da, aber gefaltet ganz unten — gesperrte zeigen, wie sie
    aufgehen. */
 
-import { el, knopf, kopf, wasText } from "./teile.js";
+import { el, knopf, kopf, wasText, faerbe } from "./teile.js";
 import { heatmap } from "./heatmap.js";
 
 let mehrOffen = false;
@@ -18,7 +18,7 @@ export function render(api) {
     const es = api.heuteVon(v);
     const ohne = es.some((e) => e.art === "ohne");
     const zeile = el("div", "blatt-zeile");
-    zeile.dataset.v = v;
+    faerbe(zeile, VERZICHTE, v);
     const kreis = el("span", "kreis");
     if (ohne) kreis.dataset.ohne = "";
     if (es.some((e) => e.art === "habe")) kreis.dataset.spur = "";
@@ -27,12 +27,12 @@ export function render(api) {
     mitte.append(el("strong", "v-name", V.name));
     const liste = el("ul", "blatt-liste");
     for (const e of es.filter((e) => e.art !== "ohne")) liste.append(el("li", null, `${e.zeit} · ${wasText(api, e)}`));
-    mitte.append(liste);
     const aktionen = el("div", "blatt-aktionen");
     aktionen.append(knopf("habe", "text", () => api.eintragen(v, "habe")));
     if (z.commitment[v].drang) aktionen.append(knopf("würde gern", "text", () => api.eintragen(v, "drang")));
     if (!es.some((e) => e.art === "habe")) aktionen.append(knopf(ohne ? "✓ heute ohne" : "heute ohne", "text", () => api.ohne(v)));
-    zeile.append(kreis, mitte, aktionen);
+    mitte.append(aktionen, liste);
+    zeile.append(kreis, mitte);
     s.append(zeile);
   }
 

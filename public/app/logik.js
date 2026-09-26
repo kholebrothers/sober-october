@@ -28,23 +28,68 @@ export const VERZICHTE = {
 /** Die drei festen Verzichte, die „Alles" auf einmal wählt. */
 export const FEST = Object.keys(VERZICHTE);
 
-/* Die eigene Definition: ein Verzicht, dessen Namen der Mensch selbst
-   schreibt („Alkohol", „Zucker", „Social Media"). Der Name steht in
-   `z.eigen.name`, getrennt vom Commitment, damit er beim Abwählen nicht
-   verloren geht. Er bleibt auf dem Gerät, siehe fuerKern(). */
+/* Eigene Tracker: so viele, wie man will, jederzeit dazu. Den Namen schreibt
+   der Mensch selbst („Alkohol", „Zucker", „Social Media"). Er steht in
+   `z.eigene`, getrennt vom Commitment, damit er beim Abwählen nicht verloren
+   geht, und bleibt auf dem Gerät, siehe fuerKern(). Der erste heißt `eigen`
+   — so hieß die eine eigene Definition, die es vorher gab. */
 export const EIGEN = "eigen";
+const EIGEN_ID = /^eigen(-[a-z0-9]{1,12})?$/;
 const EIGEN_LAENGE = 60;
 
+/* Eigene Tracker bekommen Töne aus der Magenta-Familie, damit sie sich von
+   den festen (gelb, blau, lila) und den Bedeutungsfarben unterscheiden. */
+const EIGEN_FARBEN = [
+  "var(--magenta)",
+  "color-mix(in oklab, var(--magenta) 55%, var(--gelb))",
+  "color-mix(in oklab, var(--magenta) 55%, var(--blau))",
+  "color-mix(in oklab, var(--magenta) 60%, var(--leise))",
+];
+
 /** Der Name, wie er in Sätzen steht: „kein Alkohol" wird „Alkohol". */
-export function eigenerName(z) {
-  return String(z.eigen?.name || "").trim().replace(/^kein(e|en|em|er|es)?\s+/i, "").trim();
+export const saubererName = (name) =>
+  String(name || "").replace(/\s+/g, " ").trim().replace(/^kein(e|en|em|er|es)?\s+/i, "").trim().slice(0, EIGEN_LAENGE);
+
+/** Alle Tracker dieses Zustands — die festen und die eigenen. */
+export function verzichte(z) {
+  const alle = { ...VERZICHTE };
+  z.eigene.forEach((e, i) => {
+    const name = saubererName(e.name) || "Eigenes";
+    alle[e.id] = { name, satz: name, habe: `${name} — ist geschehen`, drang: `würde gern: ${name}`,
+      eigen: true, farbe: EIGEN_FARBEN[i % EIGEN_FARBEN.length] };
+  });
+  return alle;
 }
 
-/** Alle Verzichte dieses Zustands — die festen und, immer, der eigene. */
-export function verzichte(z) {
-  const name = eigenerName(z) || "Eigenes";
-  return { ...VERZICHTE, [EIGEN]: { name, satz: name, habe: `${name} — ist geschehen`, drang: `würde gern: ${name}` } };
+/** Ein eigener Tracker mehr. Gibt seine id zurück, oder null ohne Namen. Er
+    ist gleich gewählt; einen gleichnamigen gibt es nicht zweimal. */
+export function fuegeEigenenHinzu(z, name) {
+  const n = saubererName(name);
+  if (!n) return null;
+  const da = z.eigene.find((e) => saubererName(e.name).toLowerCase() === n.toLowerCase());
+  const id = da ? da.id : z.eigene.some((e) => e.id === EIGEN) ? `eigen-${neueId().slice(0, 8)}` : EIGEN;
+  if (!da) z.eigene.push({ id, name: n });
+  z.commitment[id] ||= { drang: true };
+  return id;
 }
+
+export function benenneEigenen(z, id, name) {
+  const n = saubererName(name), e = z.eigene.find((x) => x.id === id);
+  if (!n || !e) return false;
+  e.name = n;
+  return true;
+}
+
+/** Entfernen geht nur, solange nichts dazu notiert ist — sonst hingen
+    Notizen ohne Namen herum. Abwählen geht immer. */
+export function entferneEigenen(z, id) {
+  if (z.ereignisse.some((e) => e.verzicht === id)) return false;
+  z.eigene = z.eigene.filter((e) => e.id !== id);
+  delete z.commitment[id];
+  return true;
+}
+
+export const hatNotizen = (z, id) => z.ereignisse.some((e) => e.verzicht === id);
 
 export const ANSICHTEN = {
   knopf: "Knopf — ein Verzicht auf einmal",
@@ -101,7 +146,7 @@ export const EBENEN = [
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigen: { name: "" }, ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], abends: true, leitgedanken: [] };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], abends: true, leitgedanken: [] };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -112,13 +157,20 @@ export function aus(text) {
   try { roh = JSON.parse(text); } catch { return neuerZustand(); }
   if (!roh || typeof roh !== "object" || roh.v !== VERSION) return neuerZustand();
   const z = neuerZustand();
+  if (Array.isArray(roh.eigene))
+    for (const e of roh.eigene)
+      if (e && EIGEN_ID.test(e.id) && saubererName(e.name) && !z.eigene.some((x) => x.id === e.id))
+        z.eigene.push({ id: e.id, name: String(e.name).slice(0, EIGEN_LAENGE) });
+  // Die eine eigene Definition von vorher wird der erste eigene Tracker.
+  if (roh.eigen && saubererName(roh.eigen.name) && !z.eigene.some((x) => x.id === EIGEN))
+    z.eigene.unshift({ id: EIGEN, name: String(roh.eigen.name).slice(0, EIGEN_LAENGE) });
+  const ids = [...FEST, ...z.eigene.map((e) => e.id)];
   if (roh.commitment && typeof roh.commitment === "object")
-    for (const k of [...FEST, EIGEN])
+    for (const k of ids)
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
-  if (roh.eigen && typeof roh.eigen.name === "string") z.eigen.name = roh.eigen.name.slice(0, EIGEN_LAENGE);
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
   if (Array.isArray(roh.ereignisse))
-    z.ereignisse = roh.ereignisse.filter((e) => e && (VERZICHTE[e.verzicht] || e.verzicht === EIGEN) && ["habe", "drang", "ohne"].includes(e.art))
+    z.ereignisse = roh.ereignisse.filter((e) => e && ids.includes(e.verzicht) && ["habe", "drang", "ohne"].includes(e.art))
       .map((e) => ({ ...e, antworten: e.antworten && typeof e.antworten === "object" ? e.antworten : {} }));
   if (roh.frei && typeof roh.frei === "object")
     for (const eb of EBENEN) if (roh.frei[eb.id]) z.frei[eb.id] = roh.frei[eb.id];
@@ -133,13 +185,8 @@ export function aus(text) {
   return z;
 }
 
-/** Was gewählt ist. Die eigene Definition zählt erst, wenn sie einen Namen hat. */
-export const gewaehlt = (z) => [...FEST, EIGEN].filter((k) => z.commitment[k] && (k !== EIGEN || eigenerName(z)));
-
-/** Setzt den Namen der eigenen Definition, gekürzt auf eine Zeile. */
-export function setzeEigen(z, name) {
-  z.eigen.name = String(name).replace(/\s+/g, " ").slice(0, EIGEN_LAENGE);
-}
+/** Was gewählt ist: erst die festen, dann die eigenen in ihrer Reihenfolge. */
+export const gewaehlt = (z) => [...FEST, ...z.eigene.map((e) => e.id)].filter((k) => z.commitment[k]);
 
 /** „Alles": wählt die drei festen Verzichte — oder, wenn sie schon alle
     gewählt sind, wieder ab. Die eigene Definition bleibt, wie sie ist. */
@@ -298,9 +345,10 @@ export function besterLauf(z, heute) {
   return best;
 }
 
-/* Die große Heatmap: eine Spalte je Woche (Montag oben), 13 Wochen, die den
-   Oktober ganz enthalten — vorher und mittendrin endet sie mit dem
-   31. Oktober, danach mit heute. Tage nach heute stehen leer. */
+/* Die große Heatmap: eine Spalte je Woche (Montag oben). Sie beginnt mit
+   der Woche des 1. September — der Monat davor ist die Vorbereitung — und
+   endet mit dem 31. Oktober, danach mit heute; höchstens 13 Wochen, dann
+   rückt der Anfang mit. Tage nach heute stehen leer. */
 export const HEAT_WOCHEN = 13;
 
 /** Wie voll ein Tag war: Anteil der gewählten Verzichte mit einer Notiz. */
@@ -311,17 +359,18 @@ export function tagesAnteil(z, tag) {
   return Math.min(1, da.size / Math.max(1, gew.length));
 }
 
-/** Wochen als Listen von Tagen (Mo–So), dazu der Tag, an dem sie endet. */
+/** Wochen als Listen von Tagen (Mo–So). */
 export function heatWochen(heute) {
   const { start } = oktober(heute);
+  const montag = (t) => verschiebe(t, -((alsDatum(t).getDay() + 6) % 7));
   const ende = [verschiebe(start, 30), heute].sort().at(-1);
-  const e = alsDatum(ende);
-  const letzterMontag = verschiebe(ende, -((e.getDay() + 6) % 7));
-  const erster = verschiebe(letzterMontag, -7 * (HEAT_WOCHEN - 1));
+  const letzterMontag = montag(ende);
+  const vomSeptember = tageZwischen(montag(verschiebe(start, -30)), letzterMontag) / 7 + 1;
+  const n = Math.min(HEAT_WOCHEN, vomSeptember);
   const wochen = [];
-  for (let w = 0; w < HEAT_WOCHEN; w++) {
+  for (let w = 0; w < n; w++) {
     const woche = [];
-    for (let i = 0; i < 7; i++) woche.push(verschiebe(erster, w * 7 + i));
+    for (let i = 0; i < 7; i++) woche.push(verschiebe(letzterMontag, -7 * (n - 1 - w) + i));
     wochen.push(woche);
   }
   return wochen;
@@ -450,8 +499,8 @@ export function wasTraegt(z, n = 3) {
  * Was später auf den Server darf: die Teilnahme. Einstellung `commitment`
  * als kurzer Text, und je Tag mit irgendeiner Notiz (oder frei genommen)
  * ein `dabei: true`.
- * Keine Einträge, keine Antworten, keine Zählungen. Von der eigenen
- * Definition nur der Schlüssel `eigen`, nicht ihr Name: der kann so
+ * Keine Einträge, keine Antworten, keine Zählungen. Von eigenen Trackern
+ * nur der Schlüssel (`eigen`, `eigen-…`), nicht ihr Name: der kann so
  * persönlich sein wie eine Antwort.
  */
 export function fuerKern(z, heute) {

@@ -9,8 +9,8 @@
 
 import { heute as heuteTag } from "../kern/datum.js";
 import {
-  FRAGEN, EBENEN, ANSICHTEN, FEST, EIGEN, verzichte, gewaehlt, commitmentSatz, vonTag,
-  notiere, schalteOhne, schalteAlles, setzeEigen, stand, tagesZeile, serie, lauf,
+  FRAGEN, EBENEN, ANSICHTEN, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
+  notiere, schalteOhne, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   tagesKopf,
 } from "./logik.js";
@@ -18,6 +18,7 @@ import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
+import { faerbe } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
 
@@ -120,7 +121,7 @@ function eintragen(v, art) {
    Was schon ausgefüllt war, bleibt stehen. */
 function begleiten(v, zurueck) {
   const k = el("div", "bogen-inhalt begleitung");
-  k.dataset.v = v;
+  faerbe(k, verzichte(z), v);
   k.append(
     el("p", "rubrik", verzichte(z)[v].name),
     Object.assign(el("div", "welle"), { ariaHidden: "true" }),
@@ -142,7 +143,7 @@ function begleiten(v, zurueck) {
 function fragen(v, art, titel) {
   const V = verzichte(z)[v];
   const f = el("form", "bogen-inhalt");
-  f.dataset.v = v;
+  faerbe(f, verzichte(z), v);
   f.append(el("p", "rubrik", `${V.name} · ${jetztZeit()}`), el("h2", null, titel),
     el("p", "leise", "Alles freiwillig. Ein Wort reicht, keins auch."));
   let begleitetSek = 0;
@@ -243,7 +244,7 @@ function leitgedankeBearbeiten() {
 function einstellungen() {
   const k = el("div", "bogen-inhalt");
   k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)));
-  k.append(knopf("Commitment ändern", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }),
+  k.append(knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }),
     knopf("Leitgedanken ändern", "text", () => leitgedankeBearbeiten()));
 
   const ans = el("fieldset", "frage");
@@ -293,62 +294,95 @@ function melde(text) {
 
 function wahlSeite() {
   const s = el("section", "wahl");
-  s.append(el("p", "rubrik", `Sober October · ${tagesZeile(heute())}`),
-    el("h1", "serif", "Was lässt du im Oktober sein?"),
-    el("p", "leise", "Eins reicht. Bereitschaft genügt."));
   const V = verzichte(z);
-  const los = knopf("So ist es.", "gross", () => { wahlOffen = false; zeichne(); });
-  const umschalten = (id) => () => {
-    if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: true };
-  };
-  const zeile = (id, text, an, beiKlick) => {
-    const r = el("div", "wahl-zeile");
-    r.dataset.v = id;
-    r.dataset.an = an;
-    const b = knopf(an ? `✓ ${text}` : text, "wahl-knopf", () => aendern(beiKlick));
+  const alle = FEST.every((k) => z.commitment[k]);
+  s.append(el("p", "rubrik", `Sober October · ${tagesZeile(heute())}`),
+    el("h1", "serif", "Was lässt du im Oktober sein?"));
+  const unterKopf = el("div", "wahl-unterkopf");
+  const alles = knopf(alle ? "✓ Alles" : "Alles", "chip-knopf", () => aendern(() => schalteAlles(z)));
+  alles.setAttribute("aria-pressed", alle);
+  alles.title = "Kaffee, Kippe und Video auf einmal";
+  unterKopf.append(el("span", "leise", "Eins reicht. Bereitschaft genügt."), alles);
+  s.append(unterKopf);
+
+  /* Eine Zeile je Tracker: links der Name (antippen wählt ihn), rechts, wenn
+     gewählt, ein leiser Schalter für die Würde-gern-Momente. Eigene Tracker
+     haben dazu ein „…" für Umbenennen und Entfernen. */
+  const liste = el("div", "wahl-liste");
+  for (const id of [...FEST, ...z.eigene.map((e) => e.id)]) {
+    const an = !!z.commitment[id];
+    const zeile = faerbe(el("div", "wahl-zeile"), V, id);
+    zeile.dataset.an = an;
+    const b = knopf(V[id].name, "wahl-knopf", () => aendern(() => {
+      if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: true };
+    }));
     b.setAttribute("aria-pressed", an);
-    r.append(b);
-    return r;
-  };
-  const drangZusatz = (r, id) => {
-    const l = el("label", "leise wahl-zusatz");
-    const i = Object.assign(document.createElement("input"), { type: "checkbox", checked: z.commitment[id].drang });
-    i.addEventListener("change", () => aendern(() => { z.commitment[id].drang = i.checked; }));
-    l.append(i, " auch die Momente notieren, in denen ich gern würde");
-    r.append(l);
-  };
-
-  for (const id of FEST) {
-    const r = zeile(id, V[id].name, !!z.commitment[id], umschalten(id));
-    if (z.commitment[id]) drangZusatz(r, id);
-    s.append(r);
+    b.prepend(el("span", "wahl-haken", an ? "✓" : ""));
+    zeile.append(b);
+    if (an) {
+      const d = knopf("würde gern", "chip-knopf klein", () => aendern(() => { z.commitment[id].drang = !z.commitment[id].drang; }));
+      d.setAttribute("aria-pressed", z.commitment[id].drang);
+      d.title = "Auch die Momente notieren, in denen ich gern würde";
+      zeile.append(d);
+    }
+    if (V[id].eigen) {
+      const m = knopf("…", "rund klein", () => eigenerTracker(id));
+      m.setAttribute("aria-label", `${V[id].name}: umbenennen oder entfernen`);
+      zeile.append(m);
+    }
+    liste.append(zeile);
   }
+  s.append(liste);
 
-  s.append(zeile("alles", `Alles — ${FEST.map((k) => V[k].name).join(", ")}`,
-    FEST.every((k) => z.commitment[k]), () => schalteAlles(z)));
+  const neu = el("form", "wahl-neu");
+  const i = Object.assign(document.createElement("input"), {
+    name: "neu", placeholder: "Eigener Tracker, z. B. Alkohol", autocomplete: "off", maxLength: 60,
+  });
+  i.setAttribute("aria-label", "Eigenen Tracker hinzufügen");
+  const plus = knopf("+", "rund", () => neu.requestSubmit());
+  plus.setAttribute("aria-label", "Hinzufügen");
+  neu.append(i, plus);
+  neu.addEventListener("submit", (e) => {
+    e.preventDefault();
+    let id = null;
+    aendern(() => { id = fuegeEigenenHinzu(z, i.value); });
+    if (id) { melde(`${verzichte(z)[id].name} ist dabei.`); $(".wahl-neu input")?.focus(); }
+  });
+  s.append(neu);
 
-  const eigen = zeile(EIGEN, "Eigene Definition von Sober", !!z.commitment[EIGEN], umschalten(EIGEN));
-  if (z.commitment[EIGEN]) {
-    const l = el("label", "wahl-zusatz wahl-eigen");
-    l.append(el("span", "leise", "Was heißt sober für dich? Was lässt du sein?"));
-    const i = Object.assign(document.createElement("input"), {
-      name: "eigen", value: z.eigen.name, placeholder: "Alkohol, Zucker, Social Media …", autocomplete: "off", maxLength: 60,
-    });
-    // Ohne neu zu zeichnen, damit der Cursor im Feld bleibt.
-    i.addEventListener("input", () => {
-      setzeEigen(z, i.value);
-      if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
-      los.disabled = !gewaehlt(z).length;
-    });
-    l.append(i);
-    eigen.append(l);
-    drangZusatz(eigen, EIGEN);
-  }
-  s.append(eigen);
-
+  const los = knopf("So ist es.", "gross", () => { wahlOffen = false; zeichne(); });
   los.disabled = !gewaehlt(z).length;
-  s.append(los, el("p", "leise", "Du kannst es jederzeit ändern. Was du notierst, bleibt auf diesem Gerät."));
+  s.append(los, el("p", "leise klein", "Du kannst jederzeit Tracker dazunehmen oder abwählen. Was du notierst, bleibt auf diesem Gerät."));
   return s;
+}
+
+/* Ein eigener Tracker: umbenennen, oder entfernen, solange nichts notiert ist. */
+function eigenerTracker(id) {
+  const V = verzichte(z);
+  const f = faerbe(el("form", "bogen-inhalt"), V, id);
+  f.append(el("p", "rubrik", "Eigener Tracker"), el("h2", null, V[id].name));
+  const l = el("label", "frage");
+  l.append(el("span", "serif", "Name"));
+  const i = Object.assign(document.createElement("input"), { name: "name", value: V[id].name, autocomplete: "off", maxLength: 60 });
+  l.append(i);
+  f.append(l);
+  const unten = el("div", "wahlreihe");
+  const speichern = () => { aendern(() => benenneEigenen(z, id, i.value)); bogen.close(); };
+  unten.append(knopf("speichern", "gross", speichern));
+  if (hatNotizen(z, id)) {
+    f.append(el("p", "leise klein", "Dazu ist schon etwas notiert, deshalb lässt er sich nicht entfernen. Abwählen reicht: die Notizen bleiben."));
+  } else {
+    const weg = knopf("entfernen", "text leise", () => {
+      aendern(() => entferneEigenen(z, id));
+      bogen.close();
+      melde(`${V[id].name} ist entfernt.`);
+    });
+    unten.append(weg);
+  }
+  unten.append(knopf("abbrechen", "text leise", () => bogen.close()));
+  f.append(unten);
+  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
+  zeigeBogen(f);
 }
 
 /* ---- Zeichnen -------------------------------------------------------------- */

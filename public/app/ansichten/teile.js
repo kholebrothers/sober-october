@@ -15,6 +15,14 @@ export function knopf(text, klasse, beiKlick) {
   return b;
 }
 
+/** Die Farbe eines Trackers an ein Element: data-v für die festen, dazu
+    --v direkt für die eigenen (die haben keine feste Regel im Stylesheet). */
+export function faerbe(e, V, v) {
+  e.dataset.v = V[v]?.eigen ? "eigen" : v;
+  if (V[v]?.farbe) e.style.setProperty("--v", V[v].farbe);
+  return e;
+}
+
 /** Die Kopfzeile: links der Tag, rechts optional etwas, dann „Einstellungen". */
 export function kopf(api, rechts) {
   const k = el("header", "kopf");
@@ -72,7 +80,10 @@ export function laufZeile(api) {
   kette.setAttribute("aria-label", `Dein Lauf, Tag 1 bis heute: ${worte.join(", ")}` +
     (l.fenster > l.weit ? ` — dann noch ${l.fenster - l.weit} Tage bis ${l.fenster}` : ""));
   const reihe = el("div", "kette-zeile");
-  reihe.append(kette, el("span", "leise klein", `${l.dabeiTage} von ${l.fenster} Tagen`));
+  // Die Zählung „9 von 13 Tagen" stand hier sichtbar; aufgeräumt steht sie
+  // nur noch im Tooltip und für Screenreader — die Zahl links sagt genug.
+  kette.title = `${l.dabeiTage} von ${l.fenster} Tagen`;
+  reihe.append(kette);
   h.append(zahl, text, reihe);
   return h;
 }

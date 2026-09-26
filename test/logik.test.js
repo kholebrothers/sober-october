@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   neuerZustand, aus, notiere, schalteOhne, stand, oktober, tagesZeile,
   commitmentSatz, fuerKern, vonTag, VERSION, tagesKopf,
-  gewaehlt, schalteAlles, setzeEigen, verzichte, FEST,
+  gewaehlt, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, verzichte, FEST,
   serie, lauf, besterLauf, heatWochen, tagesAnteil, LEITER,
   schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
@@ -124,40 +124,78 @@ test("„Alles\" wählt die drei festen Verzichte und wieder ab", () => {
   assert.deepEqual(gewaehlt(z), []);
 });
 
-test("„Alles\" lässt die eigene Definition stehen", () => {
-  const z = mit("eigen");
-  setzeEigen(z, "Alkohol");
+test("„Alles\" lässt eigene Tracker stehen", () => {
+  const z = neuerZustand();
+  const id = fuegeEigenenHinzu(z, "Alkohol");
   schalteAlles(z);
   schalteAlles(z);
-  assert.deepEqual(gewaehlt(z), ["eigen"]);
+  assert.deepEqual(gewaehlt(z), [id]);
 });
 
-test("die eigene Definition zählt erst mit Namen", () => {
-  const z = mit("eigen");
-  assert.deepEqual(gewaehlt(z), []);
-  setzeEigen(z, "  keinen   Zucker ");
-  assert.deepEqual(gewaehlt(z), ["eigen"]);
-  assert.equal(verzichte(z).eigen.name, "Zucker");
-  assert.equal(commitmentSatz(z), "Im Oktober lasse ich Zucker sein.");
+test("eigene Tracker: beliebig viele, gleich gewählt, keiner doppelt", () => {
+  const z = neuerZustand();
+  assert.equal(fuegeEigenenHinzu(z, "   "), null, "ohne Namen kein Tracker");
+  const a = fuegeEigenenHinzu(z, "  keinen   Zucker ");
+  const b = fuegeEigenenHinzu(z, "Social Media");
+  const c = fuegeEigenenHinzu(z, "zucker");
+  assert.equal(a, "eigen", "der erste heißt wie die eine eigene Definition von früher");
+  assert.match(b, /^eigen-[a-z0-9]+$/);
+  assert.equal(c, a, "gleichnamig heißt: derselbe");
+  assert.deepEqual(gewaehlt(z), [a, b]);
+  const V = verzichte(z);
+  assert.equal(V[a].name, "Zucker");
+  assert.notEqual(V[a].farbe, V[b].farbe, "jeder eigene hat seinen Ton");
   z.commitment.kaffee = { drang: false };
-  assert.equal(commitmentSatz(z), "Im Oktober lasse ich den Kaffee und Zucker sein.");
+  assert.equal(commitmentSatz(z), "Im Oktober lasse ich den Kaffee, Zucker und Social Media sein.");
 });
 
-test("die eigene Definition übersteht Speichern, der Name bleibt beim Abwählen", () => {
-  const z = mit("eigen");
-  setzeEigen(z, "Alkohol");
-  notiere(z, { tag: "2026-10-01", zeit: "20:00", verzicht: "eigen", art: "drang" });
+test("umbenennen immer, entfernen nur ohne Notizen", () => {
+  const z = neuerZustand();
+  const a = fuegeEigenenHinzu(z, "Alkhol");
+  const b = fuegeEigenenHinzu(z, "Zucker");
+  assert.equal(benenneEigenen(z, a, "Alkohol"), true);
+  assert.equal(verzichte(z)[a].name, "Alkohol");
+  notiere(z, { tag: "2026-10-01", zeit: "20:00", verzicht: a, art: "drang" });
+  assert.equal(entferneEigenen(z, a), false);
+  assert.equal(entferneEigenen(z, b), true);
+  assert.deepEqual(z.eigene.map((e) => e.id), [a]);
+  assert.equal(z.commitment[b], undefined);
+});
+
+test("eigene Tracker überstehen Speichern; der Name bleibt beim Abwählen", () => {
+  const z = neuerZustand();
+  const a = fuegeEigenenHinzu(z, "Alkohol");
+  const b = fuegeEigenenHinzu(z, "Zucker");
+  notiere(z, { tag: "2026-10-01", zeit: "20:00", verzicht: b, art: "drang" });
+  assert.deepEqual(aus(JSON.stringify(z)), z);
+  delete z.commitment[a];
   const zurueck = aus(JSON.stringify(z));
-  assert.deepEqual(zurueck, z);
-  delete zurueck.commitment.eigen;
-  assert.equal(aus(JSON.stringify(zurueck)).eigen.name, "Alkohol");
-  assert.equal(verzichte(zurueck).eigen.name, "Alkohol");
+  assert.equal(verzichte(zurueck)[a].name, "Alkohol");
+  assert.deepEqual(gewaehlt(zurueck), [b]);
 });
 
-test("der Name der eigenen Definition geht nicht an kur-core", () => {
-  const z = mit("eigen");
-  setzeEigen(z, "Alkohol");
-  notiere(z, { tag: "2026-10-01", zeit: "20:00", verzicht: "eigen", art: "habe" });
+test("die eine eigene Definition von früher wird der erste eigene Tracker", () => {
+  const alt = { v: VERSION, commitment: { kippe: { drang: true }, eigen: { drang: false } }, eigen: { name: "Alkohol" },
+    ereignisse: [{ id: "x", tag: "2026-10-01", zeit: "20:00", verzicht: "eigen", art: "habe", antworten: {} }] };
+  const z = aus(JSON.stringify(alt));
+  assert.deepEqual(z.eigene, [{ id: "eigen", name: "Alkohol" }]);
+  assert.deepEqual(gewaehlt(z), ["kippe", "eigen"]);
+  assert.equal(z.commitment.eigen.drang, false);
+  assert.equal(z.ereignisse.length, 1);
+});
+
+test("Unsinn bei eigenen Trackern wird beim Laden verworfen", () => {
+  const roh = { v: VERSION, eigene: [{ id: "eigen", name: "A" }, { id: "eigen", name: "B" }, { id: "kaffee", name: "C" }, { id: "eigen-x", name: "  " }, null],
+    ereignisse: [{ tag: "2026-10-01", verzicht: "eigen-weg", art: "habe" }] };
+  const z = aus(JSON.stringify(roh));
+  assert.deepEqual(z.eigene, [{ id: "eigen", name: "A" }]);
+  assert.deepEqual(z.ereignisse, []);
+});
+
+test("der Name eines eigenen Trackers geht nicht an kur-core", () => {
+  const z = neuerZustand();
+  const a = fuegeEigenenHinzu(z, "Alkohol");
+  notiere(z, { tag: "2026-10-01", zeit: "20:00", verzicht: a, art: "habe" });
   const k = fuerKern(z, "2026-10-01");
   assert.ok(!JSON.stringify(k).includes("Alkohol"));
   assert.equal(k.einstellungen[0].wert, "eigen");
@@ -204,15 +242,15 @@ test("der längste Lauf zählt Tage ohne Lücke", () => {
   assert.equal(besterLauf(z, okt(9)), 3);
 });
 
-test("die Heatmap: 13 Wochen ab Montag, der Oktober ganz darin", () => {
-  for (const heute of ["2026-09-26", okt(15), "2026-12-20"]) {
+test("die Heatmap: ab der Woche des 1. September, Montag oben, der Oktober ganz darin", () => {
+  for (const [heute, n] of [["2026-09-26", 9], [okt(15), 9], ["2026-11-20", 12], ["2026-12-20", 13]]) {
     const w = heatWochen(heute);
-    assert.equal(w.length, 13);
+    assert.equal(w.length, n, heute);
     assert.ok(w.every((x) => x.length === 7));
     assert.equal(new Date(w[0][0] + "T12:00").getDay(), 1, "Montag oben");
     const alle = w.flat();
-    if (heute < "2026-11-01") assert.ok(alle.includes(okt(1)) && alle.includes(okt(31)), heute);
-    else assert.ok(alle.includes(heute));
+    if (heute < "2026-12-01") assert.ok(alle.includes("2026-09-01") && alle.includes(okt(31)), heute);
+    assert.ok(alle.includes(heute) || heute < okt(31));
   }
 });
 

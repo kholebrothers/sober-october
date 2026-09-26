@@ -5,7 +5,7 @@
    Kopf. Wählbare Ebenen stecken hinter einem einzigen „+" ganz unten. */
 
 import { zaehlknopf } from "../../knopf/knopf.js";
-import { el, knopf, kopf } from "./teile.js";
+import { el, knopf, kopf, faerbe } from "./teile.js";
 
 let aktiv = 0;
 let plusOffen = false;
@@ -18,7 +18,7 @@ export function render(api) {
   const V = VERZICHTE[v];
   const es = api.heuteVon(v);
   const s = el("section", "ansicht-knopf");
-  s.dataset.v = v;
+  faerbe(s, VERZICHTE, v);
 
   const punkte = el("span", "punkte");
   for (const e of EBENEN.filter((e) => ["frei", "an"].includes(api.stand(e.id)))) {
@@ -37,7 +37,7 @@ export function render(api) {
     gew.forEach((k, i) => {
       const r = knopf(VERZICHTE[k].name, "text", () => { aktiv = i; api.zeichne(); });
       r.setAttribute("role", "tab");
-      r.dataset.v = k;
+      faerbe(r, VERZICHTE, k);
       r.setAttribute("aria-selected", i === aktiv);
       reiter.append(r);
     });

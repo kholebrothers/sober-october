@@ -6,7 +6,7 @@
    erfüllt ist. */
 
 import { AUSWAHL, tagesKopf } from "../logik.js";
-import { el, knopf, kopf, wasText } from "./teile.js";
+import { el, knopf, kopf, wasText, faerbe } from "./teile.js";
 
 export function render(api) {
   const { zustand: z, VERZICHTE, EBENEN } = api;
@@ -17,7 +17,7 @@ export function render(api) {
   for (const v of api.gewaehlt()) {
     const V = VERZICHTE[v];
     const p = el("p");
-    p.dataset.v = v;
+    faerbe(p, VERZICHTE, v);
     p.append(el("span", "leise v-name", `${V.name}: `), knopf(V.habe, "text verb", () => api.eintragen(v, "habe")));
     if (z.commitment[v].drang) p.append(" · ", knopf(V.drang, "text verb", () => api.eintragen(v, "drang")));
     verben.append(p);
@@ -40,7 +40,7 @@ export function render(api) {
       faden.append(el("li", "faden-kopf rubrik", tagesKopf(p.tag)));
     }
     const li = el("li", `faden-${p.typ}`);
-    if (p.e) li.dataset.v = p.e.verzicht;
+    if (p.e) faerbe(li, VERZICHTE, p.e.verzicht);
     if (p.eb) li.dataset.ebene = p.eb.id;
     if (p.typ === "eintrag") {
       li.append(el("span", "leise", p.e.zeit), " ", wasText(api, p.e));

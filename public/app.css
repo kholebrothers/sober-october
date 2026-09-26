@@ -105,17 +105,24 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 .kreis[data-heute] { box-shadow:0 0 0 2px var(--paper), 0 0 0 3px var(--linie-stark); }
 .punkt { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--teal); vertical-align:middle; }
 
-/* Wahl */
-.wahl h1 { margin-bottom:4px; }
-.wahl-zeile { border:1px solid var(--linie); border-radius:14px; margin:12px 0; background:var(--surface); }
-.wahl-zeile[data-an="true"] { border-color:var(--v); background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); }
-.wahl-zeile[data-an="true"] .wahl-knopf::first-letter { color:var(--v); }
-.wahl-zeile[data-an="true"] input[type="checkbox"] { accent-color:var(--v); }
-.wahl-knopf { width:100%; text-align:left; background:none; border:0; padding:16px; font:500 18px var(--serif); }
-.wahl-zusatz { display:flex; gap:8px; align-items:center; padding:0 16px 14px; font-size:13px; }
+/* Wahl — eine ruhige Liste: je Tracker eine Zeile, der Name links, der
+   Würde-gern-Schalter rechts. Darunter das Feld für eigene Tracker. */
+.wahl h1 { margin-bottom:6px; }
+.wahl-unterkopf { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+.wahl-liste { display:grid; gap:8px; }
+.wahl-zeile { display:flex; align-items:center; gap:8px; padding:0 10px 0 0; border:1px solid var(--linie); border-radius:12px; background:var(--surface); }
+.wahl-zeile[data-an="true"] { border-color:color-mix(in oklab, var(--v) 70%, var(--linie)); background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); }
+.wahl-knopf { flex:1; min-width:0; display:flex; align-items:center; gap:10px; text-align:left; background:none; border:0; padding:13px 0 13px 14px; font:500 17px var(--serif); }
+.wahl-haken { width:14px; flex:none; color:var(--v); font:600 14px var(--sans); }
+/* Ein leiser Schalter: Umriss, gefüllt nur, wenn an. */
+.chip-knopf { flex:none; border:1px solid var(--linie-stark); background:transparent; color:var(--leise); border-radius:99px; padding:4px 11px; font-size:13px; }
+.chip-knopf.klein { font-size:12px; padding:3px 9px; }
+.chip-knopf[aria-pressed="true"] { border-color:var(--v, var(--moss)); color:var(--v, var(--moss)); background:color-mix(in oklab, var(--v, var(--moss)) var(--hauch), transparent); }
+.wahl-unterkopf .chip-knopf { --v:var(--moss); }
+.wahl-neu { display:flex; gap:8px; align-items:center; margin:12px 0 4px; }
+.wahl-neu input { flex:1; min-width:0; font:inherit; font-size:15px; padding:10px 12px; border:1px dashed var(--linie-stark); border-radius:12px; background:transparent; color:var(--ink); }
+.wahl-neu input:focus { border-style:solid; }
 .wahl > .gross { margin-top:14px; width:100%; }
-.wahl-eigen { display:grid; gap:6px; align-items:stretch; padding-bottom:6px; }
-.wahl-eigen input { font:inherit; font-size:15px; padding:9px 11px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; }
 
 /* Bogen */
 dialog#bogen { border:0; border-radius:18px; padding:0; width:min(420px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px -20px #0006; }
@@ -173,12 +180,12 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .plus { margin-top:24px; display:grid; justify-items:center; gap:4px; }
 
 /* Ansicht Blatt */
-.blatt-zeile { display:grid; grid-template-columns:28px 1fr auto; gap:14px; align-items:start; padding:16px 0; border-top:1px solid var(--linie); }
+.blatt-zeile { display:grid; grid-template-columns:28px 1fr; gap:14px; align-items:start; padding:14px 0; border-top:1px solid var(--linie); }
 .blatt-zeile strong { font:500 17px var(--serif); }
 /* Ein Punkt in der Farbe des Verzichts vor dem Namen. */
 .blatt-zeile .v-name::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--v); margin-right:8px; vertical-align:.12em; }
 .blatt-liste { list-style:none; margin:2px 0 0; padding:0; font-size:13px; color:var(--leise); }
-.blatt-aktionen { display:grid; justify-items:end; font-size:14px; }
+.blatt-aktionen { display:flex; flex-wrap:wrap; gap:2px 16px; font-size:14px; margin-top:2px; }
 .blatt-aktionen .text { padding:3px 0; }
 .blatt-mehr { margin-top:40px; border-top:1px solid var(--linie); padding-top:12px; }
 .blatt-mehr summary { color:var(--leise); cursor:pointer; font-size:14px; }
@@ -268,3 +275,7 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 .woche-je { list-style:none; padding:0 !important; margin:2px 0 4px !important; font-family:var(--sans) !important; font-size:13px; color:var(--leise); }
 .woche-je li::before { content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--v); margin-right:7px; vertical-align:.1em; }
 .woche .zitat { border-left:2px solid color-mix(in oklab, var(--v) 55%, transparent); padding-left:8px; font-size:14px; }
+
+/* Aufgeräumt: der Satz des Commitments ist ein Satz, keine Überschrift. */
+.ansicht-blatt h1, .ansicht-faden h1 { font-size:20px; line-height:1.35; margin:0 0 10px; }
+.reiter { flex-wrap:wrap; justify-content:center; row-gap:4px; }
