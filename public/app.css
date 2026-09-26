@@ -18,8 +18,10 @@
    ===================================================================== */
 
 :root {
-  --paper:#F2F0E5; --surface:#FFFCF0; --ink:#100F0F; --leise:#6F6E69;
-  --linie:#E6E4D9; --linie-stark:#CECDC3; --hm-leer:#E6E4D9; --mist:#B7B5AC;
+  /* Die Grundtöne der hellen Farbwelt; die Farbwelten tauschen nur diese. */
+  --g-paper:#F2F0E5; --g-surface:#FFFCF0; --g-linie:#E6E4D9; --g-linie-stark:#CECDC3;
+  --paper:var(--g-paper); --surface:var(--g-surface); --ink:#100F0F; --leise:#6F6E69;
+  --linie:var(--g-linie); --linie-stark:var(--g-linie-stark); --hm-leer:var(--g-linie); --mist:#B7B5AC;
   --moss:#66800B; --clay:#BC5215; --teal:#24837B;
   --gelb:#AD8301; --blau:#205EA6; --lila:#5E409D; --magenta:#A02F6F;
   --hauch:7%; --frei:#B7B5AC;
@@ -42,20 +44,34 @@
   --hauch:10%; --frei:#857566;
 }
 
+/* Drei helle Farbwelten, alle auf Flexoki-Grund: dieselben Akzente, nur das
+   Papier ist anders getönt. Papier ist Flexoki pur; Salbei zieht es ins
+   Grüne, Flieder ins kühle Violettblau. Im Dunkeln gilt immer das Braun. */
+:root[data-farbe="salbei"] { --g-paper:#E9ECDD; --g-surface:#F8FAF0; --g-linie:#DCE1CD; --g-linie-stark:#C3CAB0; }
+:root[data-farbe="flieder"] { --g-paper:#EBE9F1; --g-surface:#FAF9FD; --g-linie:#DFDCE8; --g-linie-stark:#C8C4D6; }
+
 /* Abends ruhiger, dezent (aus lifetracker, Nachtmodus — hier ohne den
-   Sprung ins Dunkle). Hell: das Papier rückt um eine Flexoki-Stufe nach
-   unten, die Schrift wird weicher. Dunkel: Schrift weicher, das Braun eine Spur tiefer. */
+   Sprung ins Dunkle). Hell: das Papier der gewählten Farbwelt rückt eine
+   Spur Richtung Grau, die Schrift wird weicher. Dunkel: Schrift weicher, das Braun eine Spur tiefer. */
 @media (prefers-color-scheme: light) {
-  :root[data-tageszeit="abend"]:not([data-theme="dark"]) { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
-  :root[data-tageszeit="nacht"]:not([data-theme="dark"]) { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --leise:#6F6E69; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
+  :root[data-tageszeit="abend"]:not([data-theme="dark"]) { --paper:var(--abend-paper); --surface:var(--abend-surface); --ink:#282726; --linie:var(--abend-linie); --hm-leer:var(--abend-linie); }
+  :root[data-tageszeit="nacht"]:not([data-theme="dark"]) { --paper:var(--nacht-paper); --surface:var(--abend-paper); --ink:#343331; --leise:#6F6E69; --linie:var(--nacht-linie); --hm-leer:var(--nacht-linie); --linie-stark:#B7B5AC; }
 }
 @media (prefers-color-scheme: dark) {
   :root[data-tageszeit="nacht"]:not([data-theme="light"]) { --ink:#CFC4B3; --paper:#1B1511; }
 }
-:root[data-theme="light"][data-tageszeit="abend"] { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
-:root[data-theme="light"][data-tageszeit="nacht"] { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
+:root[data-theme="light"][data-tageszeit="abend"] { --paper:var(--abend-paper); --surface:var(--abend-surface); --ink:#282726; --linie:var(--abend-linie); --hm-leer:var(--abend-linie); }
+:root[data-theme="light"][data-tageszeit="nacht"] { --paper:var(--nacht-paper); --surface:var(--abend-paper); --ink:#343331; --linie:var(--nacht-linie); --hm-leer:var(--nacht-linie); --linie-stark:#B7B5AC; }
+/* Abends rückt jede Farbwelt eine Stufe Richtung Flexoki-Grau, nachts zwei. */
+:root {
+  --abend-paper:color-mix(in oklab, var(--g-paper) 93%, #575653); --abend-surface:var(--g-paper);
+  --abend-linie:color-mix(in oklab, var(--g-linie) 94%, #575653);
+  --nacht-paper:color-mix(in oklab, var(--g-paper) 86%, #575653); --nacht-linie:color-mix(in oklab, var(--g-linie) 88%, #575653);
+}
 :root[data-theme="dark"][data-tageszeit="nacht"] { --ink:#CFC4B3; --paper:#1B1511; }
-body { transition:background-color 1.2s ease, color 1.2s ease; }
+/* Sanft nur beim Wechsel der Tageszeit, nicht beim Laden: sonst blendete die
+   Seite jedes Mal erst von Papier in die gewählte Farbwelt über. */
+:root.bereit body { transition:background-color 1.2s ease, color 1.2s ease; }
 
 /* Die Farbe je Verzicht. Nicht Orange (das ist „habe"), nicht Cyan (das ist
    der Drang), nicht Grün (das ist „ohne") — die drei sagen, was geschah. */
@@ -296,3 +312,12 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 .plus-tracker { color:var(--leise) !important; font-size:14px; }
 .reiter .plus-tracker { font-size:18px; line-height:1; padding:4px 8px !important; border:1px solid var(--linie-stark); border-radius:99px; }
 .ansicht-blatt > .plus-tracker { margin-top:4px; border-top:1px solid var(--linie); width:100%; padding-top:12px !important; }
+
+/* Farbwelt wählen: drei Felder, jedes zeigt sein Papier und die Akzente. */
+.farbwahl { display:flex; gap:10px; flex-wrap:wrap; }
+.farbe-option { position:relative; display:grid; justify-items:center; gap:4px; font-size:13px; }
+.farbe-option input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+.farbe-feld { width:64px; height:44px; border-radius:10px; border:1.5px solid var(--linie-stark); display:flex; align-items:flex-end; justify-content:center; gap:3px; padding-bottom:7px; }
+.farbe-feld i { width:8px; height:8px; border-radius:50%; }
+.farbe-option input:checked + .farbe-feld { border-color:var(--ink); box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+.farbe-option input:focus-visible + .farbe-feld { outline:2px solid var(--teal); outline-offset:3px; }

@@ -91,6 +91,14 @@ export function entferneEigenen(z, id) {
 
 export const hatNotizen = (z, id) => z.ereignisse.some((e) => e.verzicht === id);
 
+/** Die hellen Farbwelten, alle auf Flexoki-Grund. `papier` und `flaeche`
+    sind die Töne für die Vorschau in den Einstellungen und die Browserleiste. */
+export const FARBWELTEN = {
+  papier: { name: "Papier", papier: "#F2F0E5", flaeche: "#FFFCF0" },
+  salbei: { name: "Salbei", papier: "#E9ECDD", flaeche: "#F8FAF0" },
+  flieder: { name: "Flieder", papier: "#EBE9F1", flaeche: "#FAF9FD" },
+};
+
 export const ANSICHTEN = {
   knopf: "Knopf — ein Tracker auf einmal",
   blatt: "Blatt — alles auf einer Seite",
@@ -172,7 +180,7 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {} };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {} };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -195,6 +203,7 @@ export function aus(text) {
     for (const k of ids)
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
+  if (FARBWELTEN[roh.farbe]) z.farbe = roh.farbe;
   if (Array.isArray(roh.ereignisse))
     z.ereignisse = roh.ereignisse.filter((e) => e && ids.includes(e.verzicht) && ["habe", "drang", "ohne"].includes(e.art))
       .map((e) => ({ ...e, antworten: e.antworten && typeof e.antworten === "object" ? e.antworten : {} }));

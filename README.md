@@ -24,7 +24,7 @@ nicht: ein Tag ohne Eintrag ist ein freier Tag. Alles Weitere ist ein **Baustein
 | Wissen und Rückblick | unten | Ebenen, die sich durch Benutzen öffnen; der Rückblick in Wochen |
 | Abends ruhiger *(an)* | Darstellung | nach Sonnenuntergang eine Spur ruhiger |
 
-Die Ansicht (Knopf, Blatt, Faden) ist davon unabhängig. Ebenen öffnen sich auch, wenn ihr Baustein
+Die Ansicht (Knopf, Blatt, Faden) ist davon unabhängig, ebenso die **Farbwelt**: drei helle auf Flexoki-Grund — Papier (Flexoki pur), Salbei, Flieder —, im Dunkeln immer das warme Braun. Ebenen öffnen sich auch, wenn ihr Baustein
 aus ist — schaltet man ihn ein, ist da, was schon verdient ist. Vom Homescreen startet die App auch
 **ohne Netz** (Manifest und Service Worker; Symbole: `node tools/icons-bauen.js`).
 
