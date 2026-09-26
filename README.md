@@ -17,7 +17,7 @@ ohne“, dazu dein Leitgedanke. Alles Weitere ist ein **Baustein**, den man unte
 | Baustein | Wo | Was |
 |---|---|---|
 | Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
-| Lauf und Kette | oben | Tage dabei, die Kette auf der Fibonacci-Leiter 5, 8, 13, 21, 34, Satz zum Tag, kleine Momente |
+| Lauf und Kette | oben | Tage dabei, die Kette auf der Fibonacci-Leiter 5, 8, 13, 21, 34, Satz zum Tag, kleine Momente. Die Zahl ist zugleich „Ich bin da“: antippen, und der Tag zählt — jede andere Notiz zählt ihn genauso |
 | Freie Tage | oben | einen Tag bewusst frei nehmen; er hält die Kette |
 | Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
 | Wissen und Rückblick | unten | Ebenen, die sich durch Benutzen öffnen; der Rückblick in Wochen |

@@ -8,6 +8,7 @@ import {
   schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
   BAUSTEINE, aktiv, schalteBaustein,
+  istDa, schalteDa, hatEintrag,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -407,4 +408,30 @@ test("Sonne über Berlin und die Tageszeit", () => {
   assert.equal(tageszeit("2026-10-15", 19 * 60), "abend");
   assert.equal(tageszeit("2026-10-15", 23 * 60), "nacht");
   assert.equal(tageszeit("2026-10-15", 5 * 60), "nacht");
+});
+
+test("„ich bin da\": ein Tippen, und der Tag zählt wie eine Notiz", () => {
+  const z = mit("kaffee");
+  notizAn(z, okt(1));
+  schalteDa(z, okt(2));
+  schalteDa(z, okt(3));
+  assert.equal(istDa(z, okt(2)), true);
+  assert.equal(hatEintrag(z, okt(2)), true);
+  assert.equal(serie(z, okt(3)), 3);
+  assert.deepEqual(lauf(z, okt(3)).tage.slice(0, 3).map((t) => t.stand), ["dabei", "dabei", "dabei"]);
+  assert.equal(tagessatz(z, okt(3)), "Der Tag zählt. Du bist da.");
+  assert.equal(besterLauf(z, okt(3)), 3);
+  assert.equal(tagesAnteil(z, okt(2)), 0.2, "in der Heatmap der hellste Ton");
+  assert.deepEqual(fuerKern(z, okt(3)).eintraege.map((e) => e.date), [okt(1), okt(2), okt(3)]);
+  schalteDa(z, okt(3));
+  assert.equal(istDa(z, okt(3)), false, "zurücknehmen geht");
+  assert.deepEqual(aus(JSON.stringify(z)).daTage, [okt(2)], "übersteht Speichern");
+});
+
+test("„ich bin da\" an einem freien Tag: der Tag steht als dabei, nicht als frei", () => {
+  const z = mit("kaffee");
+  schalteFrei(z, okt(1));
+  schalteDa(z, okt(1));
+  assert.equal(lauf(z, okt(1)).tage[0].stand, "dabei");
+  assert.equal(tagessatz(z, okt(1)), "Der Tag zählt. Du bist da.");
 });

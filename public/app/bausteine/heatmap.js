@@ -6,7 +6,7 @@
    Flamme, und nie rot. Leere Tage außerhalb des Oktobers stehen blasser
    da, Tage im Oktober nach heute als Ring. */
 
-import { verzichte, heatWochen, tagesAnteil, tagesKopf, oktober, vonTag, istFrei, besterLauf } from "../logik.js";
+import { verzichte, heatWochen, tagesAnteil, tagesKopf, oktober, vonTag, istFrei, istDa, besterLauf } from "../logik.js";
 import { alsDatum } from "../../kern/datum.js";
 import { el } from "../ansichten/teile.js";
 
@@ -34,6 +34,7 @@ export function tagesText(z, tag) {
     if (n.drang) w.push(`${n.drang}× ${V[v].drang}`);
     return `${V[v].name}: ${w.join(", ")}`;
   });
+  if (istDa(z, tag)) teile.unshift("da");
   if (istFrei(z, tag)) teile.unshift("frei genommen");
   return teile.length ? teile.join(" · ") : "nichts notiert";
 }
