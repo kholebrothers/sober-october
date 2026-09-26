@@ -31,29 +31,46 @@ export function kopf(api, rechts) {
   return f;
 }
 
-/** Der Lauf aus dem Kopf von lifetracker: die Zahl der Tage dabei und die
-    Kette, die auf der Fibonacci-Leiter einrastet (5, 8, 13, 21, 34). */
+/** Der Lauf aus dem Kopf von lifetracker: die Zahl der Tage dabei, daneben
+    der Leitgedanke des Tages, darunter die Kette, die auf der
+    Fibonacci-Leiter einrastet (5, 8, 13, 21, 34). */
 export function laufZeile(api) {
   const n = api.serie();
   const l = api.lauf();
+  const g = api.leitgedanke();
   const h = el("div", "lauf");
   const zahl = el("div", n ? "lauf-zahl an" : "lauf-zahl");
   zahl.append(el("span", "n", String(n)), el("span", "u", n === 1 ? "Tag dabei" : "Tage dabei"));
+
+  const text = el("div", "lauf-text");
+  text.append(el("span", "lauf-zeile serif", g.zeile));
+  const unter = el("span", "lauf-unter leise");
+  unter.append(el("span", null, g.unter));
+  // Frei nehmen geht nur, solange heute nichts notiert ist — mit einer Notiz
+  // zählt der Tag ohnehin.
+  if (!api.heuteVon().length) {
+    const frei = api.istFrei();
+    const b = knopf(frei ? "✓ heute frei" : "heute frei nehmen", "text frei-knopf", () => api.frei());
+    b.setAttribute("aria-pressed", frei);
+    unter.append(b);
+  }
+  text.append(unter);
+
   const kette = el("div", "kette");
-  const text = [];
+  const worte = [];
   for (const t of l.tage) {
     const p = el("span", "glied");
     p.dataset.stand = t.stand;
     if (t.heute) p.dataset.heute = "";
     kette.append(p);
-    if (t.stand !== "kommt") text.push(t.stand === "dabei" ? "dabei" : t.heute ? "noch offen" : "nichts");
+    if (t.stand !== "kommt") worte.push(t.stand === "dabei" ? "dabei" : t.stand === "frei" ? "frei" : t.heute ? "noch offen" : "nichts");
   }
   kette.setAttribute("role", "img");
-  kette.setAttribute("aria-label", `Dein Lauf, Tag 1 bis heute: ${text.join(", ")}` +
+  kette.setAttribute("aria-label", `Dein Lauf, Tag 1 bis heute: ${worte.join(", ")}` +
     (l.fenster > l.weit ? ` — dann noch ${l.fenster - l.weit} Tage bis ${l.fenster}` : ""));
-  const unten = el("div", "kette-zeile");
-  unten.append(kette, el("span", "leise klein", `${l.dabeiTage} von ${l.fenster} Tagen`));
-  h.append(zahl, unten);
+  const reihe = el("div", "kette-zeile");
+  reihe.append(kette, el("span", "leise klein", `${l.dabeiTage} von ${l.fenster} Tagen`));
+  h.append(zahl, text, reihe);
   return h;
 }
 

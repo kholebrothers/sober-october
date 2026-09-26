@@ -20,6 +20,14 @@ und die Kette, die auf der Fibonacci-Leiter 5, 8, 13, 21, 34 einrastet. Dabei is
 notiert — auch ein „habe“. Die Ebene **Dein Oktober** zeigt die große Heatmap aus lifetracker
 (13 Wochen, den ganzen Oktober darin); in der Ansicht Blatt steht sie direkt auf der Seite.
 
+Neben der Zahl steht der **Leitgedanke** des Tages („Eine Notiz hält die Kette.“). Ist heute nichts
+notiert, lässt sich der Tag **frei nehmen**: bewusst genommen, nicht vergessen, er hält die Kette.
+Erreichen die Tage dabei eine Stufe der Leiter, gibt es einen **kleinen Moment** (ein Aufleuchten und
+ein Satz, je Stufe ein anderer). Nach der ersten Oktoberwoche öffnet sich der **Rückblick** in vier
+Abschnitten mit den eigenen Worten und dem, was trägt. Abends und nachts wird die Seite **dezent
+ruhiger** (nach Sonnenuntergang in Berlin, abschaltbar in ⋯). Vom Homescreen startet die App auch
+**ohne Netz** (Manifest und Service Worker; Symbole: `node tools/icons-bauen.js`).
+
 Die Haltung kommt aus lifetracker und smokefree: Ein Konsumereignis ist ein Ereignis, kein
 Versagen. Ein leerer Kreis heißt *unbekannt*, nicht *nicht geschafft*. Kein Verhalten wird rot.
 
@@ -50,7 +58,8 @@ ausgeliefert, wie es im Repo steht.
     public/app/haupt.js        Verdrahtung: Wahl, Bogen, Einstellungen, render()
     public/app/ebenen.js       Inhalte der Ebenen (Texte ungeprüft, siehe dort)
     public/app/ansichten/      knopf.js, blatt.js, faden.js
-    public/kern/               aus kur-core kopiert: datum.js, uhr.js (Dev-Uhr)
+    public/kern/               aus kur-core kopiert: datum.js, uhr.js (Dev-Uhr); sonne.js aus lifetracker
+    public/sw.js               Service Worker; SCHALE muss jede Datei nennen (test/pwa.test.js)
     public/knopf/              aus smokefree kopiert: der Zählknopf
     test/                      node --test; kur-core-wertevertrag.js ist eine Kopie
 

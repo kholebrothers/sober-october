@@ -6,7 +6,7 @@
    Flamme, und nie rot. Leere Tage außerhalb des Oktobers stehen blasser
    da, Tage im Oktober nach heute als Ring. */
 
-import { verzichte, heatWochen, tagesAnteil, tagesKopf, oktober, vonTag } from "../logik.js";
+import { verzichte, heatWochen, tagesAnteil, tagesKopf, oktober, vonTag, istFrei } from "../logik.js";
 import { alsDatum } from "../../kern/datum.js";
 import { el } from "./teile.js";
 
@@ -34,6 +34,7 @@ export function tagesText(z, tag) {
     if (n.drang) w.push(`${n.drang}× ${V[v].drang}`);
     return `${V[v].name}: ${w.join(", ")}`;
   });
+  if (istFrei(z, tag)) teile.unshift("frei genommen");
   return teile.length ? teile.join(" · ") : "nichts notiert";
 }
 
@@ -68,7 +69,8 @@ export function heatmap(z, heute) {
     if (tag > heute) { c.dataset.kommt = ""; if (!imOkt) c.dataset.leer = ""; }
     else {
       const r = tagesAnteil(z, tag);
-      if (!imOkt && !r) c.dataset.rand = "";
+      if (istFrei(z, tag) && !r) c.dataset.frei = "";
+      else if (!imOkt && !r) c.dataset.rand = "";
       c.style.background = tint(r);
       if (r && imOkt) dabeiImOktober++;
       c.title = `${tagesKopf(tag)} · ${tagesText(z, tag)}`;
@@ -87,6 +89,11 @@ export function heatmap(z, heute) {
     legende.append(c);
   }
   legende.append(el("span", null, "alles notiert"));
+  if (z.freieTage.length) {
+    const f = el("span", "hm-zelle");
+    f.dataset.frei = "";
+    legende.append(f, el("span", null, "frei"));
+  }
 
   const d = el("div", "hm");
   d.append(kal, legende);

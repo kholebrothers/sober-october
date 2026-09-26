@@ -11,7 +11,9 @@ import { heute as heuteTag } from "../kern/datum.js";
 import {
   FRAGEN, EBENEN, ANSICHTEN, FEST, EIGEN, verzichte, gewaehlt, commitmentSatz, vonTag,
   notiere, schalteOhne, schalteAlles, setzeEigen, stand, tagesZeile, serie, lauf,
+  leitgedanke, istFrei, schalteFrei, moment,
 } from "./logik.js";
+import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
@@ -27,11 +29,25 @@ const $ = (s) => document.querySelector(s);
 const heute = () => heuteTag();
 const jetztZeit = () => new Date().toTimeString().slice(0, 5);
 
+/* Jede Änderung geht hierdurch. Sie vergleicht den Lauf davor und danach:
+   ist heute gerade dazugekommen, pulsiert sein Glied einmal; erreichen die
+   Tage dabei eine Stufe der Leiter, leuchtet der Kopf kurz auf und der Satz
+   zur Stufe kommt zurück, damit der Aufrufer ihn mit seiner Meldung sagt. */
 function aendern(f) {
+  const stand = () => ({ lauf: lauf(z, heute()), serie: serie(z, heute()) });
+  const vor = gewaehlt(z).length ? stand() : null;
   f();
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
+  if (!vor || !gewaehlt(z).length || wahlOffen) return "";
+  const m = moment(vor, stand());
+  if (m.heuteNeu) document.querySelector(".glied[data-heute]")?.classList.add("pling");
+  if (m.stufe) document.querySelector(".lauf")?.classList.add("blitz");
+  return m.satz;
 }
+
+/** Eine Meldung, an die ein Stufensatz angehängt wird, wenn es einen gibt. */
+const mitMoment = (text, satz) => (satz ? (text ? `${text} ${satz}` : satz) : text);
 
 /* ---- Was die Ansichten benutzen ---------------------------------------- */
 
@@ -48,7 +64,16 @@ const api = {
   serie: () => serie(z, heute()),
   lauf: () => lauf(z, heute()),
   eintragen,
-  ohne: (v) => aendern(() => schalteOhne(z, heute(), jetztZeit(), v)),
+  ohne(v) {
+    const satz = aendern(() => schalteOhne(z, heute(), jetztZeit(), v));
+    if (satz) melde(satz);
+  },
+  leitgedanke: () => leitgedanke(z, heute()),
+  istFrei: () => istFrei(z, heute()),
+  frei() {
+    const satz = aendern(() => schalteFrei(z, heute()));
+    melde(mitMoment(istFrei(z, heute()) ? "Heute ist frei. Die Kette läuft weiter." : "Der freie Tag ist zurückgenommen.", satz));
+  },
   einschalten(id) {
     aendern(() => { z.frei[id] = { tag: heute(), zeit: jetztZeit(), gesehen: false }; });
     oeffneEbene(id);
@@ -148,9 +173,9 @@ function fragen(v, art, titel) {
       if (t) antworten[k] = antworten[k] ? antworten[k] + ", " + t : t;
     }
     let neu = [];
-    aendern(() => { neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art, antworten, begleitetSek }); });
     bogen.close();
-    melde(neu.length ? `Notiert. Eine Ebene hat sich geöffnet: ${neu.map((e) => e.titel).join(", ")}.` : "Notiert.");
+    const satz = aendern(() => { neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art, antworten, begleitetSek }); });
+    melde(mitMoment(neu.length ? `Notiert. Eine Ebene hat sich geöffnet: ${neu.map((e) => e.titel).join(", ")}.` : "Notiert.", satz));
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("notieren", "gross", () => speichern(true)),
@@ -188,6 +213,12 @@ function einstellungen() {
     ans.append(l);
   }
   k.append(ans);
+
+  const ruhe = el("label", "frage zeile");
+  const ri = Object.assign(document.createElement("input"), { type: "checkbox", checked: z.abends });
+  ri.addEventListener("change", () => { z.abends = ri.checked; sichern(z); tageszeitSetzen(); });
+  ruhe.append(ri, el("span", null, "Abends und nachts etwas ruhiger"));
+  k.append(ruhe);
 
   const daten = el("div", "frage");
   daten.append(el("p", "serif", "Deine Daten"),
@@ -293,5 +324,22 @@ document.addEventListener("visibilitychange", () => {
 });
 /* Ein anderer Tab hat gespeichert. */
 addEventListener("storage", (e) => { if (e.key === "sober-october") { z = laden(); zeichne(); } });
+
+/* Abends ruhiger — dezent: nach Sonnenuntergang wird das Papier eine Spur
+   dunkler und die Schrift eine Spur weicher, ab 22 Uhr noch eine Spur mehr.
+   Kein Umschalten ins Dunkle; wer dunkel will, stellt das System um. */
+function tageszeitSetzen() {
+  const d = new Date();
+  const zeit = z.abends ? tageszeit(heute(), d.getHours() * 60 + d.getMinutes()) : "tag";
+  document.documentElement.dataset.tageszeit = zeit;
+}
+tageszeitSetzen();
+setInterval(tageszeitSetzen, 5 * 60 * 1000);
+
+/* Der Service Worker macht die App vom Homescreen aus startfähig, auch
+   ohne Netz. Er ist Beiwerk: geht die Anmeldung schief, läuft alles genauso
+   weiter — nur eben online. */
+if (navigator.serviceWorker && location.protocol !== "file:")
+  addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
 zeichne();

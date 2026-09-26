@@ -20,6 +20,11 @@ Nicht als Datei, aber inhaltlich übernommen:
   Neu geschrieben als Module (`logik.js`: `serie`, `lauf`, `besterLauf`, `heatWochen`;
   `ansichten/heatmap.js`). Anders als dort: „dabei" heißt *eine Notiz, gleich welche*, die
   Heatmap zeigt den eigenen Anteil statt des Teams, in Moos statt Flamme.
+- **Leitgedanke, freier Tag, Rückblick, Abendruhe, Offline-Start**: lifetracker (`tagLine`/`tagSub`,
+  `FEIER`, Kurviertel und „Was trägt“, `sonne`/`phase` und Nachtmodus, `public/sw.js`,
+  `manifest.webmanifest`, `tools/icons-bauen.js`). Angepasst: der Nachtmodus springt nicht ins
+  Dunkle, sondern rückt das Papier um eine Flexoki-Stufe; der Service Worker hat keine
+  `/api/`-Regel, weil es keinen Server gibt; die Symbole zeigen den offenen Kreis statt des Eis.
 - **Palette**: [Flexoki](https://stephango.com/flexoki) von Steph Ango (MIT), hell die 600er-,
   dunkel die 400er-Töne; Flexoki-Rot ist bewusst nicht übernommen. Eine Farbe je Verzicht, je
   Art von Ebene und je Grundgefühl, leise eingesetzt (Rand, Punkt, Hauch von Grund).

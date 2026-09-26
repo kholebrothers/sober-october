@@ -21,7 +21,7 @@
   --linie:#E6E4D9; --linie-stark:#CECDC3; --hm-leer:#E6E4D9; --mist:#B7B5AC;
   --moss:#66800B; --clay:#BC5215; --teal:#24837B;
   --gelb:#AD8301; --blau:#205EA6; --lila:#5E409D; --magenta:#A02F6F;
-  --hauch:7%;
+  --hauch:7%; --frei:#B7B5AC;
   --serif:"Source Serif 4", Georgia, serif;
   --sans:Inter, system-ui, -apple-system, sans-serif;
   color-scheme: light dark;
@@ -31,15 +31,30 @@
   --linie:#282726; --linie-stark:#403E3C; --hm-leer:#282726; --mist:#575653;
   --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
   --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
-  --hauch:10%;
+  --hauch:10%; --frei:#6F6E69;
 }}
 :root[data-theme="dark"] {
   --paper:#100F0F; --surface:#1C1B1A; --ink:#CECDC3; --leise:#878580;
   --linie:#282726; --linie-stark:#403E3C; --hm-leer:#282726; --mist:#575653;
   --moss:#879A39; --clay:#DA702C; --teal:#3AA99F;
   --gelb:#D0A215; --blau:#4385BE; --lila:#8B7EC8; --magenta:#CE5D97;
-  --hauch:10%;
+  --hauch:10%; --frei:#6F6E69;
 }
+
+/* Abends ruhiger, dezent (aus lifetracker, Nachtmodus — hier ohne den
+   Sprung ins Dunkle). Hell: das Papier rückt um eine Flexoki-Stufe nach
+   unten, die Schrift wird weicher. Dunkel: nur die Schrift wird weicher. */
+@media (prefers-color-scheme: light) {
+  :root[data-tageszeit="abend"]:not([data-theme="dark"]) { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
+  :root[data-tageszeit="nacht"]:not([data-theme="dark"]) { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --leise:#6F6E69; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-tageszeit="nacht"]:not([data-theme="light"]) { --ink:#B7B5AC; }
+}
+:root[data-theme="light"][data-tageszeit="abend"] { --paper:#E6E4D9; --surface:#F2F0E5; --ink:#282726; --linie:#DAD8CE; --hm-leer:#DAD8CE; }
+:root[data-theme="light"][data-tageszeit="nacht"] { --paper:#DAD8CE; --surface:#E6E4D9; --ink:#343331; --linie:#CECDC3; --hm-leer:#CECDC3; --linie-stark:#B7B5AC; }
+:root[data-theme="dark"][data-tageszeit="nacht"] { --ink:#B7B5AC; }
+body { transition:background-color 1.2s ease, color 1.2s ease; }
 
 /* Die Farbe je Verzicht. Nicht Orange (das ist „habe"), nicht Cyan (das ist
    der Drang), nicht Grün (das ist „ohne") — die drei sagen, was geschah. */
@@ -53,7 +68,7 @@
 [data-ebene] { --e:var(--teal); }
 [data-ebene="drang"], [data-ebene="routine"] { --e:var(--blau); }
 [data-ebene="statt"] { --e:var(--moss); }
-[data-ebene="verlauf"] { --e:var(--gelb); }
+[data-ebene="verlauf"], [data-ebene="rueckblick"] { --e:var(--gelb); }
 
 * { box-sizing:border-box; }
 body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 var(--sans); -webkit-text-size-adjust:100%; }
@@ -188,7 +203,14 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
    kurze Kette nicht zu Klötzen wird. */
 .kopf-flaeche { margin-bottom:14px; }
 .kopf-flaeche .kopf { margin-bottom:6px; }
-.lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; }
+.lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; row-gap:10px; position:relative; border-radius:14px; }
+.lauf-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.lauf-zeile { font-size:17px; line-height:1.25; text-wrap:balance; }
+/* Die beiden Angaben trennt der Abstand, kein Zeichen (aus lifetracker). */
+.lauf-unter { font-size:13px; line-height:1.4; display:flex; flex-wrap:wrap; column-gap:12px; row-gap:2px; }
+.frei-knopf { padding:0 !important; font-size:13px; }
+.frei-knopf[aria-pressed="true"] { color:var(--leise); }
+.kette-zeile { grid-column:1 / -1; }
 .lauf-zahl { display:flex; flex-direction:column; align-items:center; width:54px; color:var(--leise); }
 .lauf-zahl .n { font:500 30px/1 var(--serif); font-variant-numeric:tabular-nums; color:var(--linie-stark); }
 .lauf-zahl.an .n { color:var(--moss); }
@@ -201,6 +223,18 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 /* Ein ausgelassener Tag ist ein graues Rund, ein Tag, den es noch nicht gibt, nur ein Ring. */
 .glied[data-stand="kommt"] { background:none; border-color:var(--linie-stark); }
 .glied[data-heute] { border-color:var(--leise); }
+/* Frei genommen ist nicht leer geblieben: ein warmes Grau, weder Farbe noch Lücke. */
+.glied[data-stand="frei"] { background:var(--frei); }
+
+/* Kleine Momente. Heute kommt dazu: das Glied pulsiert einmal. Eine Stufe
+   ist gesprengt: der Kopf leuchtet kurz auf. Sonst passiert nichts. */
+.glied.pling { animation:pling .55s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pling { 0% { transform:scale(1); } 45% { transform:scale(1.7); } 100% { transform:scale(1); } }
+.lauf.blitz::after { content:""; position:absolute; inset:-8px -6px; border-radius:16px; pointer-events:none;
+  background:radial-gradient(circle at 12% 40%, color-mix(in oklab, var(--moss) 30%, transparent), transparent 65%);
+  animation:blitz .9s ease-out forwards; }
+@keyframes blitz { from { opacity:1; } to { opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .glied.pling, .lauf.blitz::after { animation:none; } .lauf.blitz::after { display:none; } }
 
 /* Die große Heatmap — aus lifetracker (.hm-*): eine Spalte je Woche. */
 .hm { display:grid; gap:10px; }
@@ -214,6 +248,14 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .hm-zelle[data-kommt] { background:none !important; border-color:var(--linie); }
 .hm-zelle[data-kommt][data-leer] { border-color:transparent; }
 .hm-zelle[data-heute] { border-color:var(--ink); }
+.hm-zelle[data-frei] { background:repeating-linear-gradient(135deg, var(--frei) 0 2px, var(--hm-leer) 2px 4px) !important; }
 .hm-legende { display:flex; align-items:center; justify-content:flex-end; gap:5px; font-size:11px; color:var(--leise); }
 .hm-legende .hm-zelle { width:11px; height:11px; aspect-ratio:auto; flex:none; }
 .blatt-oktober { margin:18px 0 6px; display:grid; gap:8px; }
+
+/* Rückblick in Wochen */
+.woche { display:grid; gap:4px; padding:10px 0 12px; border-top:1px solid var(--linie); }
+.woche p { margin:0 !important; }
+.woche-je { list-style:none; padding:0 !important; margin:2px 0 4px !important; font-family:var(--sans) !important; font-size:13px; color:var(--leise); }
+.woche-je li::before { content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--v); margin-right:7px; vertical-align:.1em; }
+.woche .zitat { border-left:2px solid color-mix(in oklab, var(--v) 55%, transparent); padding-left:8px; font-size:14px; }
