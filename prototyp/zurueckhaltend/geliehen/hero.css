@@ -1,0 +1,39 @@
+.kur-hero {
+  --hero-tinte: var(--ink, #30392f);
+  --hero-leise: var(--muted, #62695e);
+  --hero-linie: var(--line, #dedfd5);
+  --hero-akzent: var(--sage, #607852);
+  color: var(--hero-tinte);
+  background: var(--surface, #fffdf7);
+  border: 1px solid var(--hero-linie);
+  border-radius: var(--r-lg, 22px);
+  box-shadow: var(--shadow, 0 1px 2px #191c160d, 0 10px 28px -16px #191c1647);
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+.kur-hero *, .kur-hero *::before, .kur-hero *::after { box-sizing: border-box; }
+.kur-hero__zahl { font: 500 24px/1 var(--font-display, Georgia, serif); color: var(--hero-akzent); font-variant-numeric: tabular-nums; }
+.kur-hero__titel { font: 600 19px/1.2 var(--font-display, Georgia, serif); margin: 0 0 7px; overflow-wrap: anywhere; }
+.kur-hero__klein { color: var(--hero-leise); font-size: 13px; line-height: 1.5; margin: 0; }
+.kur-hero__vorsatz, .kur-hero__gemeinsam { display: grid; gap: 6px; min-width: 0; }
+.kur-hero__vorsatz { padding: 8px 0; }
+.kur-hero__gemeinsam { padding-top: 4px; }
+.kur-hero__vorsatz[data-stufe="0"] { --hero-akzent: var(--berry, #965b70); }
+.kur-hero__zeile { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.kur-hero__rubrik { font-size: 11px; line-height: 1.4; letter-spacing: .02em; margin: 0; color: var(--hero-akzent); }
+.kur-hero :focus-visible { outline: 2px solid var(--hero-akzent); outline-offset: 4px; }
+ .kur-hero__kopf { display:grid; grid-template-columns:64px minmax(0,1fr) 64px; gap:14px; align-items:center; }
+.kur-hero__wert { display:flex; flex-direction:column; gap:4px; text-align:center; align-items:center; }
+.kur-hero__zahl { font-size:38px; font-weight:600; color:var(--flame, #D2542A); }
+.kur-hero__wert .kur-hero__klein { font-size:11px; line-height:1.2; }
+.kur-hero__wert:last-child .kur-hero__zahl { font-size:28px; color:var(--hero-akzent); }
+@media (max-width:360px) { .kur-hero__kopf { grid-template-columns:48px minmax(0,1fr) 48px; gap:8px; } }
+.kur-kopf { position:sticky; top:0; z-index:10; background:color-mix(in oklab,var(--bg,#F4F5F0) 88%,transparent); backdrop-filter:blur(12px); padding:12px 14px; }
+.kur-kopf__innen { max-width:612px; margin:auto; display:flex; align-items:center; gap:10px; }
+.kur-kopf__marke { flex:1; display:flex; align-items:baseline; gap:8px; font:600 19px var(--font-display,Georgia,serif); }
+.kur-kopf__tag { font:700 12px var(--font-body,Arial,sans-serif); color:var(--muted,#6B6F63); letter-spacing:.1em; text-transform:uppercase; }
+.kur-kopf__person { width:38px; height:38px; border:0; border-radius:50%; background:#B9761A; color:white; font:700 13px var(--font-body,Arial,sans-serif); box-shadow:0 0 0 2px var(--bg,#F4F5F0),0 0 0 3.5px #B9761A; cursor:pointer; }
+.kur-hero[data-leer=true] .kur-hero__zahl { color:var(--line,#DDE0D4); }
