@@ -26,7 +26,9 @@ export function faerbe(e, V, v) {
 /** Die Kopfzeile: links der Tag, rechts optional etwas, dann „Einstellungen". */
 export function kopf(api, rechts) {
   const k = el("header", "kopf");
-  k.append(el("span", "rubrik", api.tagesZeile()));
+  const marke = el("div", "kopf-marke");
+  marke.append(el("span", "markenname", "Sober October"), el("span", "rubrik", api.tagesZeile()));
+  k.append(marke);
   const r = el("span", "kopf-rechts");
   if (rechts) r.append(rechts);
   const e = knopf("⋯", "rund klein", () => api.einstellungen());

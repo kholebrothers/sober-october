@@ -27,6 +27,9 @@
   --hauch:7%; --frei:#B7B5AC;
   --serif:"Source Serif 4", Georgia, serif;
   --sans:Inter, system-ui, -apple-system, sans-serif;
+  --radius-control:12px; --radius-card:20px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px; --space-8:32px;
+  --touch:44px;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -88,25 +91,34 @@
 [data-ebene="verlauf"], [data-ebene="rueckblick"] { --e:var(--gelb); }
 
 * { box-sizing:border-box; }
-body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 var(--sans); -webkit-text-size-adjust:100%; }
-#buehne { max-width:440px; margin:0 auto; padding:max(20px, env(safe-area-inset-top)) 16px 64px; min-height:100vh; }
-h1 { font-weight:500; font-size:24px; line-height:1.25; margin:4px 0 18px; }
+body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 var(--sans); -webkit-text-size-adjust:100%; }
+#buehne { max-width:480px; margin:0 auto; padding:max(24px, env(safe-area-inset-top)) 24px max(112px, env(safe-area-inset-bottom)); min-height:100dvh; }
+h1 { font-weight:500; font-size:32px; line-height:1.2; margin:4px 0 18px; }
 h2 { font:500 21px/1.3 var(--serif); margin:2px 0 4px; }
 .serif { font-family:var(--serif); }
 .leise { color:var(--leise); }
 .klein { font-size:13px; }
 .rubrik { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--leise); margin:0; }
-button { font:inherit; color:inherit; cursor:pointer; }
-button:focus-visible, input:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+button { font:inherit; color:inherit; cursor:pointer; touch-action:manipulation; }
+button, input, summary { -webkit-tap-highlight-color:transparent; }
+button.text, button.gross, button.chip-knopf, .melde-knopf { min-height:var(--touch); }
+input[type="radio"], input[type="checkbox"] { accent-color:var(--teal); width:18px; height:18px; }
+button:disabled { cursor:default; }
+h1, h2, button, .zitat { overflow-wrap:anywhere; }
+:root[data-theme="light"] { color-scheme:light; }
+:root[data-theme="dark"] { color-scheme:dark; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
 button.text { background:none; border:0; padding:6px 0; color:var(--teal); text-align:left; }
 button.text.leise { color:var(--leise); }
 button.gross { background:var(--ink); color:var(--paper); border:0; border-radius:12px; padding:12px 18px; }
 button.gross.leise { background:transparent; color:var(--ink); border:1px solid var(--linie-stark); }
 button.gross:disabled { opacity:.3; cursor:default; }
-button.rund { width:36px; height:36px; border-radius:50%; border:1px solid var(--linie-stark); background:transparent; color:var(--leise); }
-button.rund.klein { width:30px; height:30px; line-height:1; }
+button.rund { width:var(--touch); height:var(--touch); flex:none; border-radius:50%; border:1px solid var(--linie-stark); background:transparent; color:var(--leise); }
+button.rund.klein { width:var(--touch); height:var(--touch); line-height:1; }
 
-.kopf { display:flex; justify-content:space-between; align-items:center; min-height:32px; margin-bottom:8px; }
+.kopf { display:flex; justify-content:space-between; align-items:center; min-height:52px; margin-bottom:24px; }
+.kopf-marke { display:grid; gap:4px; }
+.markenname { font-size:14px; font-weight:600; letter-spacing:.01em; }
 .kopf-rechts { display:flex; align-items:center; gap:12px; }
 
 /* Der offene Kreis: leer = unbekannt. */
@@ -123,8 +135,8 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 
 /* Wahl — eine ruhige Liste: je Tracker eine Zeile, der Name links, der
    Würde-gern-Schalter rechts. Darunter das Feld für eigene Tracker. */
-.wahl h1 { margin-bottom:6px; }
-.wahl-unterkopf { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+.wahl h1 { margin:20px 0 12px; max-width:12em; }
+.wahl-unterkopf { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:24px; }
 .wahl-liste { display:grid; gap:8px; }
 .wahl-zeile { display:flex; align-items:center; gap:8px; padding:0 10px 0 0; border:1px solid var(--linie); border-radius:12px; background:var(--surface); }
 .wahl-zeile[data-an="true"] { border-color:color-mix(in oklab, var(--v) 70%, var(--linie)); background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); }
@@ -133,7 +145,7 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 /* Ein leiser Schalter: Umriss, gefüllt nur, wenn an. */
 .chip-knopf { flex:none; border:1px solid var(--linie-stark); background:transparent; color:var(--leise); border-radius:99px; padding:4px 11px; font-size:13px; }
 .chip-knopf.klein { font-size:12px; padding:3px 9px; }
-.chip-knopf[aria-pressed="true"] { border-color:var(--v, var(--moss)); color:var(--v, var(--moss)); background:color-mix(in oklab, var(--v, var(--moss)) var(--hauch), transparent); }
+.chip-knopf[aria-pressed="true"] { border-color:var(--v, var(--moss)); color:var(--ink); background:color-mix(in oklab, var(--v, var(--moss)) var(--hauch), transparent); }
 .wahl-unterkopf .chip-knopf { --v:var(--moss); }
 .wahl-neu { display:flex; gap:8px; align-items:center; margin:12px 0 4px; }
 .wahl-neu input { flex:1; min-width:0; font:inherit; font-size:15px; padding:10px 12px; border:1px dashed var(--linie-stark); border-radius:12px; background:transparent; color:var(--ink); }
@@ -141,25 +153,25 @@ button.rund.klein { width:30px; height:30px; line-height:1; }
 .wahl > .gross { margin-top:14px; width:100%; }
 
 /* Bogen */
-dialog#bogen { border:0; border-radius:18px; padding:0; width:min(420px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px -20px #0006; }
+dialog#bogen { border:0; border-radius:var(--radius-card); padding:0; width:min(460px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px -20px #0006; }
 dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transparent); }
 /* Ein Eintrag trägt oben die Farbe seines Verzichts, eine Ebene die ihre. */
 .bogen-inhalt[data-v] { box-shadow:inset 0 3px 0 var(--v); }
-.bogen-inhalt[data-v] > .rubrik:first-child { color:var(--v); }
+.bogen-inhalt[data-v] > .rubrik:first-child { color:var(--leise); }
 .bogen-inhalt[data-ebene] { box-shadow:inset 0 3px 0 var(--e); }
-.bogen-inhalt[data-ebene] > .rubrik:first-child { color:var(--e); }
-.bogen-inhalt { padding:22px 20px 18px; display:grid; gap:12px; }
+.bogen-inhalt[data-ebene] > .rubrik:first-child { color:var(--leise); }
+.bogen-inhalt { padding:24px; display:grid; gap:20px; }
 .bogen-inhalt > p { margin:0; }
 .wahlreihe { display:flex; gap:6px 14px; flex-wrap:wrap; align-items:center; }
 .frage { display:grid; gap:6px; border:0; padding:0; margin:0; min-width:0; }
 .frage legend { padding:0; margin-bottom:6px; }
 .frage p { margin:0; }
-.frage input[name]:not([type="radio"]):not([type="checkbox"]) { font:inherit; padding:9px 11px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; }
+.frage input[name]:not([type="radio"]):not([type="checkbox"]) { font:inherit; font-size:16px; min-height:var(--touch); padding:10px 12px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; }
 .frage .zeile { display:flex; gap:8px; align-items:center; padding:3px 0; }
 .chips { display:flex; flex-wrap:wrap; gap:6px; }
 .chip { position:relative; }
 .chip input { position:absolute; opacity:0; inset:0; margin:0; }
-.chip span { display:inline-block; padding:6px 12px; border:1px solid var(--linie-stark); border-radius:99px; font-size:13px; }
+.chip span { display:inline-block; min-height:var(--touch); padding:10px 14px; border:1px solid var(--linie-stark); border-radius:99px; font-size:13px; }
 .chip { --c:var(--teal); }
 /* Die Grundgefühle, jedes in seiner Farbe. Wut ist Orange, nicht Rot. */
 .chip[data-wert="Angst"] { --c:var(--lila); }
@@ -167,7 +179,7 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .chip[data-wert="Trauer"] { --c:var(--blau); }
 .chip[data-wert="Freude"] { --c:var(--gelb); }
 .chip[data-wert="weiß nicht"] { --c:var(--leise); }
-.chip input:checked + span { border-color:var(--c); color:var(--c); background:color-mix(in oklab, var(--c) var(--hauch), transparent); }
+.chip input:checked + span { border-color:var(--c); color:var(--ink); background:color-mix(in oklab, var(--c) var(--hauch), transparent); }
 .chip input:focus-visible + span { outline:2px solid var(--teal); outline-offset:2px; }
 .begleitung { text-align:center; justify-items:center; }
 .welle { width:140px; height:140px; border-radius:50%; border:1.5px solid var(--mist); margin:10px; animation:atmen 9s ease-in-out infinite; }
@@ -180,19 +192,20 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .zitat { display:block; font-family:var(--serif); font-style:italic; color:var(--ink); }
 .zitat.wahl { font-family:var(--sans); font-style:normal; font-size:13px; color:var(--leise); }
 
-#meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; top:max(16px, env(safe-area-inset-top)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
+#meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
 #meldung[hidden] { display:none; }
 .melde-knopf { background:none; border:0; padding:4px 0; color:inherit; font-size:14px; font-weight:600; text-decoration:underline; text-underline-offset:3px; opacity:.9; }
 
 /* Ansicht Knopf */
-.ansicht-knopf { display:grid; gap:18px; justify-items:center; }
+.ansicht-knopf { display:grid; gap:24px; justify-items:center; }
 .ansicht-knopf .kopf, .ansicht-knopf .oben, .ansicht-knopf .unten { width:100%; margin:0; }
 .reiter { display:flex; align-items:center; justify-content:center; gap:14px; width:100%; }
-.reiter-tabs { display:flex; flex-wrap:wrap; justify-content:center; gap:4px 18px; }
+.reiter-tabs { display:flex; flex:1; min-width:0; overflow-x:auto; gap:4px; padding:4px; border:1px solid var(--linie); border-radius:var(--radius-control); background:var(--surface); }
+.reiter-tabs .text { flex:1 0 auto; padding:8px 14px; text-align:center; border-radius:8px; white-space:nowrap; }
 .reiter .text { color:var(--leise); }
-.reiter .text[aria-selected="true"] { color:var(--ink); border-bottom:2px solid var(--v, var(--ink)); }
-.ansicht-knopf .zk { width:100%; --zk-hoehe:260px; --zk-grund:var(--surface); --zk-linie:var(--linie-stark); --zk-an:var(--clay); --zk-text:var(--ink); --zk-neben:var(--leise); }
-.drang-knopf { width:100%; padding:16px; border:1px dashed color-mix(in oklab, var(--teal) 45%, var(--linie-stark)); border-radius:16px; background:transparent; font:17px var(--serif); }
+.reiter .text[aria-selected="true"] { color:var(--ink); background:color-mix(in oklab, var(--v) var(--hauch), var(--paper)); box-shadow:inset 0 -2px var(--v); }
+.ansicht-knopf .zk { width:100%; --zk-hoehe:240px; --zk-grund:var(--surface); --zk-linie:var(--linie-stark); --zk-an:var(--clay); --zk-text:var(--ink); --zk-neben:var(--leise); }
+.drang-knopf { width:100%; padding:16px; border:1px dashed color-mix(in oklab, var(--teal) 45%, var(--linie-stark)); border-radius:16px; background:transparent; font:17px var(--sans); }
 
 /* Ansicht Blatt */
 .blatt-zeile { display:grid; grid-template-columns:28px 1fr; gap:14px; align-items:start; padding:14px 0; border-top:1px solid var(--linie); }
@@ -219,13 +232,13 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
    kurze Kette nicht zu Klötzen wird. */
 /* Oben: der Leitgedanke allein ist eine Zeile; mit dem Lauf ein Raster aus
    Zahl, Text und der Kette darunter. */
-.oben { margin:0 0 16px; position:relative; }
+.oben { margin:0 0 24px; padding:20px 0; border-top:1px solid var(--linie); border-bottom:1px solid var(--linie); position:relative; }
 .oben.lauf { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:14px; row-gap:10px; border-radius:14px; }
 .lauf-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
-.lauf-zeile { font-size:17px; line-height:1.25; text-wrap:balance; }
+.lauf-zeile { font-size:23px; line-height:1.25; text-wrap:balance; }
 /* Der Leitgedanke ist ein Satz, kein Knopf: er sieht aus wie Text und lässt
    sich antippen. Ein zarter Unterstrich verrät es. */
-button.leitgedanke { background:none; border:0; padding:0; text-align:left; color:var(--ink);
+button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--touch); text-align:left; color:var(--ink);
   text-decoration:underline; text-decoration-color:var(--linie-stark); text-decoration-thickness:1px; text-underline-offset:4px; }
 .leit-bogen h2 { font-style:italic; }
 .leit-frueher summary { cursor:pointer; font-size:13px; }
@@ -240,7 +253,7 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
   color:var(--leise); background:none; border:1.5px dashed var(--linie-stark); border-radius:50%; }
 /* Heute zählt: der Ring wird durchgezogen und bekommt einen Hauch Moos. */
 .lauf-zahl[aria-pressed="true"] { border-style:solid; border-color:var(--moss); background:color-mix(in oklab, var(--moss) var(--hauch), transparent); }
-.lauf-zahl .n { font:500 24px/1 var(--serif); font-variant-numeric:tabular-nums; color:var(--linie-stark); }
+.lauf-zahl .n { font:500 24px/1 var(--sans); font-variant-numeric:tabular-nums; color:var(--linie-stark); }
 .lauf-zahl.an .n { color:var(--moss); }
 .lauf-zahl .u { font-size:9px; line-height:1.1; text-align:center; letter-spacing:.03em; margin-top:1px; max-width:36px; }
 .kette-zeile { display:flex; align-items:center; gap:10px; min-width:0; }
@@ -300,10 +313,10 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 
 /* Einstellungen */
 .ansicht-wahl { display:grid; gap:6px; }
-.ansicht-option { display:grid; grid-template-columns:auto 1fr; column-gap:10px; align-items:baseline; padding:4px 0; }
+.ansicht-option { display:grid; grid-template-columns:auto 1fr; column-gap:10px; align-items:center; padding:12px; border:1px solid var(--linie); border-radius:var(--radius-control); }
 .ansicht-option .klein { grid-column:2; }
 .bausteine { gap:2px; }
-.baustein { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:start; padding:6px 0; }
+.baustein { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:start; padding:12px 0; }
 .baustein input { margin-top:4px; accent-color:var(--moss); }
 .baustein-text { display:grid; gap:1px; }
 .baustein-mehr { padding:0 0 4px 26px !important; font-size:13px; }
@@ -321,3 +334,38 @@ button.leitgedanke { background:none; border:0; padding:0; text-align:left; colo
 .farbe-feld i { width:8px; height:8px; border-radius:50%; }
 .farbe-option input:checked + .farbe-feld { border-color:var(--ink); box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
 .farbe-option input:focus-visible + .farbe-feld { outline:2px solid var(--teal); outline-offset:3px; }
+
+/* Gemeinsame Hierarchie aller Ansichten; siehe docs/DESIGNSPRACHE.md. */
+.tracker-panel { display:grid; gap:16px; width:100%; min-width:0; }
+.tracker-titel { font-size:22px; text-align:center; margin:0; }
+.ansicht-knopf .zk-knopf { border-radius:var(--radius-card); }
+.ansicht-knopf .zk-mitte { background:var(--surface); border-radius:var(--radius-control); padding:16px 20px; max-width:100%; gap:8px; }
+.ansicht-knopf .zk-zahl { font-weight:500; font-size:56px; }
+.ansicht-knopf .zk[data-leer="true"] .zk-zahl { opacity:1; color:var(--leise); }
+.ansicht-knopf .zk-wort { font-size:17px; opacity:1; }
+.zk-hinweis { color:var(--leise); font-size:12px; }
+.wahl-hilfe { margin:12px 0 20px; }
+.wahl-knopf { overflow-wrap:anywhere; }
+.wahl-neu input { font-size:16px; min-height:var(--touch); }
+.einstellungen > .frage { padding-top:20px; border-top:1px solid var(--linie); }
+.ansicht-option:has(input:checked) { background:var(--paper); border-color:var(--teal); }
+.ansicht-option, .baustein, .chip { cursor:pointer; }
+.blatt-zeile > div { min-width:0; }
+.blatt-zeile .kreis { margin-top:8px; }
+.blatt-aktionen .text { text-decoration:underline; text-decoration-color:var(--linie-stark); text-underline-offset:4px; }
+.verben > p { padding:12px 0; border-bottom:1px solid var(--linie); }
+.meldung-schliessen { margin-left:auto; min-width:44px; text-decoration:none; }
+@media (hover:hover) {
+  button:not(:disabled):hover { filter:brightness(.95); }
+}
+@media (min-width:720px) {
+  #buehne { padding-top:56px; }
+}
+@media (max-width:360px) {
+  #buehne { padding-inline:16px; }
+  .bogen-inhalt { padding:20px 16px; }
+  .wahl-unterkopf { align-items:flex-start; }
+}
+@media (prefers-reduced-motion:reduce) {
+  :root.bereit body { transition:none; }
+}

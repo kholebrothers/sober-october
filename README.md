@@ -13,7 +13,7 @@ gingen nur die Schlüssel (`eigen`, `eigen-…`).
 
 **Die App fängt klein an.** Zu sehen sind nur die Tracker, je mit „habe“ und „würde gern“, dazu dein
 Leitgedanke. **Loggen ist ein Tippen:** es notiert sofort; die Meldung danach bietet „Details“ (die
-Fragen, freiwillig) und „Zurück“ (vertippt). Einen Knopf „heute ohne“ oder „frei nehmen“ gibt es
+Fragen, freiwillig) und „Rückgängig“ (vertippt). Einen Knopf „heute ohne“ oder „frei nehmen“ gibt es
 nicht: ein Tag ohne Eintrag ist ein freier Tag. Alles Weitere ist ein **Baustein**, den man unter ⋯ dazunimmt:
 
 | Baustein | Wo | Was |
@@ -63,6 +63,8 @@ ausgeliefert, wie es im Repo steht.
     public/sw.js               Service Worker; SCHALE muss jede Datei nennen (test/pwa.test.js)
     public/knopf/              aus smokefree kopiert: der Zählknopf
     test/                      node --test; kur-core-wertevertrag.js ist eine Kopie
+
+UX-Bewertung und gemeinsame Gestaltungsregeln: [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 
 Woher was stammt: [docs/HERKUNFT.md](docs/HERKUNFT.md).
 

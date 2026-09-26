@@ -92,6 +92,11 @@ const api = {
 const bogen = $("#bogen");
 
 function zeigeBogen(knoten) {
+  const titel = knoten.querySelector("h2") || knoten.querySelector(".rubrik");
+  if (titel) {
+    titel.id = "bogen-titel";
+    bogen.setAttribute("aria-labelledby", titel.id);
+  } else bogen.removeAttribute("aria-labelledby");
   bogen.replaceChildren(knoten);
   if (!bogen.open) bogen.showModal();
 }
@@ -125,7 +130,7 @@ function eintragen(v, art) {
   });
   melde(mitMoment(ebenenText(neu, `Notiert: ${art === "habe" ? V.habe : V.drang}.`), satz), [
     ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)],
-    ["Zurück", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }],
+    ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }],
   ]);
 }
 
@@ -311,7 +316,9 @@ function einstellungen() {
       aendern(() => schalteBaustein(z, b.id, i.checked));
       if (b.id === "abends") tageszeitSetzen();
       const y = bogen.scrollTop;
+      const index = BAUSTEINE.findIndex((eintrag) => eintrag.id === b.id);
       einstellungen();
+      bogen.querySelectorAll(".baustein input")[index]?.focus({ preventScroll: true });
       bogen.scrollTop = y;
     });
     const t = el("span", "baustein-text");
@@ -346,9 +353,14 @@ function melde(text, aktionen = []) {
   const m = $("#meldung");
   m.replaceChildren(el("span", null, text));
   for (const [t, tun] of aktionen) m.append(knopf(t, "melde-knopf", () => { m.hidden = true; tun(); }));
+  if (aktionen.length) {
+    const schliessen = knopf("×", "melde-knopf meldung-schliessen", () => { m.hidden = true; });
+    schliessen.setAttribute("aria-label", "Meldung schließen");
+    m.append(schliessen);
+  }
   m.hidden = false;
   clearTimeout(meldeTimer);
-  meldeTimer = setTimeout(() => (m.hidden = true), aktionen.length ? 7000 : 3600);
+  if (!aktionen.length) meldeTimer = setTimeout(() => (m.hidden = true), 5000);
 }
 
 /* ---- Commitment wählen ----------------------------------------------------- */
@@ -362,6 +374,7 @@ function wahlSeite() {
   const unterKopf = el("div", "wahl-unterkopf");
   const alles = knopf(alle ? "✓ Alles" : "Alles", "chip-knopf", () => aendern(() => schalteAlles(z)));
   alles.setAttribute("aria-pressed", alle);
+  alles.dataset.focus = "wahl-alles";
   alles.title = "Kaffee, Kippe und Video auf einmal";
   unterKopf.append(el("span", "leise", "Eins reicht. Bereitschaft genügt."), alles);
   s.append(unterKopf);
@@ -378,12 +391,15 @@ function wahlSeite() {
       if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: true };
     }));
     b.setAttribute("aria-pressed", an);
+    b.dataset.focus = `wahl-${id}`;
     b.prepend(el("span", "wahl-haken", an ? "✓" : ""));
     zeile.append(b);
     if (an) {
       const d = knopf("würde gern", "chip-knopf klein", () => aendern(() => { z.commitment[id].drang = !z.commitment[id].drang; }));
       d.setAttribute("aria-pressed", z.commitment[id].drang);
+      d.dataset.focus = `wahl-drang-${id}`;
       d.title = "Auch die Momente notieren, in denen ich gern würde";
+      d.setAttribute("aria-label", `${V[id].name}: Würde-gern-Momente mitnotieren`);
       zeile.append(d);
     }
     if (V[id].eigen) {
@@ -393,7 +409,7 @@ function wahlSeite() {
     }
     liste.append(zeile);
   }
-  s.append(liste);
+  s.append(liste, el("p", "leise klein wahl-hilfe", "„Würde gern“ schaltet das Notieren von Verlangen ein. Du kannst es jederzeit ändern."));
 
   const neu = el("form", "wahl-neu");
   const i = Object.assign(document.createElement("input"), {
@@ -411,7 +427,7 @@ function wahlSeite() {
   });
   s.append(neu);
 
-  const los = knopf("So ist es.", "gross", () => { wahlOffen = false; zeichne(); });
+  const los = knopf("Mit meiner Auswahl starten", "gross", () => { wahlOffen = false; zeichne(); });
   los.disabled = !gewaehlt(z).length;
   s.append(los, el("p", "leise klein", "Du kannst jederzeit Tracker dazunehmen oder abwählen. Was du notierst, bleibt auf diesem Gerät."));
   return s;
@@ -499,7 +515,18 @@ function zeichne() {
   const buehne = $("#buehne");
   const ansicht = wahlOffen || !gewaehlt(z).length ? null : ANSICHT[z.ansicht] || knopfAnsicht;
   buehne.dataset.ansicht = ansicht ? z.ansicht : "wahl";
+  // Gleiche Aktion bleibt nach dem Neuzeichnen per Tastatur erreichbar.
+  const fokus = document.activeElement;
+  const innerhalb = buehne.contains(fokus);
+  const schluessel = fokus?.dataset.focus;
+  const name = fokus?.getAttribute("aria-label") || fokus?.textContent;
   buehne.replaceChildren(ansicht ? ansicht.render(api) : wahlSeite());
+  if (innerhalb) {
+    const ziel = schluessel
+      ? [...buehne.querySelectorAll("[data-focus]")].find((e) => e.dataset.focus === schluessel)
+      : [...buehne.querySelectorAll("button")].find((e) => (e.getAttribute("aria-label") || e.textContent) === name);
+    ziel?.focus({ preventScroll: true });
+  }
 }
 
 /* Ein neuer Tag, während die App offen stand: beim Zurückkommen neu zeichnen. */
