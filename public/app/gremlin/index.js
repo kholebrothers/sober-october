@@ -5,19 +5,20 @@
    die Figur steht in gremlin.js, die Sätze in saetze.js. Hier nur die Naht:
    wann er da ist, was er vom Tag weiß, und worauf er reagiert.
 
-   Er erscheint nur, wenn die Tiefe 3 ist und der Baustein an. Er bleibt
-   danach im Speicher; ausgeblendet ist er einfach unsichtbar.
+   Er erscheint nur, wenn die Tiefe 3 ist, der Baustein an und die
+   Beziehung begonnen hat (logik.js, gremlinStufe). Die Figur folgt der
+   Stufe: wild, Gremlin, halb Katze, frei lebende Katze.
    ===================================================================== */
 
 import { erzeugeBegleiter } from "../../begleiter/begleiter.js";
-import { GREMLIN } from "./gremlin.js";
+import { figurFuer } from "./gremlin.js";
 import { GREMLINSAETZE } from "./saetze.js";
 
 /**
- * @param o {an: () => bool, kontext: () => object|null, buzz: (muster) => void}
+ * @param o {an: () => bool, stufe: () => number, kontext: () => object|null, buzz: (muster) => void}
  */
 export function erzeugeGremlin(o) {
-  let b = null;
+  let b = null, figur = 0;
 
   /* Die Leinwand versteht keine CSS-Variablen und kein var() in color-mix.
      Ein unsichtbares Messelement löst jede Farbe auf, wie der Browser sie
@@ -33,12 +34,17 @@ export function erzeugeGremlin(o) {
     return getComputedStyle(probe).color;
   };
 
+  /* Die Figur hängt an der Stufe der Beziehung. Ändert sie sich, zieht ein
+     neuer Begleiter ein; der alte geht aus dem Bild. */
   function sicher() {
-    if (b || !o.an()) return b;
+    if (!o.an()) return b;
+    if (b && figur === o.stufe()) return b;
+    if (b) { b.element.remove(); b = null; }
+    figur = o.stufe();
     let speicher = null;
     try { speicher = localStorage; speicher.getItem("x"); } catch { speicher = null; }
     b = erzeugeBegleiter({
-      silhouette: GREMLIN, texte: GREMLINSAETZE, kontext: () => (o.an() ? o.kontext() : null),
+      silhouette: figurFuer(figur), texte: GREMLINSAETZE, kontext: () => (o.an() ? o.kontext() : null),
       speicher, praefix: "sober-october.gremlin.", id: "gremlin",
       wirt: { css, buzz: o.buzz },
     });

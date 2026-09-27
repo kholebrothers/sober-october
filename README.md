@@ -57,8 +57,10 @@ welche Fragen er beantwortet hat und welche offen sind.
 
 **Drei Schichten, drei Tiefen** (beim Start und unter ⋯ wählbar): 1 · Beobachten — einfaches
 Tracking; 2 · Formen — Routinen in Schritten, Wenn-dann-Pläne und NLP-Kurzwerkzeuge (Anker, Swish, Reframing); 3 · Nervensystem —
-Tages-Check-in, Ebenen, Verlauf und der **Gremlin**: der Begleiter aus kur-core als neue Figur, nach dem
-Possibility Management. Tracker gibt es zum **Sein-lassen** und zum **Aufbauen** (etwa eine
+Tages-Check-in, Ebenen, Verlauf und der **Gremlin** (nach Possibility Management, SPARK 099): taucht nach
+ein paar Tagen auf, und je nach Beziehung — erkennen, erleben, Hunger spüren, bewusst füttern, arbeiten
+lassen — wird aus dem wilden Gremlin eine frei lebende Katze. Dazu ab Schicht 1 die **Lebenszeit**: was
+Kaffee, Kippe, Video vorher kosteten und was jetzt frei wird. Tracker gibt es zum **Sein-lassen** und zum **Aufbauen** (etwa eine
 Morgenroutine); wer nichts sein lässt, kann die App genauso nutzen. Siehe
 [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 

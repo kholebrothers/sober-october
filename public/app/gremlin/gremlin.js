@@ -20,6 +20,8 @@
    --gremlin-c2 (Schopf). Sie stehen in app.css.
    ===================================================================== */
 
+import { KATZE } from "./katze.js";
+
 /* ---- Kopf ------------------------------------------------------- */
 const KOPF = ["D.........D", "DgD.....DgD", ".DgDDDDDgD.", "DmgggggggD.", "KmgDgggggDD", "KggDggDggDD", "KggggDgDggD", "KgggggggggD"];
 const OHREN = {
@@ -154,3 +156,19 @@ export const GREMLIN = {
 };
 
 export default GREMLIN;
+
+/* ---- Die Figur je Stufe der Beziehung ------------------------------ */
+
+const WILD = { ...GREMLIN, posen: { ...GREMLIN.posen, sit: { art: "sitz", augen: "boese" }, "peek-l": { art: "sitz", dreh: -2, augen: "boese" }, "peek-r": { art: "sitz", dreh: 2, augen: "boese" } } };
+/* Halb und halb: der Körper einer Katze, Haut und Schopf des Gremlins. */
+const HALB = { ...KATZE, name: "Gremlin-Katze",
+  farben: { ...KATZE.farben, D: "--gremlin-o", m: "--gremlin-s", g: "--gremlin-f", K: "--gremlin-k", C: "--gremlin-c", c: "--gremlin-c2" },
+  aufsatz: GREMLIN.aufsatz };
+
+/** 1 wild · 2–3 Gremlin · 4 halb Katze · 5 frei lebende Katze */
+export function figurFuer(stufe) {
+  if (stufe >= 5) return KATZE;
+  if (stufe === 4) return HALB;
+  if (stufe <= 1) return WILD;
+  return GREMLIN;
+}

@@ -1,25 +1,33 @@
 /* =====================================================================
    Was der Gremlin sagt — Belegung von sober-october
 
-   Die Haltung, nach der Logik des Possibility Management, wie wir sie
-   verstehen (ENTWURF, zum Gegenlesen): Der Gremlin ist der Teil, der sich
-   von niedrigem Drama nährt — Selbstvorwurf, Ausreden, Rechthaben,
-   Vergessen. Er ist kein Feind; man wird ihn nicht los. Man kann ihn
-   erkennen, beim Namen nennen und ihm eine Aufgabe geben: das Alte zu
-   zerlegen, statt dich. Darum sagt er ehrlich, was er will — und macht
-   damit die Falle sichtbar. Er beschämt nie; er hofft nur darauf, dass
-   du es selbst tust, und sagt das laut.
+   Nach Clinton Callahan, SPARK 099 (Possibility Management, CC BY-SA 4.0):
+   „Wenn du deinen Gremlin nicht bewusst fütterst, frisst er dich." Der
+   Gremlin — König oder Königin deiner Unterwelt — lebt von niedrigem Drama:
+   Lästern, Klagen, Adrenalin, Schuld, Selbstvorwurf, Heimlichkeit. Er ist
+   weder gut noch böse, er lässt sich nicht ändern und nicht verbannen.
+   Man baut eine bewusste Beziehung zu ihm auf: ihn erkennen, ihn erleben,
+   seinen Hunger spüren, ihn nach Plan füttern (an seinem Tag, mit Futter,
+   das du wählst), ihn arbeiten lassen — danken, „Sitz!".
 
-   Dieselben Töpfe wie bei Katze und Schwein (kur-core), dazu drei eigene:
-   `drang` (ein Würde-gern-Moment ist notiert), `geschehen` (ein Konsum ist
-   notiert) und `werkzeug` (ein Werkzeug aus Schicht 2 wurde benutzt).
+   Darum sagt er ehrlich, was er will, und macht die Falle sichtbar. Er
+   beschämt nie. Mit der Beziehung (c.bez, 1–5) ändert sich sein Ton: erst
+   frech und hungrig, zuletzt ein Verbündeter, der trotzdem Gremlin bleibt.
+
+   Dieselben Töpfe wie bei Katze und Schwein (kur-core), dazu eigene:
+   `drang`, `geschehen`, `werkzeug`, `sitz` (Drang außerhalb seines Tags,
+   ab Stufe 4) und `fuetterung` (sein Tag ist heute).
 
    `ab` ist der Tag, ab dem ein Satz auftauchen darf; `wenn` bekommt den
    Tageskontext. Platzhalter: {st} Tage am Stück, {tag} Tag, {name},
    {best} bester Lauf, {v} (bleibt leer).
+
+   Die Sätze sind ein Entwurf zum Gegenlesen.
    ===================================================================== */
 
 const morgen = (c) => c.p === "morgen";
+const ab = (n) => (c) => c.bez >= n;
+const bis = (n) => (c) => c.bez <= n;
 const abend = (c) => c.p === "abend";
 
 export const GREMLINSAETZE = {
@@ -30,7 +38,9 @@ export const GREMLINSAETZE = {
     {ab: 1, t: "Abend. Die Stunde, in der ich Ideen habe. Sag lieber schnell, wie der Tag war.{v}", wenn: abend},
     {ab: 2, t: "Gestern war Pause. Ich hab mich gut gefüttert gefühlt. Heute wieder du?{v}", wenn: (c) => c.gesternLeer},
     {ab: 3, t: "{st} Tage am Stück. Ich werde langsam dünn.{v}", wenn: (c) => c.st >= 2},
-    {ab: 5, t: "Ich bin nicht dein Feind. Ich bin nur hungrig. Gib mir eine Aufgabe.{v}"},
+    {ab: 1, t: "Ich bin nicht dein Feind. Ich bin nur hungrig. Wenn du mich nicht fütterst, fress ich dich.{v}", wenn: bis(3)},
+    {ab: 1, t: "Heute ist Fütterungstag. Du weißt, was ich mag. Du entscheidest, was ich kriege.{v}", wenn: (c) => c.fuetterungstag},
+    {ab: 1, t: "Ich sitz. Ich warte auf meinen Tag. Du hast versprochen, dass er kommt.{v}", wenn: (c) => c.bez >= 4 && !c.fuetterungstag},
     {ab: 8, t: "Weißt du, was ich am liebsten esse? Ausreden. Hast du heute welche?{v}"},
     {ab: 13, t: "Dein bester Lauf waren {best} Tage. Ich erinnere mich ungern daran.{v}", wenn: (c) => c.best >= 5}
   ],
@@ -41,7 +51,8 @@ export const GREMLINSAETZE = {
     {ab: 1, t: "Du warst da. Ich knurr ein bisschen, aber ich hab's gesehen."},
     {ab: 3, t: "Dann zerleg ich eben die alte Gewohnheit. Das ist auch Drama. Nur das bessere."},
     {ab: 5, t: "{st} Tage. Ich hab mir einen neuen Job gesucht: aufpassen, dass du dranbleibst.", wenn: (c) => c.st >= 3},
-    {ab: 10, t: "Ich arbeite jetzt für dich. Sag's keinem."},
+    {ab: 1, t: "Ich arbeite jetzt für dich. Sag's keinem.", wenn: ab(5)},
+    {ab: 1, t: "Gib mir was zum Zerlegen. Eine Ausrede, eine alte Regel. Ich bin schnell.", wenn: ab(5)},
     {ab: 21, t: "Drei Wochen. Ich bin kaum wiederzuerkennen. Du auch nicht."}
   ],
 
@@ -83,6 +94,20 @@ export const GREMLINSAETZE = {
     {ab: 1, t: "Na toll. Ein Werkzeug. Jetzt hab ich nichts zu tun."},
     {ab: 1, t: "Gut. Gib mir die alte Gewohnheit, ich zerleg sie."},
     {ab: 2, t: "Ich hab verloren. Diesmal."}
+  ],
+
+  /* Drang außerhalb seines Tags, wenn er schon nach Plan gefüttert wird. */
+  sitz: [
+    {ab: 1, t: "Ich hab Hunger. Aber heute ist nicht mein Tag. Sitz. Ich weiß."},
+    {ab: 1, t: "Du sagst Sitz, ich sitz. Ich weiß, dass mein Tag kommt."},
+    {ab: 1, t: "Gut, dass du's merkst. Ich wär sonst einfach losgegangen."}
+  ],
+
+  /* Sein Tag ist heute: bewusst füttern. */
+  fuetterung: [
+    {ab: 1, t: "Endlich. Mein Tag. Was gibt's?"},
+    {ab: 1, t: "Nicht hungrig heute? Auch gut. Dann nächste Woche. Nicht vorher."},
+    {ab: 1, t: "Danke. Das war genug. Ich weiß, das sag ich nie."}
   ],
 
   /* Streicheln: knurren, wälzen, dem Schwanz nach, wegflitzen. */

@@ -13,6 +13,7 @@ import {
   TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte,
   setzeAnker, setzeSwish, planHinzu, planWeg, PLAENE_MAX,
   setzeZeitVorher, freiAm, lebenszeit, dauer,
+  gremlinStufe, setzeFuetterungstag, futterHinzu, fuettern, werkzeugBenutzt, istFuetterungstag,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -672,4 +673,34 @@ test("Lebenszeit: was vorher Zeit kostete, was jetzt frei wird — nur an Tagen 
   const zurueck = aus(JSON.stringify(z));
   assert.deepEqual([zurueck.zeitVorher, zurueck.tagebuch], [z.zeitVorher, z.tagebuch]);
   assert.ok(!JSON.stringify(fuerKern(z, okt(1))).includes("zweckfrei"), "Lebenszeit bleibt im Gerät");
+});
+
+test("die Gremlin-Beziehung: fünf Schritte nach SPARK 099, aus dem Verhalten gerechnet", () => {
+  const z = mit("kaffee");
+  const t = (n) => `2026-10-${String(n).padStart(2, "0")}`;   // der 3. Oktober 2026 ist ein Samstag
+  assert.equal(gremlinStufe(z, t(3)).n, 0, "am Anfang ist er noch nicht da");
+  for (const d of [1, 2, 3]) schalteDa(z, t(d));
+  assert.equal(gremlinStufe(z, t(3)).n, 1, "nach drei Tagen dabei: erkennen");
+  notiere(z, { tag: t(2), zeit: "10:00", verzicht: "kaffee", art: "drang" });
+  notiere(z, { tag: t(3), zeit: "10:00", verzicht: "kaffee", art: "drang" });
+  assert.equal(gremlinStufe(z, t(3)).n, 2, "Drang an zwei Tagen bemerkt: erleben");
+  werkzeugBenutzt(z, t(2)); werkzeugBenutzt(z, t(3)); werkzeugBenutzt(z, t(3));
+  assert.equal(gremlinStufe(z, t(3)).n, 3, "zwei Tage mit Werkzeug: Hunger spüren");
+
+  assert.equal(fuettern(z, t(3), "Serie"), false, "ohne Fütterungstag kein Füttern");
+  setzeFuetterungstag(z, 6);
+  assert.equal(istFuetterungstag(z, t(3)), true);
+  assert.equal(fuettern(z, t(2), "Serie"), false, "nicht außerhalb seines Tags");
+  assert.equal(fuettern(z, t(3), "Serie"), true);
+  assert.equal(fuettern(z, t(3), "noch mehr"), false, "einmal am Tag");
+  assert.equal(gremlinStufe(z, t(3)).n, 4, "nach Plan gefüttert");
+
+  for (let d = 4; d <= 10; d++) schalteDa(z, t(d));
+  fuettern(z, t(10), "");   // nicht hungrig zählt auch: warten bis zum nächsten Samstag
+  assert.equal(gremlinStufe(z, t(10)).n, 5, "zweimal nach Plan, acht Tage dabei: im Dienst");
+  assert.equal(gremlinStufe(z, t(31)).n, 1, "schläft die Beziehung ein, verwildert er wieder");
+
+  assert.equal(futterHinzu(z, " Etwas Süßes "), true);
+  assert.equal(futterHinzu(z, "Etwas Süßes"), false);
+  assert.deepEqual(aus(JSON.stringify(z)).gremlin, z.gremlin);
 });

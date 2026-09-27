@@ -158,23 +158,34 @@ ein leerer Tag ist nichts bekannt, nicht „alles gespart“. Mehr als vorher is
 
 ## Der Gremlin (Schicht 3)
 
-Die Katze der Vier-Wochen-Kur, umgebaut: dieselbe Mechanik aus kur-core (`public/begleiter/`,
-unverändert), eine neue Figur — Fledermausohren, leuchtend gelbe Augen, ein Grinsen mit Zähnchen,
-ein lila Schopf, der mit der Zeit wächst. Er läuft am Rand, klettert an den Karten, lässt sich
-streicheln.
+Grundlage ist Clinton Callahan, [SPARK 099](https://sparks.nextculture.org/res/sparks/Spark-099-en.pdf)
+(Possibility Management, CC BY-SA 4.0): „Wenn du deinen Gremlin nicht bewusst fütterst, frisst er
+dich.“ Der Gremlin — König oder Königin deiner Unterwelt — lebt von niedrigem Drama: Lästern, Klagen,
+Adrenalin, Schuld, Heimlichkeit. Er ist weder gut noch böse und lässt sich weder ändern noch verbannen.
+Was sich ändert, ist die **Beziehung**, in fünf Schritten. Die App rechnet die Stufe aus dem Verhalten
+der letzten Wochen; schläft die Beziehung ein, verwildert er wieder:
 
-Sein Charakter folgt dem Possibility Management, wie wir es verstehen (**Entwurf, zum Gegenlesen**,
-`public/app/gremlin/saetze.js`): Der Gremlin ist der Teil, der von niedrigem Drama lebt —
-Selbstvorwurf, Ausreden, Vergessen. Er ist kein Feind; man wird ihn nicht los, man kann ihn erkennen
-und ihm eine Aufgabe geben. Deshalb sagt er laut, was er will, und macht die Falle damit sichtbar:
+| Stufe | SPARK 099 | Wann | Figur |
+| --- | --- | --- | --- |
+| 0 | — | vor dem dritten Tag dabei | noch nicht da |
+| 1 | Erkennen | drei Tage dabei | wilder Gremlin, böser Blick |
+| 2 | Erleben | Drang an zwei Tagen bemerkt (14 Tage) | Gremlin |
+| 3 | Hunger spüren | Werkzeug an zwei Tagen (14 Tage) | Gremlin |
+| 4 | Füttern nach Plan | Fütterungstag gewählt, einmal eingehalten (14 Tage) | halb Katze, Haut und Schopf des Gremlins |
+| 5 | Im Dienst | zweimal eingehalten (21 Tage), acht Tage dabei (14 Tage) | frei lebende Katze — mit Gremlin-Augen |
 
-- beim Drang: „Ah, der Drang. Den hab ich bestellt. Du musst ihn nicht abholen.“
-- nach einem Konsum: „Jetzt noch ein bisschen Selbstvorwurf? Nein? Schade — das wär mein
-  Lieblingsessen.“
-- nach einem Werkzeug: „Gut. Gib mir die alte Gewohnheit, ich zerleg sie.“
-- wenn der Tag zählt, knurrt er — und sucht sich mit der Zeit einen besseren Job.
+Der Gremlin selbst ändert sich nicht (SPARK 099); die Figur zeigt, wo die Beziehung steht. Am Ende
+steht eine frei lebende Katze, die mit dir arbeitet und trotzdem gelbe Gremlin-Augen hat.
 
-Er beschämt nie. Nachts schickt er ins Bett.
+**Bewusst füttern** (Karte „Dein Gremlin“): ein fester Tag in der Woche, Futter, das *du* wählst
+(Vorschläge: eine Folge Serie ohne schlechtes Gewissen, etwas Süßes, laut mitsingen …). Nur an seinem
+Tag, einmal; „nicht hungrig“ zählt auch — dann nächste Woche, nicht vorher. Was ernste Folgen hat
+(Alkohol, Streit, Glücksspiel, Rasen), gehört nicht auf die Liste. Dazwischen, bei einem Drang, sagt er
+ab Stufe 4: „Ich hab Hunger. Aber heute ist nicht mein Tag. Sitz. Ich weiß.“
+
+Seine Sätze (`public/app/gremlin/saetze.js`, **Entwurf zum Gegenlesen**) sagen ehrlich, was er will,
+und machen die Falle damit sichtbar; sie beschämen nie. Mit der Stufe ändert sich der Ton: erst frech
+und hungrig, zuletzt ein Verbündeter.
 
 ## Bewusst offen
 

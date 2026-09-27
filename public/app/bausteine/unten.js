@@ -8,10 +8,12 @@ import { karte } from "./heatmap.js";
 import { tagebuch } from "./tagebuch.js";
 import { verlauf } from "./verlauf.js";
 import { werkzeugKarte } from "./werkzeuge.js";
+import { gremlinKarte } from "./gremlin.js";
 
 export function unten(api, { ebenen = true } = {}) {
   const teile = [];
   if (api.aktiv("werkzeuge")) teile.push(werkzeugKarte(api));
+  if (api.aktiv("gremlin")) teile.push(gremlinKarte(api));
   if (api.aktiv("tagebuch")) teile.push(tagebuch(api));
   if (api.aktiv("verlauf")) teile.push(verlauf(api));
   if (api.aktiv("heatmap")) teile.push(karte(api));

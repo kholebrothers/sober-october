@@ -18,6 +18,7 @@ import {
   TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte, ab,
   setzeAnker, setzeSwish, planHinzu, planWeg,
   ZEIT_STUFEN, ZEIT_FUER, setzeZeitVorher, freiAm, lebenszeit, dauer,
+  GREMLIN_STUFEN, GREMLIN_FUTTER_VORSCHLAEGE, WOCHENTAGE, gremlinStufe, setzeFuetterungstag, futterHinzu, futterWeg, fuettern, werkzeugBenutzt,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -53,6 +54,7 @@ function aendern(f) {
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
   planeAbgleich();
+  gremlinNachStufe();
   if (!vor || !gewaehlt(z).length || wahlOffen) return null;
   const m = moment(vor, stand());
   if (m.heuteNeu) {
@@ -126,6 +128,21 @@ const api = {
       vorher: z.zeitVorher, zeitHeute: e.zeit || {}, fuerHeute: e.fuer || [] };
   },
   zeitVorherSetzen(v, m) { aendern(() => setzeZeitVorher(z, v, m)); },
+  gremlinStand() {
+    const t = heute(), s = gremlinStufe(z, t), f = z.gremlin.fuetterungen.find((x) => x.tag === t);
+    return { stufe: s, stufen: GREMLIN_STUFEN, tag: z.gremlin.tag, futter: z.gremlin.futter, wochentage: WOCHENTAGE,
+      vorschlaege: GREMLIN_FUTTER_VORSCHLAEGE, fuetterungstag: s.fuetterungstag, heuteGefuettert: !!f, heuteWas: f?.was || "" };
+  },
+  gremlinTag(t) { aendern(() => setzeFuetterungstag(z, t)); if (t !== null) melde(`Sein Tag ist der ${WOCHENTAGE[t]}. Bis dahin: Sitz.`); },
+  gremlinFutterHinzu(was) { aendern(() => futterHinzu(z, was)); },
+  gremlinFutterWeg(i) { aendern(() => futterWeg(z, i)); },
+  gremlinFuettern(was) {
+    let ok = false;
+    aendern(() => { ok = fuettern(z, heute(), was); });
+    if (!ok) return;
+    gremlin.sagt("fuetterung");
+    melde(was ? `Gefüttert: ${was}. Bewusst, an seinem Tag.` : "Nicht hungrig. Dann nächste Woche — nicht vorher.");
+  },
   zeitHeuteSetzen(v, m) {
     const vorher = freiAm(z, heute());
     const mo = aendern(() => schreibeTag(z, heute(), { zeit: { [v]: m } }));
@@ -303,7 +320,8 @@ const bogen = $("#bogen");
 /* Der Gremlin (Schicht 3): was er vom Tag weiß. `tag` ist, wie lange man
    schon dabei ist — danach richtet sich, welche Sätze er schon kennt. */
 const gremlin = erzeugeGremlin({
-  an: () => aktiv(z, "gremlin") && gewaehlt(z).length > 0 && !wahlOffen,
+  an: () => aktiv(z, "gremlin") && gewaehlt(z).length > 0 && !wahlOffen && gremlinStufe(z, heute()).n >= 1,
+  stufe: () => gremlinStufe(z, heute()).n,
   buzz: (m) => spueren(m || 10),
   kontext() {
     const t = heute(), d = new Date(), h = d.getHours();
@@ -315,16 +333,30 @@ const gremlin = erzeugeGremlin({
       tag: Math.max(1, seit), st: serie(z, t), n: vonTag(z, t).length + (istDa(z, t) ? 1 : 0) + (z.tagebuch[t] ? 1 : 0),
       best: besterLauf(z, t), name: z.gemeinsam?.name || "", p, tiefe: p === "nacht" ? Math.min(1, ((h + 2) % 24) / 8) : 0,
       gesternLeer: !hatEintrag(z, verschiebe(t, -1)), v: "",
+      bez: gremlinStufe(z, t).n, fuetterungstag: gremlinStufe(z, t).fuetterungstag,
     };
   },
 });
+
+/* Hat sich die Beziehung verändert, sagt die App es einmal — kurz nach
+   der Meldung zur Handlung, damit keine die andere verschluckt. */
+let letzteStufe = null;
+function gremlinNachStufe() {
+  const s = gremlinStufe(z, heute());
+  if (letzteStufe !== null && s.n !== letzteStufe && aktiv(z, "gremlin")) {
+    const text = s.n === 1 ? "Da ist jemand. Dein Gremlin zeigt sich — unten am Rand."
+      : s.n > letzteStufe ? `Dein Gremlin: ${s.name}. ${s.text}` : `Dein Gremlin verwildert ein wenig: ${s.name}.`;
+    setTimeout(() => { gremlin.pruefen(); melde(text); }, 2600);
+  }
+  letzteStufe = s.n;
+}
 
 /* Die Werkzeuge (Schicht 2) bekommen, was sie brauchen, hinein. */
 const W = werkzeuge({
   el: (...a) => el(...a), knopf: (...a) => knopf(...a), zeige: (n) => zeigeBogen(n), schliessen: () => bogen.close(),
   aendern: (f) => aendern(f), melde: (...a) => melde(...a), zustand: () => z,
   setzeAnker, setzeSwish, planHinzu, planWeg, ergaenze,
-  gemacht: () => gremlin.sagt("werkzeug"),
+  gemacht: () => { aendern(() => werkzeugBenutzt(z, heute())); gremlin.sagt("werkzeug"); },
 });
 
 function zeigeBogen(knoten) {
@@ -367,7 +399,7 @@ function eintragen(v, art) {
   });
   document.querySelector(`[data-focus="${art === "getan" ? "habe" : art}-${v}"]`)?.classList.add("tipp");
   if (!m?.heuteNeu) spueren(8);
-  if (art === "drang") gremlin.sagt("drang");
+  if (art === "drang") gremlin.sagt(gremlinStufe(z, heute()).n >= 4 && !gremlinStufe(z, heute()).fuetterungstag ? "sitz" : "drang");
   else if (art === "habe") gremlin.sagt("geschehen");
   else gremlin.freut(vonTag(z, heute()).length, document.querySelector(`[data-focus="habe-${v}"]`));
   const text = `${art === "getan" ? `Getan: ${V.name}.` : `Notiert: ${art === "habe" ? V.habe : V.drang}.`}${m?.heuteNeu ? " Der Tag zählt." : ""}`;
@@ -957,6 +989,7 @@ function zeichne() {
   const name = fokus?.getAttribute("aria-label") || fokus?.textContent;
   buehne.replaceChildren(ansicht ? ansicht.render(api) : wahlSeite());
   gremlin.pruefen();
+  if (letzteStufe === null) letzteStufe = gremlinStufe(z, heute()).n;
   if (innerhalb) {
     const ziel = schluessel
       ? [...buehne.querySelectorAll("[data-focus]")].find((e) => e.dataset.focus === schluessel)

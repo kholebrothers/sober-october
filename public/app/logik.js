@@ -248,7 +248,8 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 
 export function neuerZustand() {
   return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1,
-    werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {} };
+    werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {},
+    gremlin: { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] } };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -274,6 +275,7 @@ export function aus(text) {
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
   z.werkzeug = werkzeugAus(roh.werkzeug);
+  z.gremlin = gremlinAus(roh.gremlin);
   if (roh.zeitVorher && typeof roh.zeitVorher === "object")
     for (const k of ids) if (minuten(roh.zeitVorher[k]) !== null) z.zeitVorher[k] = roh.zeitVorher[k];
   // Ein Stand von vor den Schichten hatte alles: er bleibt auf der tiefsten.
@@ -835,6 +837,91 @@ export function planHinzu(z, wenn, dann) {
   return true;
 }
 export function planWeg(z, i) { z.werkzeug.plaene.splice(i, 1); }
+
+/* ---- Der Gremlin: die Beziehung ------------------------------------------------
+
+   Nach Clinton Callahan, SPARK 099 (Possibility Management, CC BY-SA 4.0):
+   „Wenn du deinen Gremlin nicht bewusst fütterst, frisst er dich." Der
+   Gremlin ist weder gut noch böse; er lässt sich nicht ändern und nicht
+   verbannen. Was sich ändert, ist die Beziehung — in fünf Schritten. Die
+   Figur zeigt, wo die Beziehung steht: am Anfang ein wilder Gremlin, am
+   Ende eine frei lebende Katze, die mit dir arbeitet (die Augen bleiben
+   die eines Gremlins).
+
+   Die Stufe wird aus dem Verhalten der letzten Wochen gerechnet, nicht
+   gesammelt: schläft die Beziehung ein, verwildert er wieder. Er taucht
+   erst auf, wenn man an drei Tagen dabei war.
+
+     gremlin.tag           Fütterungstag, 0 = Sonntag … 6 = Samstag, oder null
+     gremlin.futter        was er bekommen darf — du wählst, nicht er
+     gremlin.fuetterungen  [{tag, was}]; was = "" heißt: war nicht hungrig
+     gremlin.werkzeugTage  Tage, an denen ein Werkzeug benutzt wurde */
+export const GREMLIN_STUFEN = [
+  { n: 0, name: "Noch nicht da", text: "Er zeigt sich nach ein paar Tagen." },
+  { n: 1, name: "Erkennen", text: "Jede:r hat einen Gremlin: den Teil, der von niedrigem Drama lebt. Er ist weder gut noch böse." },
+  { n: 2, name: "Erleben", text: "Du merkst, wann er am Steuer sitzt: an Drang, Ausreden, diesem einen Lachen." },
+  { n: 3, name: "Hunger spüren", text: "Du spürst ihn kommen, bevor er übernimmt — und hast ein Werkzeug zur Hand." },
+  { n: 4, name: "Füttern nach Plan", text: "Er bekommt sein Futter an seinem Tag, das du wählst. Dazwischen: Sitz." },
+  { n: 5, name: "Im Dienst", text: "Er arbeitet für dich: frech, wach, unbestechlich. Danke kurz, dann Sitz." },
+];
+export const GREMLIN_FUTTER_VORSCHLAEGE = ["Eine Folge Serie, ohne schlechtes Gewissen", "Etwas Süßes", "Laut Musik, laut mitsingen",
+  "Eine Stunde rumgammeln", "Über schlechtes Fernsehen lästern", "Im Auto schimpfen, allein"];
+export const WOCHENTAGE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const GREMLIN_FUTTER_MAX = 8;
+
+function gremlinAus(roh) {
+  const g = { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] };
+  if (!roh || typeof roh !== "object") return g;
+  if (Number.isInteger(roh.tag) && roh.tag >= 0 && roh.tag <= 6) g.tag = roh.tag;
+  if (Array.isArray(roh.futter)) g.futter = roh.futter.filter((x) => typeof x === "string" && x.trim()).map((x) => KURZTEXT(x, 80)).slice(0, GREMLIN_FUTTER_MAX);
+  const TAG = /^\d{4}-\d{2}-\d{2}$/;
+  if (Array.isArray(roh.fuetterungen))
+    g.fuetterungen = roh.fuetterungen.filter((f) => f && TAG.test(f.tag) && typeof f.was === "string").map((f) => ({ tag: f.tag, was: KURZTEXT(f.was, 80) }));
+  if (Array.isArray(roh.werkzeugTage)) g.werkzeugTage = [...new Set(roh.werkzeugTage.filter((t) => typeof t === "string" && TAG.test(t)))].sort();
+  return g;
+}
+
+export function setzeFuetterungstag(z, tag) { z.gremlin.tag = Number.isInteger(tag) && tag >= 0 && tag <= 6 ? tag : null; }
+export function futterHinzu(z, was) {
+  const w = KURZTEXT(was, 80);
+  if (!w || z.gremlin.futter.length >= GREMLIN_FUTTER_MAX || z.gremlin.futter.includes(w)) return false;
+  z.gremlin.futter.push(w);
+  return true;
+}
+export function futterWeg(z, i) { z.gremlin.futter.splice(i, 1); }
+export const istFuetterungstag = (z, tag) => z.gremlin.tag !== null && alsDatum(tag).getDay() === z.gremlin.tag;
+/** Füttern (was = "" heißt: nicht hungrig). Nur an seinem Tag, einmal. */
+export function fuettern(z, tag, was) {
+  if (!istFuetterungstag(z, tag) || z.gremlin.fuetterungen.some((f) => f.tag === tag)) return false;
+  z.gremlin.fuetterungen.push({ tag, was: KURZTEXT(was, 80) });
+  return true;
+}
+export function werkzeugBenutzt(z, tag) {
+  if (!z.gremlin.werkzeugTage.includes(tag)) z.gremlin.werkzeugTage = [...z.gremlin.werkzeugTage, tag].sort();
+}
+
+/** Die Stufe der Beziehung, 0 bis 5, und warum. Jede Stufe setzt die
+    vorige voraus. */
+export function gremlinStufe(z, heute) {
+  const vor = (n) => verschiebe(heute, -n);
+  const im = (t, n) => t > vor(n) && t <= heute;
+  const allesDabei = eintragsTage(z).filter((t) => t <= heute && dabei(z, t));
+  const dabei14 = allesDabei.filter((t) => im(t, 14)).length;
+  const drangTage14 = new Set(z.ereignisse.filter((e) => e.art === "drang" && im(e.tag, 14)).map((e) => e.tag)).size;
+  const werkzeug14 = z.gremlin.werkzeugTage.filter((t) => im(t, 14)).length;
+  const fuetterungen = (n) => z.gremlin.fuetterungen.filter((f) => im(f.tag, n)).length;
+  const bedingungen = [
+    allesDabei.length >= 3,
+    drangTage14 >= 2,
+    werkzeug14 >= 2,
+    z.gremlin.tag !== null && fuetterungen(14) >= 1,
+    fuetterungen(21) >= 2 && dabei14 >= 8,
+  ];
+  let n = 0;
+  while (n < bedingungen.length && bedingungen[n]) n++;
+  return { ...GREMLIN_STUFEN[n], fuetterungstag: istFuetterungstag(z, heute),
+    heuteGefuettert: z.gremlin.fuetterungen.some((f) => f.tag === heute) };
+}
 
 /* ---- Der Leitgedanke --------------------------------------------------------
 

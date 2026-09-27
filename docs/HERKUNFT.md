@@ -11,6 +11,7 @@ Nachbar-Repos sind dafür nicht verändert worden.
 | `server/api.js`, `schema.sql` | `kur-core/server/` | `f9e139a` | Spalte `raum` (live/Vorschau); nur Tag `dabei` und Einstellung `commitment`; `/api/abschied` neu, `/api/person` entfällt |
 | `server/dev-uhr.js` | `kur-core/server/dev-uhr.js` | `f9e139a` | nein |
 | `public/begleiter/` (`begleiter.js`, `bild.js`, `welt.js`, `begleiter.css`) | `kur-core/begleiter/` | `f9e139a` | nein; die Figur (`public/app/gremlin/gremlin.js`) ist nach `kur-core/test/beispiel/katze.js` gebaut |
+| `public/app/gremlin/katze.js` | `kur-core/test/beispiel/katze.js` | `f9e139a` | Augen leuchten gelb (Ton E), eigene Farbnamen |
 | `test/d1-attrappe.js` | `kur-core/test/d1-attrappe.js` | `f9e139a` | nein |
 | `test/kur-core-wertevertrag.js` | `kur-core/server/api.js` (`leer`, `normalisiere`, Muster) | `f9e139a` | nur herausgelöst |
 
@@ -52,3 +53,7 @@ Die App soll kur-core später als Unterbau nutzen können, statt ihm zu widerspr
   je Gruppe, also eine D1 je Gruppe oder eine Gruppenspalte), ist noch zu entscheiden.
 - Kommt der Server, braucht die Vorschau eine eigene D1. Worker-Versionen teilen sich ihre
   Bindungen mit live.
+
+Inhaltlich: **Der Gremlin** folgt Clinton Callahan, SPARK 099 („If you do not consciously feed your
+Gremlin then Gremlin feeds on you“), Possibility Management, CC BY-SA 4.0 —
+https://sparks.nextculture.org/res/sparks/Spark-099-en.pdf

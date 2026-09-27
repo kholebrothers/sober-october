@@ -619,3 +619,27 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .lz-fuer { display:grid; gap:6px; }
 .lz-chip { --v:var(--moss); min-height:36px; }
 @media (max-width:360px) { .lz-stufen { grid-template-columns:repeat(4, minmax(0, 1fr)); } }
+
+/* Die frei lebende Katze (Stufe 5): warme Töne, die Augen bleiben gelb. */
+:root {
+  --katze-o:color-mix(in oklab, var(--clay) 25%, var(--ink)); --katze-k:var(--ink);
+  --katze-s:color-mix(in oklab, var(--gelb) 30%, var(--leise)); --katze-f:color-mix(in oklab, var(--gelb) 30%, var(--mist));
+  --katze-c:var(--teal); --katze-c2:color-mix(in oklab, var(--teal) 60%, var(--ink));
+}
+
+/* Dein Gremlin: die fünf Schritte als Leiter, sein Tag, sein Futter. */
+.gremlin-karte { gap:12px; }
+.gr-leiter { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:4px; }
+.gr-stufe { font-size:10.5px; line-height:1.2; text-align:center; padding:6px 2px; border-radius:8px; background:var(--hm-leer); color:var(--leise); overflow-wrap:anywhere; }
+.gr-stufe[data-an] { background:color-mix(in oklab, var(--moss) 22%, var(--surface)); color:var(--ink); }
+.gr-stufe[data-jetzt] { background:var(--moss); color:var(--surface); font-weight:600; }
+.gr-text { margin:0; font-size:15px; }
+.gr-fuettern { display:grid; gap:6px; padding:12px 14px; border-radius:var(--radius-control); background:color-mix(in oklab, var(--lila) 8%, var(--paper)); border-left:3px solid var(--lila); }
+.gr-fuettern p { margin:0; }
+.gr-heute { font-size:17px; }
+.gr-tage { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:4px; }
+.gr-futter { --v:var(--lila); min-height:var(--touch); }
+.gr-vorschlag { border-style:dashed; }
+.gr-futterliste { display:grid; gap:6px; }
+.gr-futterliste p { margin:0; }
+.gr-quelle { margin:0; font-size:11px; }
