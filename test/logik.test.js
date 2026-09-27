@@ -10,6 +10,7 @@ import {
   BAUSTEINE, aktiv, schalteBaustein,
   istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN, monat,
   SCHICHTEN, STIMMUNG, SELBST, schreibeTag, tagebuchZeilen, SYSTEME, zusammenhaenge, verlauf, eingeschaetzt,
+  TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -56,9 +57,12 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
   assert.ok(neu.some((e) => e.id === "routine"));
 });
 
-test("die App fängt klein an: Leitgedanke, Gemeinsam, Tagebuch, Verlauf und Abendruhe sind von selbst an", () => {
+test("die App fängt klein an: auf Schicht 1 Leitgedanke, Gemeinsam, Tagebuch und Abendruhe, auf Schicht 3 auch der Verlauf", () => {
   const z = neuerZustand();
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "abends"]);
+  z.tiefe = 3;
   assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "abends"]);
+  z.tiefe = 1;
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);
   schalteBaustein(z, "gibtsnicht", true);
@@ -587,4 +591,47 @@ test("der Verlauf: je System eine Reihe, Drang und Geschehen darunter", () => {
   assert.deepEqual(v.map((r) => r.id).slice(-3), ["lust", "drang", "geschehen"]);
   assert.deepEqual(v[0].werte, [0, 1]);
   assert.deepEqual(v.at(-1).werte, [1 / 3, 0]);
+});
+
+test("drei Schichten: neu fängt man bei 1 an, ein alter Stand hatte alles", () => {
+  assert.deepEqual(TIEFEN.map((t) => t.name), ["Beobachten", "Formen", "Nervensystem"]);
+  assert.equal(neuerZustand().tiefe, 1);
+  assert.equal(aus(JSON.stringify({ v: 1, commitment: { kaffee: { drang: true } } })).tiefe, 3, "wer schon da war, verliert nichts");
+  const z = mit("kaffee");
+  z.tiefe = 2;
+  assert.equal(aus(JSON.stringify(z)).tiefe, 2);
+  schalteBaustein(z, "verlauf", true);
+  assert.equal(aktiv(z, "verlauf"), false, "Schicht 3 bleibt zu, auch wenn eingeschaltet");
+  z.tiefe = 3;
+  assert.equal(aktiv(z, "verlauf"), true);
+});
+
+test("aufbauen statt lassen: eine Morgenroutine mit Schritten", () => {
+  const z = mit("kaffee");
+  const vorschlag = AUFBAU_VORSCHLAEGE[0];
+  const id = fuegeEigenenHinzu(z, vorschlag.name, { art: "aufbauen", schritte: vorschlag.schritte });
+  const V = verzichte(z)[id];
+  assert.equal(V.aufbau, true);
+  assert.equal(V.schritte.length, 4);
+  assert.deepEqual(z.commitment[id], { drang: false }, "beim Aufbauen gibt es kein würde gern");
+  assert.equal(commitmentSatz(z), "Im Oktober lasse ich den Kaffee sein und baue Morgenroutine auf.");
+
+  assert.equal(schalteSchritt(z, okt(3), "07:00", id, 0), true);
+  schalteSchritt(z, okt(3), "07:05", id, 2);
+  assert.deepEqual([...schritteGetan(z, okt(3), id)].sort(), [0, 2]);
+  assert.equal(hatEintrag(z, okt(3)), true, "ein Schritt zählt den Tag");
+  assert.equal(schalteSchritt(z, okt(3), "07:10", id, 0), false, "zweites Tippen nimmt ihn weg");
+  assert.deepEqual([...schritteGetan(z, okt(3), id)], [2]);
+
+  setzeSchritte(z, id, ["  Wasser ", "", "Dehnen"]);
+  const zurueck = aus(JSON.stringify(z));
+  assert.deepEqual(zurueck.eigene.find((e) => e.id === id), { id, name: "Morgenroutine", art: "aufbauen", schritte: ["Wasser", "Dehnen"] });
+  assert.equal(zurueck.ereignisse.filter((e) => e.art === "getan").length, 1);
+});
+
+test("nur aufbauen, ohne Verzicht, geht auch", () => {
+  const z = neuerZustand();
+  fuegeEigenenHinzu(z, "Bewegung", { art: "aufbauen" });
+  assert.equal(commitmentSatz(z), "Im Oktober baue ich Bewegung auf.");
+  assert.equal(gewaehlt(z).length, 1);
 });

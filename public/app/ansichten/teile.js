@@ -49,5 +49,6 @@ export function plusTracker(api, text = "+ Tracker") {
 /** Wie ein Eintrag in einer Zeile heißt. */
 export function wasText(api, e) {
   const V = api.VERZICHTE[e.verzicht];
+  if (e.art === "getan") return Number.isInteger(e.schritt) && V.schritte?.[e.schritt] ? `${V.name}: ${V.schritte[e.schritt]}` : `${V.name} — getan`;
   return e.art === "ohne" ? `ohne ${V.name}` : e.art === "habe" ? V.habe : V.drang;
 }

@@ -15,6 +15,7 @@ import {
   istDa, schalteDa, hatEintrag, ergaenze, entferne,
   tagesKopf, monat, besterLauf, SCHICHTEN, STIMMUNG, SELBST, SELBST_MAX, schreibeTag, tagebuchZeilen,
   SYSTEME, GRUPPEN, STUFEN, eingeschaetzt, verlauf, zusammenhaenge,
+  TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte, ab,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -107,6 +108,18 @@ const api = {
     melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [["Wie war der Tag?", () => tagEinordnen()], zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
+  ab: (n) => ab(z, n),
+  trackerBearbeiten: (v) => eigenerTracker(v),
+  schritteGetan: (v) => schritteGetan(z, heute(), v),
+  schritt(v, i) {
+    const V = verzichte(z)[v];
+    let an = false;
+    const m = aendern(() => { an = schalteSchritt(z, heute(), jetztZeit(), v, i); });
+    document.querySelector(`[data-focus="schritt-${v}-${i}"]`)?.classList.add("tipp");
+    const fertig = schritteGetan(z, heute(), v).size === V.schritte.length;
+    if (an) spueren(m?.heuteNeu ? 14 : 8);
+    melde(mitMoment(an ? (fertig ? `${V.name}: alle Schritte getan.` : `${V.schritte[i]} — getan.`) + (m?.heuteNeu ? " Der Tag zählt." : "") : "Zurückgenommen.", m));
+  },
   schichten: () => SCHICHTEN,
   schichtWert: (id, tag) => SCHICHTEN.find((x) => x.id === id).wert(z, tag),
   eingeschaetzt: () => eingeschaetzt(z, heute()),
@@ -288,18 +301,18 @@ function el(tag, klasse, text) {
    nichts, bleibt der Eintrag, wie er ist. */
 function eintragen(v, art) {
   const V = verzichte(z)[v];
+  if (V.aufbau) art = "getan";
   let neu = [], id = null;
   const m = aendern(() => {
     neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art });
     id = z.ereignisse.at(-1).id;
   });
-  document.querySelector(`[data-focus="${art}-${v}"]`)?.classList.add("tipp");
+  document.querySelector(`[data-focus="${art === "getan" ? "habe" : art}-${v}"]`)?.classList.add("tipp");
   if (!m?.heuteNeu) spueren(8);
-  const text = `Notiert: ${art === "habe" ? V.habe : V.drang}.${m?.heuteNeu ? " Der Tag zählt." : ""}`;
-  melde(mitMoment(ebenenText(neu, text), m), [
-    ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)],
-    ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }],
-  ]);
+  const text = `${art === "getan" ? `Getan: ${V.name}.` : `Notiert: ${art === "habe" ? V.habe : V.drang}.`}${m?.heuteNeu ? " Der Tag zählt." : ""}`;
+  const zurueck = ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }];
+  melde(mitMoment(ebenenText(neu, text), m), art === "getan" ? [zurueck]
+    : [["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)], zurueck]);
 }
 
 const ebenenText = (neu, text) =>
@@ -543,6 +556,8 @@ function einstellungen() {
   k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)),
     knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }));
 
+  k.append(tiefeWahl("einst-tiefe"));
+
   const ans = el("fieldset", "frage");
   ans.append(el("legend", "serif", "Ansicht"));
   const reihe = el("div", "ansicht-wahl");
@@ -578,7 +593,7 @@ function einstellungen() {
   k.append(farbe);
 
   let gruppe = null, feld = null;
-  for (const b of BAUSTEINE) {
+  for (const b of BAUSTEINE.filter((x) => x.schicht <= z.tiefe)) {
     if (b.gruppe !== gruppe) {
       gruppe = b.gruppe;
       feld = el("fieldset", "frage bausteine");
@@ -662,36 +677,8 @@ function wahlSeite() {
   unterKopf.append(el("span", "leise", "Eins reicht. Bereitschaft genügt."), alles);
   s.append(unterKopf);
 
-  /* Eine Zeile je Tracker: links der Name (antippen wählt ihn), rechts, wenn
-     gewählt, ein leiser Schalter für die Würde-gern-Momente. Eigene Tracker
-     haben dazu ein „…" für Umbenennen und Entfernen. */
   const liste = el("div", "wahl-liste");
-  for (const id of [...FEST, ...z.eigene.map((e) => e.id)]) {
-    const an = !!z.commitment[id];
-    const zeile = faerbe(el("div", "wahl-zeile"), V, id);
-    zeile.dataset.an = an;
-    const b = knopf(V[id].name, "wahl-knopf", () => aendern(() => {
-      if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: true };
-    }));
-    b.setAttribute("aria-pressed", an);
-    b.dataset.focus = `wahl-${id}`;
-    b.prepend(el("span", "wahl-haken", an ? "✓" : ""));
-    zeile.append(b);
-    if (an) {
-      const d = knopf("würde gern", "chip-knopf klein", () => aendern(() => { z.commitment[id].drang = !z.commitment[id].drang; }));
-      d.setAttribute("aria-pressed", z.commitment[id].drang);
-      d.dataset.focus = `wahl-drang-${id}`;
-      d.title = "Auch die Momente notieren, in denen ich gern würde";
-      d.setAttribute("aria-label", `${V[id].name}: Würde-gern-Momente mitnotieren`);
-      zeile.append(d);
-    }
-    if (V[id].eigen) {
-      const m = knopf("…", "rund klein", () => eigenerTracker(id));
-      m.setAttribute("aria-label", `${V[id].name}: umbenennen oder entfernen`);
-      zeile.append(m);
-    }
-    liste.append(zeile);
-  }
+  for (const id of [...FEST, ...z.eigene.filter((e) => e.art !== "aufbauen").map((e) => e.id)]) liste.append(trackerZeile(id));
   s.append(liste, el("p", "leise klein wahl-hilfe", "„Würde gern“ schaltet das Notieren von Verlangen ein. Du kannst es jederzeit ändern."));
 
   const neu = el("form", "wahl-neu");
@@ -710,17 +697,104 @@ function wahlSeite() {
   });
   s.append(neu);
 
+  s.append(aufbauWahl(), tiefeWahl("wahl-tiefe"));
+
   const los = knopf("Mit meiner Auswahl starten", "gross", () => { wahlOffen = false; zeichne(); });
   los.disabled = !gewaehlt(z).length;
   s.append(los, el("p", "leise klein", "Du kannst jederzeit Tracker dazunehmen oder abwählen. Was du notierst, bleibt auf diesem Gerät."));
   return s;
 }
 
+/* Eine Zeile je Tracker: links der Name (antippen wählt ihn), rechts, wenn
+   gewählt, ein leiser Schalter für die Würde-gern-Momente. Eigene Tracker
+   haben dazu ein „…" für Umbenennen, Schritte und Entfernen. */
+function trackerZeile(id) {
+  const V = verzichte(z);
+  const an = !!z.commitment[id];
+  const zeile = faerbe(el("div", "wahl-zeile"), V, id);
+  zeile.dataset.an = an;
+  const b = knopf(V[id].name, "wahl-knopf", () => aendern(() => {
+    if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: !V[id].aufbau };
+  }));
+  b.setAttribute("aria-pressed", an);
+  b.dataset.focus = `wahl-${id}`;
+  b.prepend(el("span", "wahl-haken", an ? "✓" : ""));
+  zeile.append(b);
+  if (an && !V[id].aufbau) {
+    const d = knopf("würde gern", "chip-knopf klein", () => aendern(() => { z.commitment[id].drang = !z.commitment[id].drang; }));
+    d.setAttribute("aria-pressed", z.commitment[id].drang);
+    d.dataset.focus = `wahl-drang-${id}`;
+    d.title = "Auch die Momente notieren, in denen ich gern würde";
+    d.setAttribute("aria-label", `${V[id].name}: Würde-gern-Momente mitnotieren`);
+    zeile.append(d);
+  }
+  if (V[id].eigen) {
+    const m = knopf("…", "rund klein", () => eigenerTracker(id));
+    m.setAttribute("aria-label", `${V[id].name}: ${V[id].aufbau ? "Schritte, umbenennen oder entfernen" : "umbenennen oder entfernen"}`);
+    zeile.append(m);
+  }
+  return zeile;
+}
+
+/* Was man aufbaut: Vorschläge zum Antippen, eigene per Feld. Gewählte
+   stehen oben in der Liste wie jeder Tracker. */
+function aufbauWahl() {
+  const k = el("div", "aufbau-wahl");
+  k.append(el("h2", "serif", "Was baust du auf?"),
+    el("p", "leise klein", "Auch ohne Verzicht: eine Routine, die du im Oktober pflegen willst. Ein Tippen am Tag heißt „getan“."));
+  const gebaut = z.eigene.filter((e) => e.art === "aufbauen");
+  if (gebaut.length) {
+    const l = el("div", "wahl-liste");
+    for (const e of gebaut) l.append(trackerZeile(e.id));
+    k.append(l);
+  }
+  const r = el("div", "chips-reihe");
+  const namen = new Set(z.eigene.map((e) => e.name.toLowerCase()));
+  for (const v of AUFBAU_VORSCHLAEGE) {
+    if (namen.has(v.name.toLowerCase())) continue;
+    const b = knopf(`+ ${v.name}`, "chip-knopf aufbau-chip", () => aendern(() => fuegeEigenenHinzu(z, v.name, { art: "aufbauen", schritte: v.schritte })));
+    b.dataset.focus = `aufbau-${v.name}`;
+    r.append(b);
+  }
+  const f = el("form", "wahl-neu");
+  const i = Object.assign(document.createElement("input"), { name: "aufbau", placeholder: "Eigenes, z. B. Lesen am Abend", autocomplete: "off", maxLength: 60 });
+  i.setAttribute("aria-label", "Etwas zum Aufbauen hinzufügen");
+  const plus = knopf("+", "rund", () => f.requestSubmit());
+  plus.setAttribute("aria-label", "Hinzufügen");
+  f.append(i, plus);
+  f.addEventListener("submit", (e) => { e.preventDefault(); let id = null; aendern(() => { id = fuegeEigenenHinzu(z, i.value, { art: "aufbauen" }); }); if (id) melde(`${verzichte(z)[id].name} ist dabei.`); });
+  k.append(r, f);
+  return k;
+}
+
+/* Wie tief? Drei Karten, eine gewählt; wirkt sofort. */
+function tiefeWahl(klasse) {
+  const fs = el("fieldset", `frage ${klasse}`);
+  fs.append(el("legend", "serif", "Wie tief willst du gehen?"));
+  for (const t of TIEFEN) {
+    const l = el("label", "ansicht-option tiefe-option");
+    const i = Object.assign(document.createElement("input"), { type: "radio", name: `tiefe-${klasse}`, value: String(t.n), checked: z.tiefe === t.n });
+    i.addEventListener("change", () => { aendern(() => { z.tiefe = t.n; }); if (bogen.open) einstellungen(); });
+    l.dataset.tiefe = t.n;
+    l.append(i, el("span", "serif", `${t.n} · ${t.name}`), el("span", "leise klein", t.text));
+    fs.append(l);
+  }
+  fs.append(el("p", "leise klein", "Jede Schicht nimmt die vorigen mit. Du kannst jederzeit wechseln; nichts geht verloren."));
+  return fs;
+}
+
 /* Ein neuer Tracker, aus jeder Ansicht heraus über „+". Er ist gleich
    gewählt; die Knopf-Ansicht springt auf ihn. */
 function neuerTracker() {
   const f = el("form", "bogen-inhalt");
-  f.append(el("p", "rubrik", "Neuer Tracker"), el("h2", null, "Was lässt du noch sein?"));
+  f.append(el("p", "rubrik", "Neuer Tracker"), el("h2", null, "Was lässt du sein — oder baust du auf?"));
+  const artWahl = el("div", "wahlreihe");
+  for (const [wert, text] of [["lassen", "sein lassen"], ["aufbauen", "aufbauen"]]) {
+    const l = el("label", "zeile");
+    l.append(Object.assign(document.createElement("input"), { type: "radio", name: "art", value: wert, checked: wert === "lassen" }), el("span", null, text));
+    artWahl.append(l);
+  }
+  f.append(artWahl);
   const i = Object.assign(document.createElement("input"), { name: "neu", placeholder: "z. B. Alkohol, Zucker, Social Media", autocomplete: "off", maxLength: 60 });
   i.setAttribute("aria-label", "Name des Trackers");
   const l = el("label", "frage");
@@ -740,7 +814,8 @@ function neuerTracker() {
   }
   const hinzu = () => {
     let id = null;
-    aendern(() => { id = fuegeEigenenHinzu(z, i.value); });
+    const art = new FormData(f).get("art") || "lassen";
+    aendern(() => { id = fuegeEigenenHinzu(z, i.value, { art }); });
     if (!id) { i.focus(); return; }
     bogen.close();
     api.springeZu = id;
@@ -759,14 +834,27 @@ function neuerTracker() {
 function eigenerTracker(id) {
   const V = verzichte(z);
   const f = faerbe(el("form", "bogen-inhalt"), V, id);
-  f.append(el("p", "rubrik", "Eigener Tracker"), el("h2", null, V[id].name));
+  f.append(el("p", "rubrik", V[id].aufbau ? "Zum Aufbauen" : "Eigener Tracker"), el("h2", null, V[id].name));
   const l = el("label", "frage");
   l.append(el("span", "serif", "Name"));
   const i = Object.assign(document.createElement("input"), { name: "name", value: V[id].name, autocomplete: "off", maxLength: 60 });
   l.append(i);
   f.append(l);
+  /* Ab Schicht 2: eine Routine in Schritten, einer je Zeile. */
+  let schritte = null;
+  if (V[id].aufbau && z.tiefe >= 2) {
+    const sl = el("label", "frage");
+    schritte = Object.assign(document.createElement("textarea"), { name: "schritte", rows: 4, value: V[id].schritte.join("\n"),
+      placeholder: "Ein Glas Wasser\nFenster auf, drei Atemzüge\n…" });
+    sl.append(el("span", "serif", "Schritte, einer je Zeile"), schritte,
+      el("span", "leise klein", "Klein genug, dass du sie auch an schweren Tagen schaffst. Leer lassen: ein Tippen für alles."));
+    f.append(sl);
+  }
   const unten = el("div", "wahlreihe");
-  const speichern = () => { aendern(() => benenneEigenen(z, id, i.value)); bogen.close(); };
+  const speichern = () => {
+    aendern(() => { benenneEigenen(z, id, i.value); if (schritte) setzeSchritte(z, id, schritte.value.split("\n")); });
+    bogen.close();
+  };
   unten.append(knopf("speichern", "gross", speichern));
   if (hatNotizen(z, id)) {
     f.append(el("p", "leise klein", "Dazu ist schon etwas notiert, deshalb lässt er sich nicht entfernen. Abwählen reicht: die Notizen bleiben."));

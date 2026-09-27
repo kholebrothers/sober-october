@@ -123,6 +123,20 @@ mindestens drei Tage stehen, sagt ein Satz, was zusammenfällt: „Schlaf und Dr
 Offen: welche Linsen die Systeme später ordnen sollen (die Nachricht nannte Solms; der zweite Name
 war unklar). Heute ordnen sie sich schlicht in Körper und Antrieb.
 
+## Drei Schichten
+
+Die App ist nicht nur für Verzicht. Wer im Oktober etwas **aufbaut** (eine Morgenroutine, Bewegung,
+früher schlafen), nimmt einen Tracker zum Aufbauen: grün, ein Tippen heißt „getan“, nie Orange. Und
+man wählt beim Start, **wie tief** man gehen will; jede Schicht nimmt die vorigen mit.
+
+| Schicht | Was | Was dazukommt |
+| --- | --- | --- |
+| 1 · Beobachten | einfaches Tracking | Monat, „Heute bin ich dabei“, Etappe, Tracker (lassen oder aufbauen), Satz zum Tag, Tagebuch |
+| 2 · Formen | Verhalten verändern | Routinen in Schritten; Wenn-dann-Pläne und NLP-Kurzwerkzeuge (Anker, Swish, Reframing) folgen |
+| 3 · Nervensystem | beobachten und verändern | Tages-Check-in (Körper, Antrieb), Ebenen des Monats, Verlauf und Zusammenhänge, Wissen; der Gremlin folgt |
+
+Wer vor den Schichten schon da war, landet auf Schicht 3 und verliert nichts.
+
 ## Bewusst offen
 
 Ein fehlender Eintrag beweist keine Abstinenz. Die bestehende Logik bezeichnet solche Tage teils als „frei“, während Kreise auch „unbekannt“ bedeuten. Diese fachliche Bedeutung sollte separat entschieden werden; diese Überarbeitung verändert die Zählung nicht.

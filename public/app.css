@@ -524,3 +524,37 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .zusammenhaenge li { padding-left:10px; border-left:3px solid var(--f); font-size:14px; line-height:1.4; }
 .verlauf > p.klein { margin:0; }
 @media (max-width:360px) { .checkin-stand { font-size:12px; } .system-name { font-size:14px; } }
+
+/* Aufbauen: grün, weil es wächst. Kein Orange — getan ist kein Geschehen. */
+.kachel[data-aufbau] { --v:var(--moss); }
+.kachel:has(.routine) { grid-column:1 / -1; }
+.routine { display:grid; gap:8px; padding:12px 14px; border:1px solid color-mix(in oklab, var(--moss) 30%, var(--linie)); border-radius:var(--radius-card);
+  background:color-mix(in oklab, var(--moss) 6%, var(--surface)); box-shadow:inset 0 4px 0 var(--moss); }
+.routine[data-fertig] { background:color-mix(in oklab, var(--moss) 14%, var(--surface)); }
+.routine-kopf { display:flex; align-items:center; gap:10px; }
+.routine-kopf .kachel-name { flex:1; }
+.routine-stand { font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.routine-schritte { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.routine-schritt { display:flex; align-items:center; gap:10px; width:100%; min-height:var(--touch); padding:6px 10px; border:1px solid var(--linie);
+  border-radius:var(--radius-control); background:var(--surface); text-align:left; transition:background-color .25s ease, transform .12s ease; }
+.routine-schritt:active { transform:scale(.98); }
+.routine-haken { width:22px; height:22px; flex:none; display:grid; place-items:center; border-radius:50%; border:1.5px solid var(--moss); color:var(--surface); font-size:13px; font-weight:700; }
+.routine-schritt[aria-pressed="true"] { background:color-mix(in oklab, var(--moss) 10%, var(--surface)); }
+.routine-schritt[aria-pressed="true"] .routine-haken { background:var(--moss); }
+.routine-schritt[aria-pressed="true"] > span:last-child { color:var(--leise); }
+.routine-schritt.tipp .routine-haken { animation:pling .5s cubic-bezier(.2,1.6,.4,1); }
+
+/* Die Auswahl beim Start: was man aufbaut, und wie tief. */
+.aufbau-wahl { display:grid; gap:8px; margin-top:24px; }
+.aufbau-wahl h2 { margin:0; }
+.aufbau-wahl p { margin:0; }
+.chips-reihe { display:flex; flex-wrap:wrap; gap:8px; }
+.aufbau-chip { --v:var(--moss); min-height:var(--touch); padding:8px 14px; font-size:14px; }
+.wahl-tiefe { margin-top:24px; gap:8px; }
+.tiefe-option { grid-template-columns:auto 1fr; }
+.tiefe-option[data-tiefe="1"] { --c:var(--moss); }
+.tiefe-option[data-tiefe="2"] { --c:var(--teal); }
+.tiefe-option[data-tiefe="3"] { --c:var(--lila); }
+.tiefe-option:has(input:checked) { border-color:var(--c); background:color-mix(in oklab, var(--c) 8%, var(--paper)); }
+.tiefe-option input { accent-color:var(--c); }
+.frage textarea { font:inherit; font-size:16px; padding:10px 12px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; resize:vertical; }

@@ -55,22 +55,63 @@ export function verzichte(z) {
   const alle = { ...VERZICHTE };
   z.eigene.forEach((e, i) => {
     const name = saubererName(e.name) || "Eigenes";
-    alle[e.id] = { name, satz: name, habe: `${name} — ist geschehen`, drang: `würde gern: ${name}`,
-      eigen: true, farbe: EIGEN_FARBEN[i % EIGEN_FARBEN.length] };
+    alle[e.id] = e.art === "aufbauen"
+      ? { name, satz: name, habe: `${name} — getan`, drang: "", eigen: true, aufbau: true, schritte: e.schritte || [], farbe: "var(--moss)" }
+      : { name, satz: name, habe: `${name} — ist geschehen`, drang: `würde gern: ${name}`, eigen: true, farbe: EIGEN_FARBEN[i % EIGEN_FARBEN.length] };
   });
   return alle;
 }
 
 /** Ein eigener Tracker mehr. Gibt seine id zurück, oder null ohne Namen. Er
     ist gleich gewählt; einen gleichnamigen gibt es nicht zweimal. */
-export function fuegeEigenenHinzu(z, name) {
-  const n = saubererName(name);
+export function fuegeEigenenHinzu(z, name, { art = "lassen", schritte } = {}) {
+  const n = art === "aufbauen" ? String(name || "").replace(/\s+/g, " ").trim().slice(0, EIGEN_LAENGE) : saubererName(name);
   if (!n) return null;
   const da = z.eigene.find((e) => saubererName(e.name).toLowerCase() === n.toLowerCase());
   const id = da ? da.id : z.eigene.some((e) => e.id === EIGEN) ? `eigen-${neueId().slice(0, 8)}` : EIGEN;
-  if (!da) z.eigene.push({ id, name: n });
-  z.commitment[id] ||= { drang: true };
+  if (!da) {
+    const e = { id, name: n };
+    if (art === "aufbauen") { e.art = "aufbauen"; e.schritte = sauberSchritte(schritte); }
+    z.eigene.push(e);
+  }
+  z.commitment[id] ||= { drang: art !== "aufbauen" };
   return id;
+}
+
+/* ---- Aufbauen -------------------------------------------------------------
+
+   Nicht jede:r lässt etwas sein. Wer im Oktober etwas aufbaut — eine
+   Morgenroutine, Bewegung, früher schlafen —, nimmt einen Tracker zum
+   Aufbauen. Ein Tippen heißt „getan"; es zählt den Tag wie jede Notiz und
+   ist nie „Geschehen" (Orange), sondern grün. Ab Schicht 2 kann ein solcher
+   Tracker Schritte haben: eine Routine als Folge kleiner Handgriffe. */
+export const AUFBAU_VORSCHLAEGE = [
+  { name: "Morgenroutine", schritte: ["Ein Glas Wasser", "Fenster auf, drei tiefe Atemzüge", "Fünf Minuten bewegen", "Den Tag in einem Satz"] },
+  { name: "Bewegung" },
+  { name: "Früh ins Bett" },
+  { name: "Draußen sein" },
+];
+const SCHRITTE_MAX = 8;
+export const sauberSchritte = (l) =>
+  (Array.isArray(l) ? l : []).map((x) => String(x || "").replace(/\s+/g, " ").trim().slice(0, 60)).filter(Boolean).slice(0, SCHRITTE_MAX);
+
+export function setzeSchritte(z, id, schritte) {
+  const e = z.eigene.find((x) => x.id === id && x.art === "aufbauen");
+  if (!e) return false;
+  e.schritte = sauberSchritte(schritte);
+  return true;
+}
+
+/** Welche Schritte einer Routine an einem Tag getan sind: Set der Indizes. */
+export const schritteGetan = (z, tag, id) =>
+  new Set(z.ereignisse.filter((e) => e.tag === tag && e.verzicht === id && e.art === "getan" && Number.isInteger(e.schritt)).map((e) => e.schritt));
+
+/** Einen Schritt an- oder abhaken. */
+export function schalteSchritt(z, tag, zeit, id, i) {
+  const da = z.ereignisse.findIndex((e) => e.tag === tag && e.verzicht === id && e.art === "getan" && e.schritt === i);
+  if (da >= 0) { z.ereignisse.splice(da, 1); return false; }
+  z.ereignisse.push({ id: neueId(), tag, zeit, verzicht: id, art: "getan", schritt: i, antworten: {} });
+  return true;
 }
 
 export function benenneEigenen(z, id, name) {
@@ -154,29 +195,43 @@ export const EBENEN = [
    Einstellungen dazunimmt oder weglässt. `standard` sagt, was ein neuer
    Zustand von sich aus zeigt — nur der Leitgedanke und die Abendruhe, weil
    beide nichts fordern. */
+/* Drei Schichten, drei Tiefen. Man wählt beim Start, wie tief man gehen
+   will, und kann es jederzeit ändern; jede Schicht nimmt die vorigen mit.
+   Ein Baustein gehört zu einer Schicht und erscheint erst ab ihr. */
+export const TIEFEN = [
+  { n: 1, name: "Beobachten", text: "Einfach festhalten: jeden Tag ein Check-in, was du lässt oder aufbaust, ein Satz zum Tag." },
+  { n: 2, name: "Formen", text: "Verhalten verändern: Routinen in kleinen Schritten, Wenn-dann-Pläne, schnelle Werkzeuge für den Drang-Moment." },
+  { n: 3, name: "Nervensystem", text: "Tiefer schauen: Körper und Antrieb täglich einschätzen, Zusammenhänge über den Monat, der Gremlin." },
+];
+
 export const BAUSTEINE = [
-  { id: "leitgedanke", gruppe: "Oben", titel: "Leitgedanke", standard: true,
+  { id: "leitgedanke", schicht: 1, gruppe: "Oben", titel: "Leitgedanke", standard: true,
     text: "Ein eigener Satz, der dich begleitet." },
-  { id: "lauf", gruppe: "Oben", titel: "Lauf", standard: false,
+  { id: "lauf", schicht: 1, gruppe: "Oben", titel: "Lauf", standard: false,
     text: "Unter der Etappe: wie viele Tage am Stück, dein längster Lauf und ein Satz zum Tag." },
-  { id: "gemeinsam", gruppe: "Oben", titel: "Gemeinsam", standard: true,
+  { id: "gemeinsam", schicht: 1, gruppe: "Oben", titel: "Gemeinsam", standard: true,
     text: "Mit anderen durch den Oktober: wer heute dabei ist, und jede Reise als Farbe. Geteilt wird nur dein Name, was du sein lässt, und an welchen Tagen du dabei warst." },
-  { id: "tagebuch", gruppe: "Unten", titel: "Dein Tagebuch", standard: true,
+  { id: "tagebuch", schicht: 1, gruppe: "Unten", titel: "Dein Tagebuch", standard: true,
     text: "Jeder Tag eine Zeile: dein Satz, die Stimmung, was sich gezeigt hat. Fehlt ein Tag, lässt er sich nachtragen." },
-  { id: "verlauf", gruppe: "Unten", titel: "Verlauf und Zusammenhänge", standard: true,
+  { id: "verlauf", schicht: 3, gruppe: "Unten", titel: "Verlauf und Zusammenhänge", standard: true,
     text: "Körper und Antrieb über den Monat, neben Drang und Geschehen — und in Sätzen, was zusammenfällt." },
-  { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
+  { id: "heatmap", schicht: 1, gruppe: "Unten", titel: "Heatmap", standard: false,
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
-  { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
+  { id: "ebenen", schicht: 3, gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
     text: "Ebenen, die sich durch Benutzen öffnen: wie ein Drang verläuft, Routinen, Neues an die Stelle, der Rückblick in Wochen." },
-  { id: "abends", gruppe: "Darstellung", titel: "Abends ruhiger", standard: true,
+  { id: "abends", schicht: 1, gruppe: "Darstellung", titel: "Abends ruhiger", standard: true,
     text: "Nach Sonnenuntergang wird die Seite eine Spur ruhiger." },
 ];
 
 export function aktiv(z, id) {
+  const b = BAUSTEINE.find((x) => x.id === id);
+  if (!b || b.schicht > z.tiefe) return false;
   if (id in z.bausteine) return z.bausteine[id];
-  return !!BAUSTEINE.find((b) => b.id === id)?.standard;
+  return !!b.standard;
 }
+
+/** Ab welcher Tiefe etwas da ist, das kein Baustein ist. */
+export const ab = (z, n) => z.tiefe >= n;
 
 export function schalteBaustein(z, id, an = !aktiv(z, id)) {
   if (!BAUSTEINE.some((b) => b.id === id)) return;
@@ -186,7 +241,7 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {} };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1 };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -200,7 +255,9 @@ export function aus(text) {
   if (Array.isArray(roh.eigene))
     for (const e of roh.eigene)
       if (e && EIGEN_ID.test(e.id) && saubererName(e.name) && !z.eigene.some((x) => x.id === e.id))
-        z.eigene.push({ id: e.id, name: String(e.name).slice(0, EIGEN_LAENGE) });
+        z.eigene.push(e.art === "aufbauen"
+          ? { id: e.id, name: String(e.name).slice(0, EIGEN_LAENGE), art: "aufbauen", schritte: sauberSchritte(e.schritte) }
+          : { id: e.id, name: String(e.name).slice(0, EIGEN_LAENGE) });
   // Die eine eigene Definition von vorher wird der erste eigene Tracker.
   if (roh.eigen && saubererName(roh.eigen.name) && !z.eigene.some((x) => x.id === EIGEN))
     z.eigene.unshift({ id: EIGEN, name: String(roh.eigen.name).slice(0, EIGEN_LAENGE) });
@@ -209,12 +266,14 @@ export function aus(text) {
     for (const k of ids)
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
+  // Ein Stand von vor den Schichten hatte alles: er bleibt auf der tiefsten.
+  z.tiefe = [1, 2, 3].includes(roh.tiefe) ? roh.tiefe : 3;
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
   if (roh.gemeinsam && /^p[a-z0-9]{1,16}$/.test(roh.gemeinsam.id) && typeof roh.gemeinsam.name === "string")
     z.gemeinsam = { id: roh.gemeinsam.id, name: roh.gemeinsam.name.slice(0, 24) };
   if (FARBWELTEN[roh.farbe]) z.farbe = roh.farbe;
   if (Array.isArray(roh.ereignisse))
-    z.ereignisse = roh.ereignisse.filter((e) => e && ids.includes(e.verzicht) && ["habe", "drang", "ohne"].includes(e.art))
+    z.ereignisse = roh.ereignisse.filter((e) => e && ids.includes(e.verzicht) && ["habe", "drang", "ohne", "getan"].includes(e.art))
       .map((e) => ({ ...e, antworten: e.antworten && typeof e.antworten === "object" ? e.antworten : {} }));
   if (roh.frei && typeof roh.frei === "object")
     for (const eb of EBENEN) if (roh.frei[eb.id]) z.frei[eb.id] = roh.frei[eb.id];
@@ -269,10 +328,13 @@ export function schalteAlles(z) {
 
 export function commitmentSatz(z) {
   const V = verzichte(z);
-  const n = gewaehlt(z).map((k) => V[k].satz);
-  if (!n.length) return "";
-  const liste = n.length > 1 ? n.slice(0, -1).join(", ") + " und " + n.at(-1) : n[0];
-  return `Im Oktober lasse ich ${liste} sein.`;
+  const reihe = (n) => (n.length > 1 ? n.slice(0, -1).join(", ") + " und " + n.at(-1) : n[0]);
+  const lassen = gewaehlt(z).filter((k) => !V[k].aufbau).map((k) => V[k].satz);
+  const bauen = gewaehlt(z).filter((k) => V[k].aufbau).map((k) => V[k].satz);
+  if (lassen.length && bauen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein und baue ${reihe(bauen)} auf.`;
+  if (bauen.length) return `Im Oktober baue ich ${reihe(bauen)} auf.`;
+  if (lassen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein.`;
+  return "";
 }
 
 export const vonTag = (z, tag, v) => z.ereignisse.filter((e) => e.tag === tag && (!v || e.verzicht === v));

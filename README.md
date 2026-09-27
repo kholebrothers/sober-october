@@ -55,6 +55,12 @@ Drei Ansichten, umschaltbar in den Einstellungen (⋯): **Knopf** (Standard), **
 Sie stammen aus dem Prototyp auf dem Branch `prototyp-zurueckhaltend`; dort steht in `NOTIZ.md`,
 welche Fragen er beantwortet hat und welche offen sind.
 
+**Drei Schichten, drei Tiefen** (beim Start und unter ⋯ wählbar): 1 · Beobachten — einfaches
+Tracking; 2 · Formen — Routinen in Schritten, später Wenn-dann und NLP-Kurzwerkzeuge; 3 · Nervensystem —
+Tages-Check-in, Ebenen, Verlauf. Tracker gibt es zum **Sein-lassen** und zum **Aufbauen** (etwa eine
+Morgenroutine); wer nichts sein lässt, kann die App genauso nutzen. Siehe
+[docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
+
 ## Wo die Daten liegen
 
 **Was du notierst, bleibt im Browser** (localStorage, Schlüssel `sober-october`): Einträge, Gefühle,
