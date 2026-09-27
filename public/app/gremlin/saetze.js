@@ -110,6 +110,13 @@ export const GREMLINSAETZE = {
     {ab: 1, t: "Danke. Das war genug. Ich weiß, das sag ich nie."}
   ],
 
+  /* Dämonen zum Frühstück (nach Ilan Stephani): der Dämon war schon da. */
+  daemon: [
+    {ab: 1, t: "Du hast deinen Dämon zum Frühstück gegessen. Mir bleibt nur der Krümel."},
+    {ab: 1, t: "Geschüttelt, gebrüllt, gegessen. Was soll ich heute noch aufregen?"},
+    {ab: 1, t: "Der Trigger kommt später. Aber er kennt dich jetzt schon.", wenn: (c) => c.bez >= 3}
+  ],
+
   /* Streicheln: knurren, wälzen, dem Schwanz nach, wegflitzen. */
   schnurr: [
     {ab: 1, t: "Knurr. Hinterm Ohr. Ja."},

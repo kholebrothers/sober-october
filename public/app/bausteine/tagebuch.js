@@ -35,6 +35,7 @@ export function tagebuch(api) {
     if (z.koerper) punkt("p-koerper", `${Math.round(25 + z.koerper * 75)}%`);
     if (z.antrieb) punkt("p-antrieb", `${Math.round(25 + z.antrieb * 75)}%`);
     for (let i = 0; i < z.selbst.length; i++) punkt("p-selbst");
+    if (z.daemon) punkt("p-daemon");
     if (z.drang) punkt("p-drang");
     if (z.habe) punkt("p-geschehen");
     b.append(punkte);
@@ -51,6 +52,7 @@ export function tagebuch(api) {
     if (z.koerper) worte.push("Körper eingeschätzt");
     if (z.antrieb) worte.push("Antrieb eingeschätzt");
     if (z.selbst.length) worte.push(z.selbst.join(", "));
+    if (z.daemon) worte.push("Dämon gefrühstückt");
     if (z.getragen) worte.push(`„${z.getragen}“`);
     b.setAttribute("aria-label", `${worte.join(". ")}. Öffnen zum Ergänzen.`);
     li.append(b);

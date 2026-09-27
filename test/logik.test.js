@@ -14,6 +14,7 @@ import {
   setzeAnker, setzeSwish, planHinzu, planWeg, PLAENE_MAX,
   setzeZeitVorher, freiAm, lebenszeit, dauer,
   gremlinStufe, setzeFuetterungstag, futterHinzu, fuettern, werkzeugBenutzt, istFuetterungstag,
+  DAEMON_PHASEN, DAEMON_SEK, daemonStand,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -703,4 +704,20 @@ test("die Gremlin-Beziehung: fünf Schritte nach SPARK 099, aus dem Verhalten ge
   assert.equal(futterHinzu(z, " Etwas Süßes "), true);
   assert.equal(futterHinzu(z, "Etwas Süßes"), false);
   assert.deepEqual(aus(JSON.stringify(z)).gremlin, z.gremlin);
+});
+
+test("Dämonen zum Frühstück: sieben Minuten, vier Phasen; der Dämon bleibt im Gerät", () => {
+  assert.equal(DAEMON_SEK, 7 * 60);
+  assert.deepEqual(DAEMON_PHASEN.map((p) => p.id), ["schuetteln", "einladen", "entladen", "ruhe"]);
+  assert.deepEqual([daemonStand(0).phase.id, daemonStand(0).rest], ["schuetteln", 120]);
+  assert.deepEqual([daemonStand(130).phase.id, daemonStand(130).rest], ["einladen", 50]);
+  assert.equal(daemonStand(DAEMON_SEK).fertig, true);
+  const z = mit("kaffee");
+  schreibeTag(z, okt(2), { daemon: { was: "  das Gespräch mit der Chefin ", sek: 420 } });
+  assert.deepEqual(z.tagebuch[okt(2)].daemon, { was: "das Gespräch mit der Chefin", sek: 420 });
+  assert.equal(hatEintrag(z, okt(2)), true, "die Praxis zählt den Tag");
+  assert.deepEqual(aus(JSON.stringify(z)).tagebuch, z.tagebuch);
+  assert.ok(!JSON.stringify(fuerKern(z, okt(2))).includes("Chefin"));
+  schreibeTag(z, okt(2), { daemon: null });
+  assert.equal(z.tagebuch[okt(2)], undefined);
 });

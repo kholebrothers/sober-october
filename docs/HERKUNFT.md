@@ -57,3 +57,7 @@ Die App soll kur-core später als Unterbau nutzen können, statt ihm zu widerspr
 Inhaltlich: **Der Gremlin** folgt Clinton Callahan, SPARK 099 („If you do not consciously feed your
 Gremlin then Gremlin feeds on you“), Possibility Management, CC BY-SA 4.0 —
 https://sparks.nextculture.org/res/sparks/Spark-099-en.pdf
+
+**Dämonen zum Frühstück** — Morgenpraxis nach Ilan Stephani („Iss deine Dämonen zum Frühstück“),
+sieben Minuten in vier Phasen; die Beschreibung stammt vom Nutzer, die Texte der App sind eigene
+Formulierungen.

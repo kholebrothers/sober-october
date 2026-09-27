@@ -18,6 +18,7 @@ import {
   TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte, ab,
   setzeAnker, setzeSwish, planHinzu, planWeg,
   ZEIT_STUFEN, ZEIT_FUER, setzeZeitVorher, freiAm, lebenszeit, dauer,
+  DAEMON_PHASEN, daemonStand,
   GREMLIN_STUFEN, GREMLIN_FUTTER_VORSCHLAEGE, WOCHENTAGE, gremlinStufe, setzeFuetterungstag, futterHinzu, futterWeg, fuettern, werkzeugBenutzt,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
@@ -119,6 +120,10 @@ const api = {
   trackerBearbeiten: (v) => eigenerTracker(v),
   werkzeug: (name) => W[name](),
   werkzeugStand: () => z.werkzeug,
+  morgenpraxisOffen() {
+    const h = new Date().getHours();
+    return ab(z, 3) && h >= 4 && h < 11 && !z.tagebuch[heute()]?.daemon;
+  },
   dauer,
   zeitStufen: () => ZEIT_STUFEN,
   zeitFuer: () => ZEIT_FUER,
@@ -357,6 +362,14 @@ const W = werkzeuge({
   aendern: (f) => aendern(f), melde: (...a) => melde(...a), zustand: () => z,
   setzeAnker, setzeSwish, planHinzu, planWeg, ergaenze,
   gemacht: () => { aendern(() => werkzeugBenutzt(z, heute())); gremlin.sagt("werkzeug"); },
+  ab: (n) => ab(z, n), buzz: (m) => spueren(m),
+  daemonPhasen: DAEMON_PHASEN, daemonStand,
+  beimSchliessen: (f) => bogen.addEventListener("close", f, { once: true }),
+  daemonFertig(was, sek) {
+    const m = aendern(() => { schreibeTag(z, heute(), { daemon: { was, sek } }); werkzeugBenutzt(z, heute()); });
+    gremlin.sagt("daemon");
+    melde(mitMoment(`Dämon gefrühstückt.${m?.heuteNeu ? " Der Tag zählt." : ""}`, m));
+  },
 });
 
 function zeigeBogen(knoten) {

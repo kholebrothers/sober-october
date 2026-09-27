@@ -643,3 +643,26 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .gr-futterliste { display:grid; gap:6px; }
 .gr-futterliste p { margin:0; }
 .gr-quelle { margin:0; font-size:11px; }
+
+/* Dämonen zum Frühstück: die Phasen als Leiste, groß die Uhr. Jede Phase
+   hat ihren Ton; beim Wechsel pulsiert die Fläche einmal. */
+.daemon-phasen { margin:0; padding-left:20px; display:grid; gap:6px; }
+.daemon-phasen li { display:grid; gap:1px; }
+.daemon { --d:var(--magenta); text-align:center; justify-items:center; transition:background-color .6s ease; }
+.daemon[data-phase="schuetteln"] { --d:var(--clay); }
+.daemon[data-phase="einladen"] { --d:var(--lila); }
+.daemon[data-phase="entladen"] { --d:var(--magenta); }
+.daemon[data-phase="ruhe"] { --d:var(--teal); }
+.daemon { background:color-mix(in oklab, var(--d) 8%, var(--surface)); }
+.daemon[data-wechsel] { animation:druck .6s ease; }
+.daemon-leiste { display:flex; gap:4px; width:100%; }
+.daemon-leiste span { height:6px; border-radius:3px; background:var(--hm-leer); overflow:hidden; }
+.daemon-leiste i { display:block; height:100%; width:0; background:var(--d); }
+.daemon-name { margin:0; font-size:28px; }
+.daemon-uhr { margin:0; font:600 56px/1 var(--sans); font-variant-numeric:tabular-nums; color:var(--d); }
+.daemon-text { margin:0; font-size:17px; max-width:30ch; }
+.daemon-heute { margin:0; min-height:1.4em; font-style:italic; }
+.daemon-hinweis { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:var(--touch); padding:8px 14px; border:1px dashed var(--magenta);
+  border-radius:var(--radius-control); background:color-mix(in oklab, var(--magenta) 6%, transparent); text-align:left; font-size:14px; }
+.tb-punkte .p-daemon { background:var(--magenta); border-radius:2px; }
+@media (prefers-reduced-motion: reduce) { .daemon[data-wechsel] { animation:none; } }

@@ -58,6 +58,7 @@ export function werkzeuge(k) {
     eintrag(w.anker ? "Anker abrufen" : "Anker setzen", w.anker ? `${w.anker.geste} — und du bist wieder dort.` : "Einen ruhigen Zustand an eine Geste binden.", () => (w.anker ? ankerAbrufen() : ankerSetzen()), "var(--moss)");
     eintrag("Swish", "Das Bild vor dem Drang gegen das Bild von dir tauschen.", () => swish(), "var(--teal)");
     eintrag("Reframing", "Welche gute Absicht hat der Drang? Wie ginge das anders?", () => reframing(drangId), "var(--lila)");
+    if (k.ab?.(3)) eintrag("Dämonen zum Frühstück", "Sieben Minuten am Morgen: den Trigger des Tages freiwillig auf den Teller.", () => daemon(), "var(--magenta)");
     eintrag("Wenn-dann", w.plaene.length ? `${w.plaene.length} ${w.plaene.length === 1 ? "Plan" : "Pläne"} — ansehen, ergänzen.` : "Einen Plan für den nächsten Moment fassen.", () => plaene(), "var(--gelb)");
     f.append(liste, unten(knopf("schließen", "text leise", () => k.schliessen())));
     k.zeige(f);
@@ -212,5 +213,74 @@ export function werkzeuge(k) {
     k.zeige(f);
   }
 
-  return { menue, ankerSetzen, ankerAbrufen, swish, reframing, plaene };
+  /* ---- Dämonen zum Frühstück (Schicht 3) ------------------------------
+     Nach Ilan Stephani, „Iss deine Dämonen zum Frühstück": sieben Minuten
+     am Morgen, vier Phasen. Die App hält die Zeit, zeigt die Phase und
+     vibriert beim Wechsel; der Bildschirm bleibt an, wo das Gerät es kann. */
+  function daemon() {
+    const P = k.daemonPhasen;
+    const f = bogen("Dämonen zum Frühstück", "Morgenpraxis · 7 Minuten · nach Ilan Stephani");
+    f.append(el("p", "serif", "Statt zu warten, bis dich heute ein Trigger eiskalt erwischt, holst du ihn dir jetzt freiwillig auf den Frühstücksteller."));
+    const liste = el("ol", "daemon-phasen");
+    for (const p of P) { const li = el("li"); li.append(el("strong", null, `${p.name} · ${(p.sek / 60).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Min.`), el("span", "leise klein", p.text)); liste.append(li); }
+    const [lw, was] = feld("was", "Wer oder was könnte dich heute triggern? (freiwillig, bleibt hier)", "", "Das Gespräch um zehn, die Bahn, …");
+    f.append(liste, lw, el("p", "leise klein", "Wenn es zu viel wird: aufhören, Füße auf den Boden, lang ausatmen. Die Übung ersetzt keine Therapie."),
+      unten(knopf("Los · 7 Minuten", "gross", () => daemonBuehne(was.value.trim())), knopf("abbrechen", "text leise", () => k.schliessen())));
+    k.zeige(f);
+  }
+
+  function daemonBuehne(was) {
+    const P = k.daemonPhasen;
+    const f = bogen("Dämonen zum Frühstück", "Morgenpraxis");
+    f.classList.add("daemon");
+    const leiste = el("div", "daemon-leiste");
+    const teile = P.map((p) => { const t = el("span"); t.style.flexGrow = String(p.sek); t.append(el("i")); leiste.append(t); return t; });
+    const name = el("p", "daemon-name serif");
+    const uhr = el("p", "daemon-uhr");
+    const text = el("p", "daemon-text serif");
+    const heute = el("p", "daemon-heute leise");
+    let lauf = 0, seit = Date.now(), pause = false, zuletzt = -1, sperre = null;
+    try { navigator.wakeLock?.request("screen").then((l) => { sperre = l; }).catch(() => {}); } catch {}
+    const sek = () => lauf + (pause ? 0 : (Date.now() - seit) / 1000);
+    const zeig = () => {
+      const st = k.daemonStand(sek());
+      if (st.fertig) { ende(Math.round(sek())); return; }
+      if (st.i !== zuletzt) {
+        if (zuletzt >= 0) { k.buzz?.([20, 60, 20]); f.dataset.wechsel = ""; setTimeout(() => delete f.dataset.wechsel, 600); }
+        zuletzt = st.i;
+        f.dataset.phase = st.phase.id;
+        name.textContent = st.phase.name;
+        text.textContent = st.phase.text;
+        heute.textContent = st.phase.id === "einladen" && was ? `Dein Dämon heute: ${was}` : "";
+      }
+      const r = Math.ceil(st.rest);
+      uhr.textContent = `${Math.floor(r / 60)}:${String(r % 60).padStart(2, "0")}`;
+      let t = sek();
+      teile.forEach((x, i) => { const w = Math.max(0, Math.min(1, t / P[i].sek)); x.firstChild.style.width = `${w * 100}%`; t -= P[i].sek; });
+    };
+    const takt = setInterval(zeig, 250);
+    const aufraeumen = () => { clearInterval(takt); try { sperre?.release(); } catch {} };
+    k.beimSchliessen(aufraeumen);
+    const pk = knopf("Pause", "gross leise", () => {
+      if (pause) { seit = Date.now(); pause = false; pk.textContent = "Pause"; }
+      else { lauf = sek(); pause = true; pk.textContent = "weiter"; }
+    });
+    const ende = (gesamt) => {
+      aufraeumen();
+      const e = bogen("Gefrühstückt.", "Morgenpraxis");
+      e.classList.add("werkzeug-ruhe");
+      e.append(el("p", "serif", gesamt >= 60 * 6 ? "Der Dämon war schon da — heute Morgen, auf deinem Teller." : "Auch ein Stück Frühstück ist Frühstück."),
+        el("p", "leise", "Spür noch einen Moment nach. Was ist jetzt da?"),
+        unten(knopf("fertig", "gross", () => { k.daemonFertig(was, gesamt); k.schliessen(); })));
+      k.zeige(e);
+    };
+    f.append(leiste, name, uhr, text, heute, unten(pk, knopf("beenden", "text leise", () => {
+      const g = Math.round(sek());
+      if (g >= 60) ende(g); else { aufraeumen(); k.schliessen(); }
+    })));
+    k.zeige(f);
+    zeig();
+  }
+
+  return { menue, ankerSetzen, ankerAbrufen, swish, reframing, plaene, daemon };
 }

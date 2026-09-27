@@ -22,6 +22,7 @@ export function werkzeugKarte(api) {
   };
   b(w.anker ? "Anker" : "Anker setzen", w.anker ? "ankerAbrufen" : "ankerSetzen", "var(--moss)");
   b("Swish", "swish", "var(--teal)");
+  if (api.ab(3)) b("Dämonen zum Frühstück", "daemon", "var(--magenta)");
   b("Reframing", "reframing", "var(--lila)");
   b(w.plaene.length ? `Wenn-dann · ${w.plaene.length}` : "Wenn-dann", "plaene", "var(--gelb)");
   k.append(r);

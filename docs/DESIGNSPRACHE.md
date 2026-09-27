@@ -156,6 +156,22 @@ Groß steht, was heute frei geworden ist, darunter der Oktober bisher, und die F
 Zeit — Routinen, Menschen, draußen, Ruhe, oder einfach zweckfrei. Gezählt werden nur Tage mit Angabe:
 ein leerer Tag ist nichts bekannt, nicht „alles gespart“. Mehr als vorher ist nie weniger als null.
 
+## Dämonen zum Frühstück (Schicht 3)
+
+Eine Morgenpraxis nach Ilan Stephani, „Iss deine Dämonen zum Frühstück“: Statt zu warten, bis dich
+im Lauf des Tages ein Trigger eiskalt erwischt, holst du ihn dir morgens freiwillig auf den Teller.
+Sieben Minuten, vier Phasen, die App hält die Zeit, vibriert beim Wechsel und hält den Bildschirm an:
+
+1. **Schütteln** (2 Min.) — den Körper kräftig schütteln, tief atmen, Energie hochfahren.
+2. **Einladen** (1 Min.) — die Situation oder Person vorstellen, die heute triggern könnte; wer mag,
+   notiert vorher seinen „Dämon des Tages“ (bleibt im Gerät).
+3. **Entladen** (2,5 Min.) — der Körper drückt aus, was kommt: Wut, Frust, Zittern, Töne.
+4. **Ruhe** (1,5 Min.) — langsam herunterfahren, still werden, nachspüren.
+
+Morgens (4–11 Uhr) steht ein Hinweis im Monat, sonst ist sie unter „Werkzeuge“. Eine Praxis zählt
+den Tag und steht im Tagebuch (Punkt in Magenta). Hinweis in der Übung: „Wenn es zu viel wird:
+aufhören, Füße auf den Boden, lang ausatmen. Die Übung ersetzt keine Therapie.“
+
 ## Der Gremlin (Schicht 3)
 
 Grundlage ist Clinton Callahan, [SPARK 099](https://sparks.nextculture.org/res/sparks/Spark-099-en.pdf)

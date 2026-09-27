@@ -308,6 +308,8 @@ export function aus(text) {
         for (const [k, m] of Object.entries(e.zeit)) if (ids.includes(k) && minuten(m) !== null) zt[k] = m;
         if (Object.keys(zt).length) t.zeit = zt;
       }
+      if (e.daemon && typeof e.daemon === "object" && Number.isInteger(e.daemon.sek) && e.daemon.sek > 0 && e.daemon.sek <= 3600)
+        t.daemon = { was: typeof e.daemon.was === "string" ? e.daemon.was.trim().slice(0, 140) : "", sek: e.daemon.sek };
       if (Array.isArray(e.fuer)) { const f = [...new Set(e.fuer.filter((x) => ZEIT_FUER.some((y) => y.id === x)))]; if (f.length) t.fuer = f; }
       if (Object.keys(t).length) z.tagebuch[tag] = t;
     }
@@ -652,7 +654,7 @@ export const SCHICHTEN = [
 
 /** Einen Teil des Tagebuchs setzen; leer (oder 0) heißt weg.
     werte: {schlaf: 1–5, …}; stimmung geht auch direkt (erste Fassung). */
-export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer } = {}) {
+export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon } = {}) {
   const t = { ...(z.tagebuch[tag] || {}) };
   const alle = stimmung !== undefined ? { ...werte, stimmung } : werte;
   for (const [id, n] of Object.entries(alle)) {
@@ -666,6 +668,11 @@ export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, ze
   if (getragen !== undefined) {
     const g = String(getragen || "").replace(/\s+/g, " ").trim().slice(0, 280);
     if (g) t.getragen = g; else delete t.getragen;
+  }
+  if (daemon !== undefined) {
+    if (daemon && Number.isInteger(daemon.sek) && daemon.sek > 0)
+      t.daemon = { was: String(daemon.was || "").replace(/\s+/g, " ").trim().slice(0, 140), sek: Math.min(3600, daemon.sek) };
+    else delete t.daemon;
   }
   if (zeit !== undefined) {
     const zt = { ...(t.zeit || {}) };
@@ -792,7 +799,7 @@ export function tagebuchZeilen(z, heute) {
     const es = vonTag(z, t);
     zeilen.push({ tag: t, kopf: tagesKopf(t), heute: t === heute, dabei: dabei(z, t),
       stimmung: e.stimmung || 0, koerper: gruppenWert(z, t, "koerper"), antrieb: gruppenWert(z, t, "antrieb"),
-      selbst: (e.selbst || []).map((i) => SELBST[i]), getragen: e.getragen || "",
+      selbst: (e.selbst || []).map((i) => SELBST[i]), getragen: e.getragen || "", daemon: e.daemon || null,
       drang: es.filter((x) => x.art === "drang").length, habe: es.filter((x) => x.art === "habe").length });
   }
   return zeilen;
@@ -837,6 +844,31 @@ export function planHinzu(z, wenn, dann) {
   return true;
 }
 export function planWeg(z, i) { z.werkzeug.plaene.splice(i, 1); }
+
+/* ---- Dämonen zum Frühstück (Schicht 3) -----------------------------------------
+
+   Eine Morgenpraxis nach Ilan Stephani, „Iss deine Dämonen zum Frühstück":
+   statt zu warten, bis dich ein Trigger im Lauf des Tages erwischt, holst
+   du ihn dir morgens freiwillig auf den Teller — sieben Minuten, vier
+   Phasen. Die App führt durch die Zeit; was du dir als Dämon des Tages
+   notierst, bleibt im Gerät (tagebuch.daemon = {was, sek}). */
+export const DAEMON_PHASEN = [
+  { id: "schuetteln", name: "Schütteln", sek: 120, text: "Schüttel deinen Körper, kräftig, von den Füßen her. Atme tief. Fahr die Energie hoch." },
+  { id: "einladen", name: "Einladen", sek: 60, text: "Stell dir vor, wer oder was dich heute triggern könnte. Lass ihn herein, ganz nah." },
+  { id: "entladen", name: "Entladen", sek: 150, text: "Lass den Körper ausdrücken, was kommt: Wut, Frust, Zittern, schnelle Bewegungen, Töne. Alles darf raus." },
+  { id: "ruhe", name: "Ruhe", sek: 90, text: "Fahr langsam herunter. Werde still. Spür nach, was jetzt da ist." },
+];
+export const DAEMON_SEK = DAEMON_PHASEN.reduce((a, p) => a + p.sek, 0);
+
+/** Wo die Praxis nach `sek` Sekunden steht: {phase, i, rest, fertig}. */
+export function daemonStand(sek) {
+  let t = Math.max(0, sek);
+  for (let i = 0; i < DAEMON_PHASEN.length; i++) {
+    if (t < DAEMON_PHASEN[i].sek) return { phase: DAEMON_PHASEN[i], i, rest: DAEMON_PHASEN[i].sek - t, fertig: false };
+    t -= DAEMON_PHASEN[i].sek;
+  }
+  return { phase: DAEMON_PHASEN.at(-1), i: DAEMON_PHASEN.length - 1, rest: 0, fertig: true };
+}
 
 /* ---- Der Gremlin: die Beziehung ------------------------------------------------
 

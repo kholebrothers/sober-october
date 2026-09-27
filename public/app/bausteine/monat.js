@@ -162,6 +162,12 @@ function weiteres(api) {
     if (g0) { const n0 = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g0)); n0.dataset.focus = "nachtragen"; r.append(n0); }
     return r;
   }
+  if (api.morgenpraxisOffen()) {
+    const d = knopf("", "daemon-hinweis", () => api.werkzeug("daemon"));
+    d.dataset.focus = "daemon";
+    d.append(el("span", null, "Morgenpraxis: Dämonen zum Frühstück"), el("span", "leise klein", "7 Min."));
+    r.append(d);
+  }
   const n = api.eingeschaetzt(), alle = api.systemeAnzahl;
   const b = knopf("", "checkin-knopf", () => api.tagEinordnen());
   b.dataset.focus = "einordnen";
