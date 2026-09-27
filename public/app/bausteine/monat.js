@@ -20,24 +20,14 @@ const STAND_WORT = { dabei: "dabei", leer: "nichts notiert", offen: "heute, noch
 
 export function monat(api) {
   const m = api.monat();
-  const zaehlt = api.hatEintrag();
   const s = el("section", "monat");
   s.setAttribute("aria-label", "Dein Commitment");
   s.dataset.katze = "wand";   // Gelände für den Gremlin (begleiter/welt.js)
   s.dataset.schicht = "dabei";
 
-  /* Der Startschirm ist für das Commitment da: der Satz, die Zahl, die
-     Woche — und eine Sache zu tun. Erst „Heute bin ich dabei"; ist der Tag
-     gezählt, steht an derselben Stelle „✓ Heute dabei" und darunter die
-     Frage, wie es dir geht. Den ganzen Monat gibt es auf Antippen. */
+  /* Oben das Commitment: der Satz, die Zahl, die Woche. Den ganzen Monat
+     gibt es auf Antippen. Der Tag selbst steht darunter (heute()). */
   s.append(el("p", "monat-commitment serif", api.commitmentSatz()), kopf(m), woche(api, m));
-
-  if (m.phase !== "nach") {
-    if (!zaehlt) s.append(daKnopf(api, zaehlt));
-    else s.append(daStand(api), gesichter(api));
-    if (api.offen("satz")) s.append(satzZeile(api));
-    s.append(weiteres(api));
-  }
 
   if (api.aktiv("lauf")) {
     const n = api.serie(), best = api.besterLauf();
@@ -122,15 +112,6 @@ function kopf(m) {
   return k;
 }
 
-function daKnopf(api, zaehlt) {
-  const nurNotiz = zaehlt && !api.istDa();
-  const b = knopf("", "da-knopf", () => api.da());
-  b.dataset.focus = "da";
-  b.setAttribute("aria-pressed", zaehlt);
-  b.append(el("span", "da-haken", "✓"), el("span", "da-wort", zaehlt ? "Heute zählt" : "Heute bin ich dabei"));
-  if (nurNotiz) b.append(el("span", "da-klein", "durch deine Notiz"));
-  return b;
-}
 
 /* Die Ebenen als Reihe kleiner Schalter, jeder mit dem Punkt seiner Farbe.
    Darunter ein Satz, was die gewählte zeigt. */
@@ -181,21 +162,6 @@ function etappe(api) {
   return e;
 }
 
-/* Ein Satz zum Tag, gleich unter dem Knopf (aus lifetracker, befinden):
-   „Was hat dich heute getragen?" Eine Zeile, freiwillig; gespeichert wird
-   beim Verlassen des Feldes oder mit der Eingabetaste. */
-function satzZeile(api) {
-  const f = el("form", "satz-zeile");
-  const i = Object.assign(document.createElement("input"), { name: "getragen", value: api.getragen(), autocomplete: "off", maxLength: 280,
-    placeholder: "Was hat dich heute getragen?", enterKeyHint: "done" });
-  i.setAttribute("aria-label", "Was hat dich heute getragen? Ein Satz für dein Tagebuch");
-  i.dataset.focus = "getragen";
-  const sichern = () => { if (i.value.trim() !== api.getragen()) api.getragenSetzen(i.value); };
-  i.addEventListener("change", sichern);
-  f.addEventListener("submit", (e) => { e.preventDefault(); i.blur(); sichern(); });
-  f.append(i);
-  return f;
-}
 
 /* Darunter der Tages-Check-in: Körper und Antrieb, die Systeme unter den
    Symptomen — und, wenn gestern leer geblieben ist, das Nachtragen. */
@@ -234,39 +200,31 @@ function reiseHinweis(api) {
   return el("p", "reise-hinweis leise klein", r.noch);
 }
 
-/* Ist der Tag gezählt, steht das an der Stelle des Knopfs — ruhig, mit
-   einem leisen Weg zurück, solange nur „dabei" ihn zählt. */
-function daStand(api) {
-  const d = el("div", "da-stand");
-  const nurNotiz = !api.istDa();
-  d.append(el("span", "da-stand-text", nurNotiz ? "✓ Heute zählt — durch deine Notiz" : "✓ Heute dabei"));
-  if (!nurNotiz) {
+
+
+/* Der Tag. Er beginnt leer: ein Knopf, „Tag beginnen" (oder „+" oben, oder
+   heute in der Woche antippen). Ist er begonnen, steht hier, was sich
+   festhalten lässt — direkt in der Seite. */
+export function heute(api) {
+  const m = api.monat();
+  if (m.phase === "nach") return null;
+  const s = el("section", "heute");
+  s.setAttribute("aria-label", "Heute");
+  if (!api.hatEintrag()) {
+    const b = knopf("", "tag-beginnen", () => api.da());
+    b.dataset.focus = "da";
+    b.append(el("span", "tag-beginnen-plus", "+"), el("span", "tag-beginnen-text", "Tag beginnen"),
+      el("span", "leise klein", "Heute bin ich dabei"));
+    s.append(b, weiteres(api));
+    return s;
+  }
+  const kopf = el("div", "heute-kopf");
+  kopf.append(el("h2", "heute-titel", "Heute"), el("span", "heute-dabei", api.istDa() ? "✓ dabei" : "✓ zählt durch deine Notiz"));
+  if (api.istDa()) {
     const z = knopf("zurücknehmen", "text klein leise", () => api.daZurueck());
     z.dataset.focus = "da-zurueck";
-    d.append(z);
+    kopf.append(z);
   }
-  return d;
-}
-
-/* Wie geht’s dir? Fünf Gesichter, ein Tippen — gleich hier. Mehr (ein
-   Satz, Schlaf, Bewegung …) im Check-in. */
-function gesichter(api) {
-  const w = el("div", "heute-gesichter");
-  w.append(el("p", "heute-frage serif", "Wie geht’s dir?"));
-  const r = el("div", "gesichter");
-  r.setAttribute("role", "radiogroup");
-  r.setAttribute("aria-label", "Stimmung heute");
-  const jetzt = api.stimmungHeute();
-  for (let n = 1; n <= 5; n++) {
-    const b = knopf(api.gesicht(n), "gesicht", () => api.stimmungSetzen(n));
-    b.setAttribute("role", "radio");
-    b.setAttribute("aria-checked", jetzt === n);
-    b.setAttribute("aria-label", `Stimmung: ${api.stimmungWort(n)}`);
-    b.dataset.focus = `gesicht-${n}`;
-    r.append(b);
-  }
-  const mehr = knopf("mehr festhalten ›", "text klein woche-monat", () => api.tagEinordnen());
-  mehr.dataset.focus = "checkin-mehr";
-  w.append(r, mehr);
-  return w;
+  s.append(kopf, api.erfassungHeute(), weiteres(api));
+  return s;
 }

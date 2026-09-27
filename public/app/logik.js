@@ -323,30 +323,23 @@ export function reiseStand(z) {
   return { naechste, noch: naechste ? `Als Nächstes: ${naechste.titel} · ${naechste.noch(z)}` : "" };
 }
 
-/** Der Anfang: eine oder mehrere Sachen, eine davon der Fokus. Ersetzt,
-    was gewählt war; Notizen und eigene Tracker bleiben stehen. Eine Wahl
-    ist {fest: "kaffee"} oder {name, art: "lassen"|"aufbauen", schritte}.
-    Gibt die id des Fokus zurück. */
-export function einrichten(z, wahlen, fokus = 0) {
+/** Der Anfang: eine oder mehrere Sachen — wie viele, entscheidet der
+    Mensch. Ersetzt, was gewählt war; Notizen und eigene Tracker bleiben
+    stehen. Eine Wahl ist {fest: "kaffee"} oder {name, art: "lassen"|"aufbauen",
+    schritte}. Gibt die id der ersten zurück. */
+export function einrichten(z, wahlen) {
   z.commitment = {};
   const ids = (Array.isArray(wahlen) ? wahlen : [wahlen]).map((w) => {
     if (w.fest && FEST.includes(w.fest)) { z.commitment[w.fest] = { drang: true }; return w.fest; }
     return fuegeEigenenHinzu(z, w.name, { art: w.art, schritte: w.schritte });
   });
-  z.fokus = ids[fokus] ?? ids.find(Boolean) ?? null;
-  return z.fokus;
+  return ids.find(Boolean) || null;
 }
-
-/** Der Fokus, wenn er noch gewählt ist — sonst der erste gewählte. */
-export const fokus = (z) => (z.fokus && z.commitment[z.fokus] ? z.fokus : gewaehlt(z)[0] || null);
-
-/** Das Gewählte, der Fokus zuerst. */
-export const gewaehltMitFokus = (z) => { const f = fokus(z); return f ? [f, ...gewaehlt(z).filter((k) => k !== f)] : gewaehlt(z); };
 
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0, reiseNeu: null, fokus: null, checkin: [],
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0, reiseNeu: null, checkin: [],
     werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {},
     gremlin: { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] } };
 }
@@ -384,9 +377,8 @@ export function aus(text) {
   z.reise = Number.isInteger(roh.reise) && roh.reise >= 0 && roh.reise <= REISE.length ? roh.reise : warDa ? REISE.length : 0;
   if (!warDa && !Number.isInteger(roh.reise)) z.tiefe = 1;
   if (Number.isInteger(roh.reiseNeu) && roh.reiseNeu >= 0 && roh.reiseNeu < z.reise) z.reiseNeu = roh.reiseNeu;
-  if (typeof roh.fokus === "string" && ids.includes(roh.fokus)) z.fokus = roh.fokus;
   // Welche Eingaben im Check-in von selbst offen sind — nur bekannte.
-  if (Array.isArray(roh.checkin)) z.checkin = [...new Set(roh.checkin.filter((x) => x === "satz" || x === "selbst" || SYSTEME.some((y) => y.id === x)))];
+  if (Array.isArray(roh.checkin)) z.checkin = [...new Set(roh.checkin.filter((x) => ERFASSUNG.includes(x)))];
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
   if (roh.gemeinsam && /^p[a-z0-9]{1,16}$/.test(roh.gemeinsam.id) && typeof roh.gemeinsam.name === "string")
     z.gemeinsam = { id: roh.gemeinsam.id, name: roh.gemeinsam.name.slice(0, 24) };
@@ -417,6 +409,13 @@ export function aus(text) {
       }
       if (e.daemon && typeof e.daemon === "object" && Number.isInteger(e.daemon.sek) && e.daemon.sek > 0 && e.daemon.sek <= 3600)
         t.daemon = { was: typeof e.daemon.was === "string" ? e.daemon.was.trim().slice(0, 140) : "", sek: e.daemon.sek };
+      if (Number.isInteger(e.schlafDauer) && e.schlafDauer >= 0 && e.schlafDauer < SCHLAF_DAUER.length) t.schlafDauer = e.schlafDauer;
+      for (const x of SCHLAF_TEILE) if (Number.isInteger(e[x.id]) && e[x.id] >= 1 && e[x.id] <= 3) t[x.id] = e[x.id];
+      if (e.menge && typeof e.menge === "object") {
+        const m = {};
+        for (const [k, i] of Object.entries(e.menge)) if (ids.includes(k) && Number.isInteger(i) && i >= 0 && i < mengen(k).stufen.length) m[k] = i;
+        if (Object.keys(m).length) t.menge = m;
+      }
       if (Array.isArray(e.fuer)) { const f = [...new Set(e.fuer.filter((x) => ZEIT_FUER.some((y) => y.id === x)))]; if (f.length) t.fuer = f; }
       if (Object.keys(t).length) z.tagebuch[tag] = t;
     }
@@ -456,8 +455,8 @@ export function schalteAlles(z) {
 export function commitmentSatz(z) {
   const V = verzichte(z);
   const reihe = (n) => (n.length > 1 ? n.slice(0, -1).join(", ") + " und " + n.at(-1) : n[0]);
-  const lassen = gewaehltMitFokus(z).filter((k) => !V[k].aufbau).map((k) => V[k].satz);
-  const bauen = gewaehltMitFokus(z).filter((k) => V[k].aufbau).map((k) => V[k].satz);
+  const lassen = gewaehlt(z).filter((k) => !V[k].aufbau).map((k) => V[k].satz);
+  const bauen = gewaehlt(z).filter((k) => V[k].aufbau).map((k) => V[k].satz);
   if (lassen.length && bauen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein und baue ${reihe(bauen)} auf.`;
   if (bauen.length) return `Im Oktober baue ich ${reihe(bauen)} auf.`;
   if (lassen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein.`;
@@ -731,6 +730,37 @@ export const SELBST = ["Selbstvertrauen", "Selbstwirksamkeit", "Selbstwertgefüh
   "Selbstbehauptung", "Selbstbestimmung"];
 export const SELBST_MAX = 2;
 
+/* ---- Die Erfassung des Tages ---------------------------------------------
+
+   Was sich an einem Tag festhalten lässt, in einfachen Kategorien statt
+   Skalen: der Schlaf als Dauer und als Ampel für Einschlafen, Durchschlafen
+   und Aufwachen; der Konsum je Tracker als Menge; Körper und Antrieb als
+   Ampel. Die Ampel (1 rot, 2 gelb, 3 grün) beschreibt, wie sich etwas
+   angefühlt hat — nie ein Verhalten: der Konsum hat keine Ampel.
+
+   Die Ampel für Körper und Antrieb schreibt in die Systeme (1, 3, 5), damit
+   Verlauf und Zusammenhänge sie lesen; der Schlaf ebenso, als Mittel der
+   drei Teile. */
+export const ERFASSUNG = ["stimmung", "schlaf", "konsum", "satz", "koerper", "antrieb", "selbst"];
+export const AMPEL = ["schwer", "geht so", "gut"];
+export const SCHLAF_DAUER = ["4–6 h", "6–8 h", "8 h +"];
+export const SCHLAF_TEILE = [
+  { id: "einschlafen", name: "Einschlafen" },
+  { id: "durchschlafen", name: "Durchschlafen" },
+  { id: "aufwachen", name: "Aufwachen" },
+];
+export const AMPEL_SYSTEME = { koerper: ["bewegung", "ernaehrung", "verdauung"], antrieb: ["antrieb", "motivation", "lust"] };
+const MENGEN = {
+  kaffee: { frage: "Tassen", stufen: ["0", "1–2", "3–4", "5 +"] },
+  kippe: { frage: "Zigaretten", stufen: ["0", "1–5", "6–10", "11–20", "20 +"] },
+  video: { frage: "Stunden", stufen: ["0", "< 1", "1–2", "2–4", "4 +"] },
+};
+/** Wie sich die Menge eines Trackers angeben lässt. */
+export const mengen = (v) => MENGEN[v] || { frage: "", stufen: ["nichts", "wenig", "mittel", "viel"] };
+/** Ampel 1–3 → System 1–5, und zurück. */
+export const ampelAlsWert = (a) => [0, 1, 3, 5][a] || 0;
+export const wertAlsAmpel = (w) => (!w ? 0 : w <= 2 ? 1 : w === 3 ? 2 : 3);
+
 /** Der Mittelwert einer Gruppe an einem Tag, 0 (nichts angegeben) bis 1. */
 export function gruppenWert(z, tag, gruppe) {
   const e = z.tagebuch[tag] || {};
@@ -761,8 +791,25 @@ export const SCHICHTEN = [
 
 /** Einen Teil des Tagebuchs setzen; leer (oder 0) heißt weg.
     werte: {schlaf: 1–5, …}; stimmung geht auch direkt (erste Fassung). */
-export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon } = {}) {
+export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon, schlafDauer, schlafTeile, menge } = {}) {
   const t = { ...(z.tagebuch[tag] || {}) };
+  if (schlafDauer !== undefined) {
+    if (Number.isInteger(schlafDauer) && schlafDauer >= 0 && schlafDauer < SCHLAF_DAUER.length) t.schlafDauer = schlafDauer; else delete t.schlafDauer;
+  }
+  if (schlafTeile !== undefined) {
+    for (const [id, a] of Object.entries(schlafTeile)) {
+      if (!SCHLAF_TEILE.some((x) => x.id === id)) continue;
+      if (Number.isInteger(a) && a >= 1 && a <= 3) t[id] = a; else delete t[id];
+    }
+    // Der Schlaf als System: das Mittel der Teile, auf fünf Stufen.
+    const teile = SCHLAF_TEILE.map((x) => t[x.id]).filter(Boolean);
+    werte = { ...werte, schlaf: teile.length ? Math.round(1 + (teile.reduce((a, b) => a + b, 0) / teile.length - 1) * 2) : 0 };
+  }
+  if (menge !== undefined) {
+    const m = { ...(t.menge || {}) };
+    for (const [k, i] of Object.entries(menge)) { if (Number.isInteger(i) && i >= 0 && i < mengen(k).stufen.length) m[k] = i; else delete m[k]; }
+    if (Object.keys(m).length) t.menge = m; else delete t.menge;
+  }
   const alle = stimmung !== undefined ? { ...werte, stimmung } : werte;
   for (const [id, n] of Object.entries(alle)) {
     if (!SYSTEME.some((x) => x.id === id)) continue;

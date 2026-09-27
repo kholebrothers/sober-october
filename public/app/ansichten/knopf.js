@@ -12,21 +12,19 @@ export function render(api) {
   const s = el("section", "ansicht-knopf");
   s.append(kopf(api), oben(api));
 
-  /* Je Tracker eine Karte: oben der Name (der Fokus markiert) und was heute
+  /* Je Tracker eine Karte: oben der Name und was heute
      war, darunter die Knöpfe — sichtbar als Knöpfe, mit „+". Die letzte
      Notiz von heute steht darunter, mit „Details" und „rückgängig": die
      Antwort auf ein Tippen hat ihren festen Platz, sie wird nicht eingeblendet. */
   const raster = el("div", "tracker-liste");
   raster.dataset.katze = "weg";
-  const fokus = api.fokus();
-  for (const v of api.gewaehltMitFokus()) {
+  for (const v of api.gewaehlt()) {
     const V = VERZICHTE[v];
     const es = api.heuteVon(v);
     const habe = es.filter((e) => e.art === (V.aufbau ? "getan" : "habe")).length;
     const drang = es.filter((e) => e.art === "drang").length;
     const karte = faerbe(el("div", "tracker"), VERZICHTE, v);
     if (V.aufbau) karte.dataset.aufbau = "";
-    if (v === fokus && api.gewaehlt().length > 1) karte.dataset.fokus = "";
 
     /* Eine Routine mit Schritten (ab Schicht 2): die Karte ist die Liste. */
     if (V.aufbau && V.schritte.length && api.ab(2)) {
@@ -36,7 +34,6 @@ export function render(api) {
     }
     const kopf = el("div", "tracker-kopf");
     kopf.append(el("span", "tracker-name", V.name));
-    if (karte.dataset.fokus !== undefined) kopf.append(el("span", "tracker-fokus", "Fokus"));
     if (!V.aufbau) kopf.append(el("span", "tracker-heute", habe || drang ? `heute ${[habe && `${habe}×`, drang && `${drang}× würde gern`].filter(Boolean).join(" · ")}` : "heute nichts"));
     karte.append(kopf);
 
@@ -78,7 +75,8 @@ export function render(api) {
     }
     raster.append(karte);
   }
-  s.append(raster);
+  /* Die Tracker gehören zum Tag: solange er nicht begonnen ist, stehen sie nicht da. */
+  if (api.hatEintrag()) s.append(raster);
 
   const u = unten(api);
   if (u) s.append(u);

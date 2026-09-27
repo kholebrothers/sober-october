@@ -787,3 +787,50 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
 .tracker-letzte { display:flex; flex-wrap:wrap; align-items:center; column-gap:14px; margin:0; font-size:13px; }
 .tracker-letzte .text { min-height:36px; }
 .tracker .routine { margin:0; }
+
+/* ---- Der Tag: leer, dann die Erfassung in der Seite ---------------------
+   Die Ampel ist die einzige Stelle mit Rot. Sie beschreibt, wie sich
+   Schlaf, Körper, Antrieb angefühlt haben — nie ein Verhalten. Der Konsum
+   hat keine Ampel, nur Mengen in Tinte. */
+:root { --ampel-1:#AF3029; --ampel-2:var(--gelb); --ampel-3:var(--moss); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ampel-1:#D14D41; } }
+.heute { display:grid; gap:16px; margin-top:16px; }
+.tag-beginnen { display:grid; justify-items:center; gap:4px; width:100%; padding:28px 16px; border:2px dashed color-mix(in oklab, var(--moss) 60%, var(--linie));
+  border-radius:var(--radius-card); background:transparent; }
+.tag-beginnen-plus { width:56px; height:56px; display:grid; place-items:center; border-radius:50%; background:var(--moss); color:var(--surface); font:300 36px/1 var(--sans); }
+.tag-beginnen-text { font:600 18px var(--sans); color:var(--ink); margin-top:6px; }
+.tag-beginnen:active { transform:scale(.98); }
+.heute-kopf { display:flex; align-items:baseline; gap:12px; }
+.heute-titel { margin:0; font:500 24px var(--serif); }
+.heute-dabei { font:600 14px var(--sans); color:var(--moss); }
+.heute-kopf .text { margin-left:auto; }
+.erfassung { display:grid; gap:12px; }
+.erfassung-feld { display:grid; gap:10px; padding:14px 16px; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); }
+.erfassung-kopf { display:flex; align-items:center; gap:8px; }
+.erfassung-kopf h3 { margin:0; font:500 17px var(--serif); flex:1; }
+.erfassung-icon { font-size:18px; line-height:1; }
+.erfassung-weg { width:36px; height:36px; border:0; background:none; color:var(--leise); font-size:20px; border-radius:50%; }
+.erfassung-frage { margin:0; font-size:13px; color:var(--leise); }
+.erfassung-hinzu { display:grid; gap:8px; }
+.erfassung-hinzu .rubrik { margin:4px 0 0; }
+.erfassung-vorschlaege { display:flex; flex-wrap:wrap; gap:8px; }
+.erfassung-vorschlag { display:inline-flex; align-items:center; gap:8px; min-height:var(--touch); padding:6px 14px 6px 10px;
+  border:1.5px dashed var(--linie-stark); border-radius:99px; background:transparent; font:500 15px var(--sans); color:var(--ink); }
+.erfassung-vorschlag:active { transform:scale(.97); }
+.wahl-segmente { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:4px; padding:3px; border-radius:12px; background:var(--paper); }
+.segment { min-height:40px; padding:6px 4px; border:0; border-radius:9px; background:transparent; font:500 14px var(--sans); color:var(--leise); white-space:nowrap; }
+.segment[aria-checked="true"] { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px #0002; font-weight:600; }
+.ampel-zeile { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ampel-name { font-size:15px; }
+.ampel { display:flex; gap:10px; }
+.ampel-punkt { width:40px; height:40px; border-radius:50%; padding:0; border:2px solid color-mix(in oklab, var(--c) 55%, var(--linie)); background:color-mix(in oklab, var(--c) 10%, var(--surface)); }
+.ampel-punkt[data-ampel="1"] { --c:var(--ampel-1); }
+.ampel-punkt[data-ampel="2"] { --c:var(--ampel-2); }
+.ampel-punkt[data-ampel="3"] { --c:var(--ampel-3); }
+.ampel-punkt[aria-checked="true"] { background:var(--c); border-color:var(--c); box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--c); }
+.konsum-zeile { display:grid; gap:6px; }
+.erfassung-feld input[name="getragen"] { font:inherit; font-size:16px; min-height:var(--touch); padding:10px 12px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; }
+.selbst-chip[aria-pressed="true"] { border-color:var(--lila); color:var(--ink); background:color-mix(in oklab, var(--lila) 10%, transparent); }
+.selbst-chip:disabled { opacity:.4; }
+.tag-blatt > .gross { width:100%; margin-top:8px; }
+.tag-blatt .erfassung-feld { background:var(--paper); }

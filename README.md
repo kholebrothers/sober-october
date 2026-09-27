@@ -21,6 +21,14 @@ Tracker (oder die Lebenszeit) öffnet Schicht 2; ein Werkzeug, zweimal benutzt, 
 etwas davon nie braucht, kommt mit viel Notieren genauso weiter. Unter dem Knopf steht, was als
 Nächstes zu tun ist. Was offen ist, bleibt offen. Wer schon vor der Reise etwas gewählt hatte, hat sie hinter sich.
 
+**Der Tag startet leer.** Oben das Commitment (der Satz, die Zahl, die Woche; der ganze Monat auf
+Antippen), darunter „Tag beginnen“. Ein Tippen darauf, auf „+“ oben oder auf heute in der Woche
+beginnt den Tag (er zählt als „dabei“), und direkt in der Seite steht, was sich festhalten lässt
+(`public/app/erfassung.js`): Stimmung (fünf Gesichter), Schlaf (Dauer 4–6 / 6–8 / 8 h + und
+Einschlafen, Durchschlafen, Aufwachen als Ampel), Konsum je Tracker als Menge, ein Satz, Körper und
+Antrieb als Ampel, Selbst. Was man einmal eingeblendet hat, ist am nächsten Tag wieder da. Die Ampel
+ist die einzige Stelle mit Rot; sie beschreibt ein Gefühl, nie ein Verhalten — der Konsum hat keine.
+
 **Im Zentrum steht der Monat.** Oben in jeder Ansicht: der Oktober als Kalender und darunter
 ein Knopf, **„Heute bin ich dabei“**. Ein Tippen, und das Feld des Tages füllt sich, die Zahl der
 Tage dabei springt, das Telefon tippt kurz zurück; an den Stufen 5, 8, 13, 21 und 34 leuchtet der

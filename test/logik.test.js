@@ -15,7 +15,7 @@ import {
   setzeZeitVorher, freiAm, lebenszeit, dauer,
   gremlinStufe, setzeFuetterungstag, futterHinzu, fuettern, werkzeugBenutzt, istFuetterungstag,
   DAEMON_PHASEN, DAEMON_SEK, daemonStand,
-  REISE, offen, reiseWeiter, reiseStand, einrichten,
+  REISE, offen, reiseWeiter, reiseStand, einrichten, mengen, ampelAlsWert, wertAlsAmpel,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -803,4 +803,35 @@ test("der Check-in merkt sich, welche Eingaben offen sind — nur bekannte", () 
   z.checkin = ["satz", "schlaf", "gibtsnicht", "selbst", "schlaf"];
   assert.deepEqual(aus(JSON.stringify(z)).checkin, ["satz", "schlaf", "selbst"]);
   assert.deepEqual(neuerZustand().checkin, []);
+});
+
+test("die Erfassung: Schlaf als Dauer und Ampel, Konsum als Menge — Körper und Antrieb schreiben in die Systeme", () => {
+  const z = mit("kaffee", "kippe");
+  const t = okt(2);
+  schreibeTag(z, t, { schlafDauer: 1, schlafTeile: { einschlafen: 3, aufwachen: 1 } });
+  assert.equal(z.tagebuch[t].schlafDauer, 1);
+  assert.equal(z.tagebuch[t].schlaf, 3, "der Schlaf als System ist das Mittel der Teile");
+  schreibeTag(z, t, { menge: { kaffee: 2, kippe: 99 } });
+  assert.deepEqual(z.tagebuch[t].menge, { kaffee: 2 }, "was es als Stufe nicht gibt, wird nicht gespeichert");
+  schreibeTag(z, t, { werte: { bewegung: ampelAlsWert(3) } });
+  assert.equal(z.tagebuch[t].bewegung, 5);
+  assert.equal(wertAlsAmpel(5), 3);
+  assert.equal(wertAlsAmpel(2), 1);
+  assert.equal(hatEintrag(z, t), true, "eine Erfassung zählt den Tag");
+
+  const zurueck = aus(JSON.stringify(z));
+  assert.deepEqual(zurueck.tagebuch[t], z.tagebuch[t]);
+
+  schreibeTag(z, t, { schlafDauer: -1, menge: { kaffee: -1 }, schlafTeile: { einschlafen: 0, aufwachen: 0 } });
+  assert.equal(z.tagebuch[t].schlafDauer, undefined);
+  assert.equal(z.tagebuch[t].menge, undefined);
+  assert.equal(z.tagebuch[t].schlaf, undefined);
+  assert.deepEqual(mengen("eigen-x").stufen, ["nichts", "wenig", "mittel", "viel"]);
+});
+
+test("die Einrichtung: eins oder mehreres, ohne Fokus", () => {
+  const z = neuerZustand();
+  assert.equal(einrichten(z, [{ fest: "kippe" }, { fest: "kaffee" }, { name: "Lesen", art: "aufbauen" }]), "kippe");
+  assert.equal(gewaehlt(z).length, 3);
+  assert.equal(commitmentSatz(z), "Im Oktober lasse ich den Kaffee und die Kippe sein und baue Lesen auf.");
 });

@@ -19,7 +19,7 @@ import {
   setzeAnker, setzeSwish, planHinzu, planWeg,
   ZEIT_STUFEN, ZEIT_FUER, setzeZeitVorher, freiAm, lebenszeit, dauer,
   DAEMON_PHASEN, daemonStand,
-  REISE, offen, reiseWeiter, reiseStand, einrichten, fokus, gewaehltMitFokus,
+  REISE, offen, reiseWeiter, reiseStand, einrichten, ERFASSUNG,
   GREMLIN_STUFEN, GREMLIN_FUTTER_VORSCHLAEGE, WOCHENTAGE, gremlinStufe, setzeFuetterungstag, futterHinzu, futterWeg, fuettern, werkzeugBenutzt,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
@@ -31,6 +31,7 @@ import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { monatBlatt } from "./bausteine/monat.js";
+import { erfassung } from "./erfassung.js";
 import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
@@ -43,7 +44,6 @@ let wahlOffen = !gewaehlt(z).length;
    ist, was gerade angetippt ist, bevor es mit „Los geht's" gilt. */
 let einrichtungOffen = !gewaehlt(z).length && !offen(z, "tracker");
 let auswahl = [];          // [{schluessel, wahl}] in der Reihenfolge des Antippens
-let fokusSchluessel = null;
 let bestaetigen = false;
 
 const $ = (s) => document.querySelector(s);
@@ -118,12 +118,7 @@ const api = {
   notizWeg(id) { aendern(() => entferne(z, id)); },
   notizDetails(id) { const e = z.ereignisse.find((x) => x.id === id); if (e) fragen(e.verzicht, e.art, e.art === "habe" ? verzichte(z)[e.verzicht].habe : verzichte(z)[e.verzicht].drang, id); },
   notizWerkzeug(id) { W.menue(id); },
-  stimmungSetzen(n) {
-    aendern(() => schreibeTag(z, heute(), { werte: { stimmung: z.tagebuch[heute()]?.stimmung === n ? 0 : n } }));
-    spueren(8);
-  },
-  fokus: () => fokus(z),
-  gewaehltMitFokus: () => gewaehltMitFokus(z),
+
   reiseNeu: () => (z.reiseNeu !== null ? REISE[z.reiseNeu] : null),
   reiseGesehen() { aendern(() => { z.reiseNeu = null; }); },
   aktiv: (id) => aktiv(z, id),
@@ -193,10 +188,12 @@ const api = {
   /* Ein Tag im Kalender angetippt: was an dem Tag steht, und — für heute
      und vergangene Tage — ob man dabei war. Ein kommender Tag hat noch nichts. */
   monatZeigen: () => monatZeigen(),
-  eintragenMenue: () => eintragenMenue(),
+  plus: () => zumHeute(),
+  erfassungHeute: () => erfassung(erfassungFuer(heute())),
   tagAntippen(tag) {
     if (tag > heute()) return;
-    tagEinordnen(tag, { ausKalender: true });
+    if (bogen.open) bogen.close();
+    tagEinordnen(tag);
   },
   getragen: () => z.tagebuch[heute()]?.getragen || "",
   getragenSetzen(text) {
@@ -204,8 +201,6 @@ const api = {
   },
   tagebuchZeilen: () => tagebuchZeilen(z, heute()),
   stimmungWort: (n) => STIMMUNG[n - 1],
-  stimmungHeute: () => z.tagebuch[heute()]?.stimmung || 0,
-  gesicht: (n) => GESICHTER[n - 1],
   /* Gestern leer geblieben, aber es gibt schon etwas vorher: dann darf man
      ihn nachtragen (aus lifetracker, „Noch kurz aufschreiben"). */
   gesternOffen() {
@@ -518,182 +513,65 @@ function oeffneEbene(id) {
   zeigeBogen(k);
 }
 
-/* ---- Der Check-in ------------------------------------------------------------
+/* ---- Ein Tag im Blatt ------------------------------------------------------------
 
-   Minimale Reibung, maximale Freiheit: oben fünf Gesichter für die
-   Stimmung — ein Tippen, und es ist festgehalten. Darunter eine Reihe
-   Symbole; jedes blendet eine weitere Eingabe ein (ein Satz, Schlaf,
-   Bewegung …). Was man einmal eingeblendet hat, ist beim nächsten Mal
-   von selbst offen (`z.checkin`), was an dem Tag schon Werte hat, auch.
-   Alles speichert sofort; es gibt keinen Speichern-Knopf, nur „Fertig".
-   Alles freiwillig, alles bleibt auf dem Gerät. */
-const GESICHTER = ["😣", "🙁", "😐", "🙂", "😄"];
-
-function tagEinordnen(tag, { ausKalender = false } = {}) {
+   Für einen anderen Tag als heute (aus dem Kalender, „Gestern nachtragen")
+   dieselbe Erfassung wie auf dem Startschirm, in einem Blatt: was notiert
+   ist, ob man dabei war, und alles, was sich festhalten lässt. Alles
+   speichert sofort; es gibt nur „Fertig". */
+function tagEinordnen(tag) {
   const t = tag || heute();
-  const istHeute = t === heute();
-  const vorher = () => z.tagebuch[t] || {};
-  const k = el("div", "bogen-inhalt checkin");
-  k.append(el("p", "rubrik", `${tagesKopf(t)} · Check-in`), el("h2", null, istHeute ? "Wie geht’s dir?" : "Wie ging’s dir an dem Tag?"));
+  if (t === heute()) { zumHeute(); return; }
+  const y = bogen.open ? bogen.scrollTop : 0;
+  const k = el("div", "bogen-inhalt tag-blatt");
+  k.append(el("p", "rubrik", tagesKopf(t)), el("h2", null, "Wie war der Tag?"));
 
-  /* Speichern, still. Wird der Tag dadurch gezählt, sagt es die Meldung. */
-  const sichereTag = (was) => {
-    const m = aendern(() => schreibeTag(z, t, was));
-  };
-
-  /* Aus dem Kalender: was an dem Tag notiert ist. */
   const notizen = vonTag(z, t).filter((e) => e.art !== "ohne");
-  if (ausKalender && notizen.length) {
+  if (notizen.length) {
     const l = el("ul", "tag-notizen");
     for (const e of notizen) l.append(faerbe(el("li", null, `${e.zeit} · ${wasText(api, e)}`), verzichte(z), e.verzicht));
     k.append(l);
   }
-  /* Ein vergangener Tag — oder aus dem Kalender: dabei gewesen? */
-  if (!istHeute || ausKalender) {
-    const l = el("label", "baustein");
-    const da = Object.assign(document.createElement("input"), { type: "checkbox", checked: istDa(z, t) });
-    da.addEventListener("change", () => {
-      const m = aendern(() => { if (da.checked !== istDa(z, t)) schalteDa(z, t); });
-    });
-    const tx = el("span", "baustein-text");
-    tx.append(el("span", null, istHeute ? "Heute bin ich dabei" : "An dem Tag war ich dabei"),
-      el("span", "leise klein", notizen.length ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
-    l.append(da, tx);
-    k.append(l);
-  }
-
-  /* Die Stimmung: fünf Gesichter, ein Tippen; dasselbe noch einmal nimmt es weg. */
-  const gesichter = el("div", "gesichter");
-  gesichter.setAttribute("role", "radiogroup");
-  gesichter.setAttribute("aria-label", "Stimmung");
-  const zeigeStimmung = () => gesichter.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-checked", vorher().stimmung === i + 1));
-  GESICHTER.forEach((g, i) => {
-    const b = knopf(g, "gesicht", () => {
-      sichereTag({ werte: { stimmung: vorher().stimmung === i + 1 ? 0 : i + 1 } });
-      spueren(8);
-      zeigeStimmung();
-    });
-    b.setAttribute("role", "radio");
-    b.setAttribute("aria-label", `Stimmung: ${STIMMUNG[i]}`);
-    gesichter.append(b);
-  });
-  zeigeStimmung();
-  k.append(gesichter);
-
-  /* Die Symbole, und darunter die eingeblendeten Eingaben. */
-  const symbole = el("div", "checkin-symbole");
-  symbole.setAttribute("aria-label", "Mehr festhalten");
-  const felder = el("div", "checkin-felder");
-  const offenIds = new Set([...z.checkin, ...CHECKIN_MODULE.filter((m) => hatWert(m, vorher())).map((m) => m.id)]);
-  const bauen = {};
-  for (const mod of CHECKIN_MODULE) {
-    const b = knopf("", "checkin-symbol", () => {
-      const an = !offenIds.has(mod.id);
-      if (an) offenIds.add(mod.id); else offenIds.delete(mod.id);
-      aendern(() => { z.checkin = CHECKIN_MODULE.map((m) => m.id).filter((id) => offenIds.has(id)); });
-      zeichneFelder();
-      if (an) felder.querySelector(`[data-modul="${mod.id}"] input`)?.focus({ preventScroll: true });
-    });
-    b.dataset.modul = mod.id;
-    b.append(el("span", "checkin-icon", mod.icon), el("span", "checkin-wort", mod.name));
-    symbole.append(b);
-    bauen[mod.id] = () => modulFeld(mod, t, vorher, sichereTag);
-  }
-  const zeichneFelder = () => {
-    symbole.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", offenIds.has(b.dataset.modul)));
-    felder.replaceChildren(...CHECKIN_MODULE.filter((m) => offenIds.has(m.id)).map((m) => bauen[m.id]()));
-  };
-  zeichneFelder();
-  k.append(el("p", "rubrik checkin-mehr", "Mehr festhalten"), symbole, felder);
-
-  const unten = el("div", "wahlreihe");
-  unten.append(knopf("Fertig", "gross", () => bogen.close()));
-  k.append(unten, el("p", "leise klein", "Wird sofort gespeichert. Nur auf diesem Gerät."));
+  const l = el("label", "baustein");
+  const da = Object.assign(document.createElement("input"), { type: "checkbox", checked: istDa(z, t) });
+  da.addEventListener("change", () => { aendern(() => { if (da.checked !== istDa(z, t)) schalteDa(z, t); }); });
+  const tx = el("span", "baustein-text");
+  tx.append(el("span", null, "An dem Tag war ich dabei"),
+    el("span", "leise klein", notizen.length ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
+  l.append(da, tx);
+  k.append(l, erfassung(erfassungFuer(t, () => tagEinordnen(t))));
+  k.append(knopf("Fertig", "gross", () => bogen.close()));
   zeigeBogen(k);
+  bogen.scrollTop = y;
 }
 
-/* Was sich im Check-in einblenden lässt. Jedes Modul ist ein System aus
-   logik.js (fünf Stufen), der Satz zum Tag oder die Selbst-Markierungen. */
-const CHECKIN_MODULE = [
-  { id: "satz", icon: "✏️", name: "Ein Satz" },
-  { id: "schlaf", icon: "🌙", name: "Schlaf" },
-  { id: "bewegung", icon: "🏃", name: "Bewegung" },
-  { id: "ernaehrung", icon: "🥗", name: "Ernährung" },
-  { id: "verdauung", icon: "🌿", name: "Verdauung" },
-  { id: "antrieb", icon: "⚡", name: "Antrieb" },
-  { id: "motivation", icon: "🎯", name: "Motivation" },
-  { id: "lust", icon: "💗", name: "Lust" },
-  { id: "selbst", icon: "✨", name: "Selbst" },
-];
+/* Was die Erfassung für einen Tag braucht. `neu` zeichnet sie nach einer
+   Eingabe neu (auf dem Startschirm tut das zeichne() ohnehin). */
+function erfassungFuer(t, neu) {
+  const V = verzichte(z);
+  return {
+    tag: t,
+    heute: t === heute(),
+    eintrag: () => z.tagebuch[t] || {},
+    lassen: gewaehlt(z).filter((v) => !V[v].aufbau).map((v) => ({ id: v, name: V[v].name })),
+    offen: z.checkin,
+    schreibe(was) { aendern(() => schreibeTag(z, t, was)); spueren(8); neu?.(); },
+    zeigeArt(art, an) {
+      aendern(() => {
+        const s = new Set(z.checkin);
+        if (an) s.add(art); else s.delete(art);
+        z.checkin = ERFASSUNG.filter((a) => s.has(a));
+      });
+      neu?.();
+      if (an) setTimeout(() => document.querySelector(`.erfassung-feld[data-art="${art}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 50);
+    },
+  };
+}
 
-const hatWert = (m, e) => (m.id === "satz" ? !!e.getragen : m.id === "selbst" ? !!e.selbst?.length : !!e[m.id]);
-
-function modulFeld(mod, t, vorher, sichereTag) {
-  const istHeute = t === heute();
-  if (mod.id === "satz") {
-    const l = el("label", "frage ebene-frage");
-    l.dataset.modul = mod.id;
-    l.style.setProperty("--c", "var(--magenta)");
-    const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher().getragen || "", autocomplete: "off", maxLength: 280,
-      placeholder: "Der Kaffee mit Ben, der Spaziergang …", enterKeyHint: "done" });
-    g.addEventListener("change", () => sichereTag({ getragen: g.value }));
-    g.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); g.blur(); } });
-    l.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
-    return l;
-  }
-  if (mod.id === "selbst") {
-    const fs = el("fieldset", "frage ebene-frage");
-    fs.dataset.modul = mod.id;
-    fs.style.setProperty("--c", "var(--lila)");
-    fs.append(el("legend", "serif", istHeute ? "Was hat sich heute gezeigt?" : "Was hat sich an dem Tag gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
-    const chips = el("span", "chips");
-    SELBST.forEach((wort, i) => {
-      const c = el("label", "chip");
-      c.style.setProperty("--c", "var(--lila)");
-      c.append(Object.assign(document.createElement("input"), { type: "checkbox", value: String(i), checked: (vorher().selbst || []).includes(i) }), el("span", null, wort));
-      chips.append(c);
-    });
-    const sperren = () => {
-      const n = chips.querySelectorAll("input:checked").length;
-      for (const i of chips.querySelectorAll("input")) i.disabled = !i.checked && n >= SELBST_MAX;
-    };
-    chips.addEventListener("change", () => {
-      sperren();
-      sichereTag({ selbst: [...chips.querySelectorAll("input:checked")].map((i) => Number(i.value)) });
-    });
-    sperren();
-    fs.append(chips);
-    return fs;
-  }
-  /* Ein System: fünf Stufen zwischen zwei Polen. Ein Tippen wählt, ein
-     zweites auf dieselbe Stufe nimmt sie weg. */
-  const x = SYSTEME.find((y) => y.id === mod.id);
-  const fs = el("div", "frage ebene-frage systeme");
-  fs.dataset.modul = mod.id;
-  fs.style.setProperty("--c", GRUPPEN[x.gruppe].farbe);
-  const reihe = el("div", "system");
-  reihe.setAttribute("role", "radiogroup");
-  reihe.setAttribute("aria-label", `${x.name}: von ${x.pole[0]} bis ${x.pole[1]}`);
-  reihe.append(el("span", "system-name", x.name));
-  const stufen = el("span", "system-stufen");
-  for (let n = 1; n <= STUFEN; n++) {
-    const l = el("label", "stufe");
-    const inp = Object.assign(document.createElement("input"), { type: "radio", name: x.id, value: String(n), checked: vorher()[x.id] === n });
-    inp.setAttribute("aria-label", `${x.name} ${n} von ${STUFEN}${n === 1 ? `, ${x.pole[0]}` : n === STUFEN ? `, ${x.pole[1]}` : ""}`);
-    inp.addEventListener("click", () => {
-      const weg = vorher()[x.id] === n;
-      if (weg) inp.checked = false;
-      sichereTag({ werte: { [x.id]: weg ? 0 : n } });
-    });
-    l.style.setProperty("--w", `${Math.round(25 + (n / STUFEN) * 75)}%`);
-    l.append(inp, el("span", "stufe-kreis"));
-    stufen.append(l);
-  }
-  const pole = el("span", "system-pole");
-  pole.append(el("span", null, x.pole[0]), el("span", null, x.pole[1]));
-  reihe.append(stufen, pole);
-  fs.append(reihe);
-  return fs;
+/* Zum heutigen Tag auf dem Startschirm; ist er noch leer, beginnt er. */
+function zumHeute() {
+  if (!hatEintrag(z, heute())) api.da();
+  setTimeout(() => document.querySelector(".heute")?.scrollIntoView({ block: "start", behavior: "smooth" }), 50);
 }
 
 /* ---- Der Leitgedanke ------------------------------------------------------ */
@@ -744,7 +622,7 @@ function einstellungen() {
   k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)),
     offen(z, "tracker")
       ? knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); })
-      : knopf("Anders anfangen: neu wählen", "text", () => { bogen.close(); auswahl = []; fokusSchluessel = null; bestaetigen = false; einrichtungOffen = true; zeichne(); }));
+      : knopf("Anders anfangen: neu wählen", "text", () => { bogen.close(); auswahl = []; bestaetigen = false; einrichtungOffen = true; zeichne(); }));
 
   const r = reiseKarte();
   if (r) k.append(r);
@@ -1065,41 +943,6 @@ function eigenerTracker(id) {
   zeigeBogen(f);
 }
 
-/* ---- Eintragen ------------------------------------------------------------
-
-   Das „+" oben: alles, was sich festhalten lässt, an einer Stelle — egal,
-   wie weit die Reise ist. Die Reise entscheidet, was auf dem Startschirm
-   steht, nicht, was man eintragen darf. Was man hier benutzt, zählt für
-   die Reise wie überall sonst. */
-function eintragenMenue() {
-  const k = el("div", "bogen-inhalt eintragen-menue");
-  k.append(el("p", "rubrik", tagesZeile(heute())), el("h2", null, "Eintragen"));
-  const liste = el("div", "eintragen-liste");
-  const punkt = (titel, text, tun, farbe) => {
-    const b = knopf("", "eintragen-punkt", () => { bogen.close(); tun(); });
-    if (farbe) b.style.setProperty("--c", farbe);
-    b.append(el("span", "eintragen-titel", titel));
-    if (text) b.append(el("span", "leise klein", text));
-    liste.append(b);
-  };
-  const t = heute(), V = verzichte(z);
-  if (!hatEintrag(z, t)) punkt("Heute bin ich dabei", "Der Tag zählt.", () => api.da(), "var(--moss)");
-  for (const v of gewaehlt(z)) {
-    const farbe = V[v].farbe || `var(--${{ kaffee: "gelb", kippe: "blau", video: "lila" }[v] || "moss"})`;
-    if (V[v].aufbau) punkt(`${V[v].name} — getan`, null, () => eintragen(v, "getan"), farbe);
-    else {
-      punkt(V[v].habe, V[v].name, () => eintragen(v, "habe"), farbe);
-      punkt(V[v].drang, "Ein Moment, in dem du gern würdest", () => eintragen(v, "drang"), farbe);
-    }
-  }
-  punkt("Check-in", "Wie geht’s dir? Ein Tippen — und mehr, wenn du magst", () => tagEinordnen(t), "var(--magenta)");
-  punkt("Einen anderen Tag", "Im Monat nachtragen oder ansehen", () => monatZeigen(), "var(--leise)");
-  punkt("Weiterer Tracker", "Etwas sein lassen oder aufbauen", () => neuerTracker(), "var(--leise)");
-  punkt("Leitgedanke", "Ein Satz, der dich begleitet", () => leitgedankeBearbeiten(), "var(--leise)");
-  k.append(liste, knopf("schließen", "text leise", () => bogen.close()));
-  zeigeBogen(k);
-}
-
 /* Der ganze Monat als Blatt; ein Wechsel der Ebene zeichnet es neu. */
 function monatZeigen() {
   zeigeBogen(monatBlatt(api, () => monatZeigen()));
@@ -1108,10 +951,9 @@ function monatZeigen() {
 /* ---- Die Einrichtung ----------------------------------------------------------
 
    Wer neu ist, wählt, worauf er im Oktober achtet: etwas, das er sein
-   lässt, oder etwas, das er aufbaut — eins oder mehreres. Eins davon ist
-   der Fokus, deutlich markiert: das zuerst Gewählte, bis man einen anderen
-   zum Fokus macht. Dann ein Satz und „Los geht's". Alles andere öffnet
-   sich unterwegs (REISE in logik.js). */
+   lässt, oder etwas, das er aufbaut — eins oder mehreres, wie er will.
+   Dann ein Satz und „Los geht's". Alles andere öffnet sich unterwegs
+   (REISE in logik.js). */
 
 const KERN_LASSEN = FEST.map((k) => ({ fest: k }));
 const KERN_AUFBAU = AUFBAU_VORSCHLAEGE.map((v) => ({ name: v.name, art: "aufbauen", schritte: v.schritte }));
@@ -1125,10 +967,8 @@ function waehle(w) {
   const k = wahlSchluessel(w);
   if (auswahl.some((a) => a.schluessel === k)) {
     auswahl = auswahl.filter((a) => a.schluessel !== k);
-    if (fokusSchluessel === k) fokusSchluessel = auswahl[0]?.schluessel || null;
   } else {
     auswahl.push({ schluessel: k, wahl: w });
-    fokusSchluessel ||= k;
   }
   zeichne();
 }
@@ -1139,16 +979,16 @@ function einrichtungSeite() {
 
   if (bestaetigen && auswahl.length) {
     const probe = structuredClone(z);
-    einrichten(probe, auswahl.map((a) => a.wahl), auswahl.findIndex((a) => a.schluessel === fokusSchluessel));
+    einrichten(probe, auswahl.map((a) => a.wahl));
     s.append(el("h1", "serif einrichtung-satz", commitmentSatz(probe)));
     if (imIosBrowser()) s.append(el("p", "leise klein einrichtung-tipp", "Tipp: erst über Teilen → „Zum Home-Bildschirm“ hinzufügen, dann dort starten."));
     const unten = el("div", "einrichtung-unten");
     unten.append(
       knopf("Los geht’s", "gross", () => {
-        const wahlen = auswahl.map((a) => a.wahl), f = auswahl.findIndex((a) => a.schluessel === fokusSchluessel);
-        auswahl = []; fokusSchluessel = null; bestaetigen = false;
+        const wahlen = auswahl.map((a) => a.wahl);
+        auswahl = []; bestaetigen = false;
         einrichtungOffen = false; wahlOffen = false;
-        aendern(() => einrichten(z, wahlen, f));
+        aendern(() => einrichten(z, wahlen));
         scrollTo(0, 0);
       }),
       knopf("zurück", "text leise", () => { bestaetigen = false; zeichne(); }),
@@ -1158,28 +998,21 @@ function einrichtungSeite() {
   }
 
   s.append(el("h1", "serif", "Worauf willst du im Oktober achten?"),
-    el("p", "leise", "Eins reicht. Wählst du mehr, ist eins davon dein Fokus."));
+    el("p", "leise", "Eins reicht, mehr geht auch."));
   const gruppe = (titel, wahlen, art) => {
     const g = el("div", "kern-gruppe");
     g.append(el("h2", "rubrik", titel));
     const alle = [...wahlen, ...auswahl.map((a) => a.wahl).filter((w) => !w.fest && w.art === art && !wahlen.some((x) => wahlSchluessel(x) === wahlSchluessel(w)))];
     for (const w of alle) {
-      const k = wahlSchluessel(w), an = auswahl.some((a) => a.schluessel === k), istFokus = fokusSchluessel === k;
+      const k = wahlSchluessel(w), an = auswahl.some((a) => a.schluessel === k);
       const zeile = el("div", "kern-zeile");
       zeile.dataset.v = w.fest || "aufbau";
       zeile.dataset.an = an;
-      if (istFokus) zeile.dataset.fokus = "";
       const b = knopf("", "kern-knopf", () => waehle(w));
       b.setAttribute("aria-pressed", an);
       b.dataset.focus = `kern-${k}`;
       b.append(el("span", "kern-haken", an ? "✓" : ""), el("span", "kern-name", wahlName(w)));
       zeile.append(b);
-      if (istFokus) zeile.append(el("span", "kern-fokus", "Fokus"));
-      else if (an) {
-        const f = knopf("als Fokus", "text klein kern-zum-fokus", () => { fokusSchluessel = k; zeichne(); });
-        f.setAttribute("aria-label", `${wahlName(w)} zum Fokus machen`);
-        zeile.append(f);
-      }
       g.append(zeile);
     }
     const f = el("form", "wahl-neu");
