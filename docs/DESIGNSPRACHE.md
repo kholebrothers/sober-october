@@ -60,6 +60,23 @@ Deshalb:
 - Der Baustein „Lauf und Kette“ heißt jetzt „Lauf“ und ergänzt den Monat um „Tage am Stück“, den
   längsten Lauf und den Satz zum Tag. Die Kette selbst ist im Kalender aufgegangen.
 
+## Gemeinsam und mehr Farben
+
+Die Reise ist eine Selbsterfahrung, und doch gehen sie mehrere zugleich. Unter dem Monat steht deshalb
+die Karte „Gemeinsam“:
+
+- Wer noch nicht mitgeht, sieht eine Einladung, wer schon unterwegs ist, und in einem Satz, was
+  geteilt wird und was nicht. „Lieber allein“ blendet die Karte aus.
+- Wer mitgeht, sieht „Heute dabei: Ben, Cem und du.“ und darunter jede Reise als eine Reihe kleiner
+  Felder über dieselben Tage wie der eigene Monat.
+- **Keine Rangliste.** Die Reihenfolge ist die des Dazukommens, die Zahl steht klein am Ende. Wer
+  heute noch nicht dabei ist, wird nicht genannt, nur wer dabei ist.
+- **Jede Person hat ihre Flexoki-Farbe** (Cyan, Orange, Blau, Magenta, Gelb, Lila, dann Mischungen).
+  Rot bleibt ausgeschlossen, Moos bleibt „dabei“ im eigenen Monat.
+
+Mehr Farbe auch sonst: Die Kacheln tragen ihre Trackerfarbe als Punkt, Streifen und Hauch; eine Stufe
+der Leiter leuchtet in allen Flexoki-Farben auf.
+
 ## Bewusst offen
 
 Ein fehlender Eintrag beweist keine Abstinenz. Die bestehende Logik bezeichnet solche Tage teils als „frei“, während Kreise auch „unbekannt“ bedeuten. Diese fachliche Bedeutung sollte separat entschieden werden; diese Überarbeitung verändert die Zählung nicht.

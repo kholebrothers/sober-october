@@ -206,11 +206,13 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .kacheln { display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:10px; }
 .kachel { display:grid; gap:6px; align-content:start; min-width:0; }
 .kachel-knopf { display:grid; justify-items:start; align-content:start; gap:2px; width:100%; min-height:120px; padding:14px 12px 12px; text-align:left;
-  border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); box-shadow:inset 0 3px 0 var(--v);
+  border:1px solid color-mix(in oklab, var(--v) 25%, var(--linie)); border-radius:var(--radius-card);
+  background:color-mix(in oklab, var(--v) 6%, var(--surface)); box-shadow:inset 0 4px 0 var(--v);
   transition:transform .12s ease, background-color .3s ease; }
-.kachel[data-an="true"] .kachel-knopf { background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); border-color:color-mix(in oklab, var(--v) 45%, var(--linie)); }
+.kachel[data-an="true"] .kachel-knopf { background:color-mix(in oklab, var(--v) 14%, var(--surface)); border-color:color-mix(in oklab, var(--v) 55%, var(--linie)); }
 .kachel-knopf:active { transform:scale(.97); }
 .kachel-name { font:500 17px var(--serif); }
+.kachel-name::before { content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--v); margin-right:7px; vertical-align:.1em; }
 .kachel-zahl { font:500 34px/1.1 var(--sans); font-variant-numeric:tabular-nums; margin-top:4px; }
 .kachel[data-an="false"] .kachel-zahl { color:var(--linie-stark); }
 .kachel-wort { font-size:13px; color:var(--leise); overflow-wrap:anywhere; }
@@ -297,7 +299,10 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .da-knopf.jetzt { animation:federn .5s cubic-bezier(.2,1.6,.4,1); }
 @keyframes federn { 0% { transform:scale(.94); } 60% { transform:scale(1.03); } 100% { transform:none; } }
 .monat.blitz::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:radial-gradient(circle at 50% 40%, color-mix(in oklab, var(--moss) 28%, transparent), transparent 70%);
+  background:conic-gradient(from 200deg at 50% 45%, color-mix(in oklab, var(--moss) 30%, transparent), color-mix(in oklab, var(--teal) 30%, transparent),
+    color-mix(in oklab, var(--blau) 26%, transparent), color-mix(in oklab, var(--lila) 26%, transparent), color-mix(in oklab, var(--magenta) 26%, transparent),
+    color-mix(in oklab, var(--clay) 28%, transparent), color-mix(in oklab, var(--gelb) 30%, transparent), color-mix(in oklab, var(--moss) 30%, transparent));
+  -webkit-mask:radial-gradient(circle at 50% 45%, #000 20%, transparent 75%); mask:radial-gradient(circle at 50% 45%, #000 20%, transparent 75%);
   animation:blitz 1.4s ease-out forwards; }
 @keyframes blitz { from { opacity:1; } to { opacity:0; } }
 @media (prefers-reduced-motion: reduce) {
@@ -390,3 +395,25 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 @media (prefers-reduced-motion:reduce) {
   :root.bereit body { transition:none; }
 }
+
+/* Gemeinsam: wer mitgeht, jede Reise eine Reihe in ihrer Flexoki-Farbe
+   (--p, aus gemeinsam.js). Keine Rangliste, keine Krone: die Reihenfolge
+   ist die des Dazukommens, die Zahl steht klein am Ende. */
+.gemeinsam { display:grid; gap:12px; padding:18px 20px; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); }
+.gemeinsam-kopf { display:flex; justify-content:space-between; align-items:center; margin:-8px 0 -8px; }
+.gemeinsam-satz { margin:0; font-size:17px; line-height:1.35; }
+.gemeinsam-form { display:flex; gap:8px; }
+.gemeinsam-form input { flex:1; min-width:0; font:inherit; font-size:16px; min-height:var(--touch); padding:10px 12px; border:1px solid var(--linie-stark); border-radius:var(--radius-control); background:var(--paper); color:var(--ink); }
+.gemeinsam .wahlreihe .chip-knopf { min-height:var(--touch); padding:8px 14px; }
+.gemeinsam > p.klein { margin:0; }
+.reisen { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.reise { display:grid; grid-template-columns:minmax(0, 1fr) auto; column-gap:12px; row-gap:6px; align-items:center; }
+.reise-name { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:8px; min-width:0; }
+.reise-name strong { font-weight:600; }
+.reise-punkt { width:10px; height:10px; border-radius:50%; background:var(--p); flex:none; align-self:center; }
+.reise-zahl { grid-row:1 / span 2; grid-column:2; font:600 20px var(--sans); font-variant-numeric:tabular-nums; color:var(--p); }
+.reise-faden { grid-column:1; display:grid; grid-template-columns:repeat(var(--n), minmax(0, 1fr)); gap:2px; }
+.reise-faden i { height:8px; border-radius:2px; background:var(--hm-leer); }
+.reise-faden i[data-an] { background:var(--p); }
+.reise-faden i[data-heute] { outline:1.5px solid var(--ink); outline-offset:1px; }
+.reise[data-du] .reise-faden i { height:10px; }

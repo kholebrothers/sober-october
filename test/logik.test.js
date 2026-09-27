@@ -55,9 +55,9 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
   assert.ok(neu.some((e) => e.id === "routine"));
 });
 
-test("die App fängt klein an: nur Leitgedanke und Abendruhe sind von selbst an", () => {
+test("die App fängt klein an: nur Leitgedanke, Gemeinsam und Abendruhe sind von selbst an", () => {
   const z = neuerZustand();
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "abends"]);
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);
   schalteBaustein(z, "gibtsnicht", true);

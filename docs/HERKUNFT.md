@@ -8,6 +8,9 @@ Nachbar-Repos sind dafür nicht verändert worden.
 |---|---|---|---|
 | `public/kern/datum.js` | `kur-core/domaene/datum.js` | `f9e139a` | nein |
 | `public/kern/uhr.js` | `kur-core/dev/uhr.js` | `f9e139a` | `lokal()` erkennt auch die Vorschau-Adressen `<alias>-sober-october.…workers.dev` |
+| `server/api.js`, `schema.sql` | `kur-core/server/` | `f9e139a` | Spalte `raum` (live/Vorschau); nur Tag `dabei` und Einstellung `commitment`; `/api/abschied` neu, `/api/person` entfällt |
+| `server/dev-uhr.js` | `kur-core/server/dev-uhr.js` | `f9e139a` | nein |
+| `test/d1-attrappe.js` | `kur-core/test/d1-attrappe.js` | `f9e139a` | nein |
 | `test/kur-core-wertevertrag.js` | `kur-core/server/api.js` (`leer`, `normalisiere`, Muster) | `f9e139a` | nur herausgelöst |
 
 Nicht als Datei, aber inhaltlich übernommen:

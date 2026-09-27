@@ -18,6 +18,8 @@ import {
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
+import { holen, senden, erreichbar } from "./netz.js";
+import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { faerbe } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
@@ -44,6 +46,7 @@ function aendern(f) {
   f();
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
+  planeAbgleich();
   if (!vor || !gewaehlt(z).length || wahlOffen) return null;
   const m = moment(vor, stand());
   if (m.heuteNeu) {
@@ -103,12 +106,127 @@ const api = {
     melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
+  gruppe: () => gruppeFuerAnzeige(),
+  mitgehen,
+  binIch(id, name) {
+    aendern(() => { z.gemeinsam = { id, name }; });
+    melde(`Willkommen zurück, ${name}. Dieses Gerät geht jetzt mit.`);
+  },
+  alleinBleiben() {
+    aendern(() => schalteBaustein(z, "gemeinsam", false));
+    melde("Du gehst allein. In den Einstellungen (⋯) kannst du jederzeit mitgehen.");
+  },
+  async linkTeilen() {
+    const url = location.origin + "/";
+    try {
+      if (navigator.share) { await navigator.share({ title: "Sober October", text: "Geh mit mir durch den Oktober.", url }); return; }
+      await navigator.clipboard.writeText(url);
+      melde("Link kopiert. Wer ihn öffnet, kann mitgehen.");
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+      melde(`Der Link: ${url}`);
+    }
+  },
   neuerTracker: () => neuerTracker(),
   springeZu: null,
   oeffneEbene,
   einstellungen,
   zeichne: () => zeichne(),
 };
+
+/* ---- Gemeinsam ------------------------------------------------------------
+
+   Der Stand der Gruppe kommt vom Server (netz.js). Die Seite wartet nie
+   auf ihn: sie zeichnet sofort und noch einmal, wenn er da ist. Nach jeder
+   Änderung gleicht sie ab, was an den Server muss (gemeinsam.js) — nur
+   Tage dabei und das Commitment, nie was notiert ist. */
+
+let gruppenStand = null;
+
+function gruppeFuerAnzeige() {
+  if (!aktiv(z, "gemeinsam") || !erreichbar || !gruppenStand) return null;
+  const tage = monat(z, heute()).zellen.filter((c) => c.art !== "rand").map((c) => c.tag);
+  const g = gruppe(z, gruppenStand, heute(), tage);
+  return { ...g, ich: binDabei(z, gruppenStand), tage, heuteTag: heute(), heuteSatz: namenListe(g.heute) };
+}
+
+/* Neu zeichnen, aber nicht unter den Fingern weg: wer gerade tippt (den
+   Namen, einen Tracker), behält sein Feld. */
+function zeichneLeise() {
+  const f = document.activeElement;
+  if (f && f.matches("#buehne input")) return;
+  zeichne();
+}
+
+async function aktualisieren() {
+  if (!aktiv(z, "gemeinsam")) return;
+  const vorher = erreichbar;
+  const { stand, neu } = await holen();
+  gruppenStand = stand;
+  if (z.gemeinsam && stand && !binDabei(z, stand)) {
+    // Auf einem anderen Gerät verabschiedet: hier auch.
+    z.gemeinsam = null;
+    sichern(z);
+  }
+  if (neu || vorher !== erreichbar) zeichneLeise();
+}
+
+let abgleichTimer, abgleichLaeuft = false;
+function planeAbgleich() {
+  clearTimeout(abgleichTimer);
+  if (z.gemeinsam && aktiv(z, "gemeinsam")) abgleichTimer = setTimeout(abgleichen, 700);
+}
+
+async function abgleichen() {
+  if (abgleichLaeuft) { planeAbgleich(); return; }
+  abgleichLaeuft = true;
+  try {
+    await aktualisieren();
+    if (!z.gemeinsam || !gruppenStand) return;
+    const a = abgleich(z, gruppenStand, heute());
+    const person = z.gemeinsam.id;
+    for (const t of a.tage) await senden("/api/entry", { person, date: t.date, value: t.value });
+    if (a.commitment) await senden("/api/setting", { person, value: a.commitment, ab: heute() });
+    if (a.tage.length || a.commitment) await aktualisieren();
+  } catch (e) {
+    if (e.schluessel === "person-unbekannt") { z.gemeinsam = null; sichern(z); zeichneLeise(); }
+    // Sonst (offline, Server weg): beim nächsten Mal wieder. Nichts geht verloren,
+    // der Abgleich rechnet jedes Mal neu aus diesem Gerät.
+  } finally {
+    abgleichLaeuft = false;
+  }
+}
+
+const GRUPPEN_FEHLER = {
+  "name-leer": "Wie heißt du? Ein Vorname reicht.",
+  "name-zu-lang": "Ein kürzerer Name, bitte — höchstens 24 Zeichen.",
+  "name-vergeben": "Den Namen gibt es in der Gruppe schon. Bist du das? Dann „Schon dabei, auf einem anderen Gerät?“.",
+  "gruppe-voll": "Die Gruppe ist voll: zwanzig gehen schon mit.",
+  netz: "Gerade kein Netz. Versuch es gleich noch einmal.",
+};
+
+async function mitgehen(name) {
+  try {
+    const p = await senden("/api/einrichtung", { name, commitment: gewaehlt(z) });
+    aendern(() => { z.gemeinsam = { id: p.id, name: p.name }; });
+    melde(`Du gehst mit, ${p.name}. Schön, dass du da bist.`);
+    await abgleichen();
+  } catch (e) {
+    melde(GRUPPEN_FEHLER[e.schluessel] || "Das hat nicht geklappt. Versuch es gleich noch einmal.");
+  }
+}
+
+async function gruppeVerlassen() {
+  try {
+    await senden("/api/abschied", { person: z.gemeinsam.id });
+  } catch (e) {
+    if (e.schluessel !== "person-unbekannt") { melde(GRUPPEN_FEHLER[e.schluessel] || "Das hat nicht geklappt."); return; }
+  }
+  bogen.close();
+  aendern(() => { z.gemeinsam = null; });
+  await aktualisieren();
+  melde("Du bist aus der Gruppe gegangen. Dein Name und deine Tage sind vom Server gelöscht.");
+}
 
 /* ---- Der Bogen ---------------------------------------------------------- */
 
@@ -341,6 +459,7 @@ function einstellungen() {
     i.addEventListener("change", () => {
       aendern(() => schalteBaustein(z, b.id, i.checked));
       if (b.id === "abends") tageszeitSetzen();
+      if (b.id === "gemeinsam" && i.checked) aktualisieren();
       const y = bogen.scrollTop;
       const index = BAUSTEINE.findIndex((eintrag) => eintrag.id === b.id);
       einstellungen();
@@ -353,11 +472,18 @@ function einstellungen() {
     feld.append(l);
     if (b.id === "leitgedanke" && aktiv(z, b.id))
       feld.append(knopf("Leitgedanken ändern", "text klein baustein-mehr", () => leitgedankeBearbeiten()));
+    if (b.id === "gemeinsam" && z.gemeinsam) {
+      const weg = knopf(`Du gehst als ${z.gemeinsam.name} mit. Die Gruppe verlassen`, "text klein baustein-mehr", () => {
+        if (!weg.dataset.sicher) { weg.dataset.sicher = "1"; weg.textContent = "Wirklich? Name und Tage werden vom Server gelöscht. Noch einmal tippen."; return; }
+        gruppeVerlassen();
+      });
+      feld.append(weg);
+    }
   }
 
   const daten = el("div", "frage");
   daten.append(el("p", "serif", "Deine Daten"),
-    el("p", "leise klein", "Alles, was du notierst, liegt nur auf diesem Gerät, in diesem Browser. Nichts davon geht an einen Server."));
+    el("p", "leise klein", "Alles, was du notierst, liegt nur auf diesem Gerät, in diesem Browser. Gehst du gemeinsam mit, kennt der Server nur deinen Namen, was du sein lässt, und an welchen Tagen du dabei warst — sonst nichts."));
   const weg = knopf("Alles auf diesem Gerät löschen", "text", () => {
     if (weg.dataset.sicher) {
       loeschen();
@@ -558,8 +684,12 @@ function zeichne() {
 /* Ein neuer Tag, während die App offen stand: beim Zurückkommen neu zeichnen. */
 let zuletzt = heute();
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && heute() !== zuletzt) { zuletzt = heute(); zeichne(); }
+  if (document.visibilityState !== "visible") return;
+  if (heute() !== zuletzt) { zuletzt = heute(); zeichne(); }
+  aktualisieren();
 });
+/* Die Gruppe: einmal die Minute nachsehen, solange die Seite zu sehen ist. */
+setInterval(() => { if (document.visibilityState === "visible") aktualisieren(); }, 60 * 1000);
 /* Ein anderer Tab hat gespeichert. */
 addEventListener("storage", (e) => { if (e.key === "sober-october") { z = laden(); zeichne(); } });
 
@@ -581,4 +711,5 @@ if (navigator.serviceWorker && location.protocol !== "file:")
   addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
 zeichne();
+aktualisieren().then(planeAbgleich);
 requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add("bereit")));

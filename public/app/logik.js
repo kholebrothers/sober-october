@@ -159,6 +159,8 @@ export const BAUSTEINE = [
     text: "Ein eigener Satz, der dich begleitet." },
   { id: "lauf", gruppe: "Oben", titel: "Lauf", standard: false,
     text: "Unter dem Monat: wie viele Tage am Stück, dein längster Lauf und ein Satz zum Tag." },
+  { id: "gemeinsam", gruppe: "Oben", titel: "Gemeinsam", standard: true,
+    text: "Mit anderen durch den Oktober: wer heute dabei ist, und jede Reise als Farbe. Geteilt wird nur dein Name, was du sein lässt, und an welchen Tagen du dabei warst." },
   { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
   { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
@@ -180,7 +182,7 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {} };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -203,6 +205,9 @@ export function aus(text) {
     for (const k of ids)
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
+  // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
+  if (roh.gemeinsam && /^p[a-z0-9]{1,16}$/.test(roh.gemeinsam.id) && typeof roh.gemeinsam.name === "string")
+    z.gemeinsam = { id: roh.gemeinsam.id, name: roh.gemeinsam.name.slice(0, 24) };
   if (FARBWELTEN[roh.farbe]) z.farbe = roh.farbe;
   if (Array.isArray(roh.ereignisse))
     z.ereignisse = roh.ereignisse.filter((e) => e && ids.includes(e.verzicht) && ["habe", "drang", "ohne"].includes(e.art))

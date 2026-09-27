@@ -25,6 +25,7 @@ Einen Knopf „heute ohne“ gibt es nicht. Alles Weitere ist ein **Baustein**, 
 
 | Baustein | Wo | Was |
 |---|---|---|
+| Gemeinsam *(an)* | unter dem Monat | mit anderen durch den Oktober: wer heute dabei ist, jede Reise als Farbe |
 | Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
 | Lauf | im Monat | Tage am Stück, der längste Lauf und ein Satz zum Tag |
 | Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
@@ -44,14 +45,22 @@ welche Fragen er beantwortet hat und welche offen sind.
 
 ## Wo die Daten liegen
 
-**Nur im Browser** (localStorage, Schlüssel `sober-october`). Es gibt keinen Server, kein Konto und
-keine Anfragen nach außen. In den Einstellungen lässt sich alles auf dem Gerät löschen.
+**Was du notierst, bleibt im Browser** (localStorage, Schlüssel `sober-october`): Einträge, Gefühle,
+Antworten, Leitgedanken, die Namen eigener Tracker. In den Einstellungen lässt sich alles auf dem Gerät
+löschen.
 
-Später soll die **Teilnahme** — und nur sie — auf einen Server nach dem Muster von kur-core, für die
-Community-Erfahrung der Vier-Wochen-Kur (ein Link, kein Login, eigene und kollektive Tage). Gemeint
-sind Name, Commitment und die Tage, an denen etwas notiert wurde. Einträge, Gefühle und Reflexionen
-bleiben im Gerät. `fuerKern()` in `public/app/logik.js` liefert diese Teilnahme schon heute. Die Tests
-prüfen sie gegen den Wertevertrag von kur-core.
+**Gemeinsam** (Baustein, von selbst an): Die Reise geht jede:r für sich, aber nicht allein. Wer
+mitgeht, gibt einen Vornamen an; ein Link, kein Login, wie bei kur-core. Die Gruppe sieht dann, wer
+heute dabei ist, und jede Reise als eine Reihe in ihrer eigenen Flexoki-Farbe. Auf den Server
+(`server/`, eine D1) kommt dafür genau das, was `fuerKern()` hergibt: **der Name, was man sein lässt
+(nur als Schlüssel — eigene Tracker bleiben namenlos) und die Tage „dabei“**. Der Server nimmt auch
+nichts anderes an (`server/api.js`). Wer die Gruppe verlässt, dessen Name und Tage werden gelöscht.
+Höchstens 20 Leute; wer den Link hat, kann als jede Person schreiben — das Muster ist für Leute, die
+sich kennen.
+
+Live und Vorschauen teilen sich eine D1, getrennt über den Raum: die Live-Adresse ist `live`, alle
+anderen (Vorschau, localhost) sind `vorschau`. Ist der Server nicht erreichbar, fehlt nur die Karte
+„Gemeinsam“; alles andere läuft offline weiter.
 
 ## Aufbau
 
@@ -68,7 +77,10 @@ ausgeliefert, wie es im Repo steht.
     public/app/bausteine/      oben.js (Leitgedanke), monat.js (Kalender, „Heute bin ich dabei“, Lauf), unten.js, heatmap.js
     public/kern/               aus kur-core kopiert: datum.js, uhr.js (Dev-Uhr); sonne.js aus lifetracker
     public/sw.js               Service Worker; SCHALE muss jede Datei nennen (test/pwa.test.js)
-    test/                      node --test; kur-core-wertevertrag.js ist eine Kopie
+    public/app/gemeinsam.js    Gruppe: Abgleich mit dem Server und Anzeige — ohne DOM, getestet
+    public/app/netz.js         /api/: Abruf mit ETag, Senden
+    server/                    Worker nur für /api/*, API und Schema der Teilnahme (nach kur-core)
+    test/                      node --test; kur-core-wertevertrag.js und d1-attrappe.js sind Kopien
 
 UX-Bewertung und gemeinsame Gestaltungsregeln: [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 
@@ -98,10 +110,14 @@ geschaltet wird, mit dem Branchnamen als Alias. Zu einem offenen PR schreibt er 
 Kommentar. Schlagen die Tests fehl, wird nichts hochgeladen.
 
 **Einmal einrichten:** Im Cloudflare-Dashboard (Konto z3e) unter *My Profile → API Tokens* einen
-Token anlegen mit *Account · Workers Scripts · Edit*, *Account · Account Settings · Read* und
+Token anlegen mit *Account · Workers Scripts · Edit*, *Account · D1 · Edit*, *Account · Account Settings · Read* und
 *User · User Details · Read* (dieselben Rechte wie bei Andreas Webseite), beschränkt auf das Konto
 z3e. Danach:
 
     gh secret set CLOUDFLARE_API_TOKEN -R kholebrothers/sober-october
 
 Solange das Secret fehlt, scheitert der Schritt „Live“ bzw. „Vorschau“. Die Tests laufen trotzdem.
+
+**D1:** `wrangler.jsonc` nennt die Datenbank `sober-october` ohne `database_id`. Beim ersten Ausliefern
+legt wrangler sie an (dafür *D1 · Edit*) und behält sie danach über die Bindung des Workers. Die
+Tabellen legt der Worker beim ersten Aufruf selbst an — es gibt keinen Migrationsschritt.

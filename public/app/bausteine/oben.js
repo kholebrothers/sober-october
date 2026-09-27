@@ -1,8 +1,10 @@
-/* Oben: der Leitgedanke (Baustein, von selbst an) und der Monat, der immer
-   da ist. Der Lauf ist ein Baustein im Monat, siehe monat.js. */
+/* Oben: der Leitgedanke (Baustein, von selbst an), der Monat, der immer
+   da ist, und darunter, wenn es eine Gruppe gibt, „Gemeinsam". Der Lauf
+   ist ein Baustein im Monat, siehe monat.js. */
 
 import { el, knopf } from "../ansichten/teile.js";
 import { monat } from "./monat.js";
+import { gemeinsam } from "./gemeinsam.js";
 
 export function oben(api) {
   const h = el("div", "oben");
@@ -13,5 +15,7 @@ export function oben(api) {
     h.append(b);
   }
   h.append(monat(api));
+  const g = gemeinsam(api);
+  if (g) h.append(g);
   return h;
 }
