@@ -13,7 +13,7 @@ import {
   notiere, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   istDa, schalteDa, hatEintrag, ergaenze, entferne,
-  tagesKopf,
+  tagesKopf, monat, besterLauf,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -33,24 +33,34 @@ const heute = () => heuteTag();
 const jetztZeit = () => new Date().toTimeString().slice(0, 5);
 
 /* Jede Änderung geht hierdurch. Sie vergleicht den Lauf davor und danach:
-   ist heute gerade dazugekommen, pulsiert sein Glied einmal; erreichen die
-   Tage dabei eine Stufe der Leiter, leuchtet der Kopf kurz auf und der Satz
-   zur Stufe kommt zurück, damit der Aufrufer ihn mit seiner Meldung sagt. */
+   ist heute gerade dazugekommen, füllt sich sein Feld im Monat sichtbar, die
+   Zahl springt, und das Telefon tippt einmal leise zurück. Erreichen die
+   Tage dabei eine Stufe der Leiter (5, 8, 13, 21, 34), leuchtet der Monat
+   kurz auf. Zurück kommt der Moment, damit der Aufrufer ihn mit seiner
+   Meldung sagt. */
 function aendern(f) {
   const stand = () => ({ lauf: lauf(z, heute()), serie: serie(z, heute()) });
   const vor = gewaehlt(z).length ? stand() : null;
   f();
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
-  if (!vor || !gewaehlt(z).length || wahlOffen || !aktiv(z, "lauf")) return "";
+  if (!vor || !gewaehlt(z).length || wahlOffen) return null;
   const m = moment(vor, stand());
-  if (m.heuteNeu) document.querySelector(".glied[data-heute]")?.classList.add("pling");
-  if (m.stufe) document.querySelector(".lauf")?.classList.add("blitz");
-  return m.satz;
+  if (m.heuteNeu) {
+    document.querySelector(".monat-tag[data-heute]")?.classList.add("pling");
+    document.querySelector(".monat-zahl")?.classList.add("hoch");
+    document.querySelector(".da-knopf")?.classList.add("jetzt");
+    spueren(m.stufe ? [14, 70, 22] : 14);
+  }
+  if (m.stufe) document.querySelector(".monat")?.classList.add("blitz");
+  return m;
 }
 
-/** Eine Meldung, an die ein Stufensatz angehängt wird, wenn es einen gibt. */
-const mitMoment = (text, satz) => (satz ? (text ? `${text} ${satz}` : satz) : text);
+/* Ein kurzes Tippen zurück, wo das Gerät es kann (Android; iOS schweigt). */
+const spueren = (muster) => { try { navigator.vibrate?.(muster); } catch {} };
+
+/** Eine Meldung, an die der Satz zur Stufe angehängt wird, wenn es einen gibt. */
+const mitMoment = (text, m) => (m?.satz ? (text ? `${text} ${m.satz}` : m.satz) : text);
 
 /* ---- Was die Ansichten benutzen ---------------------------------------- */
 
@@ -66,18 +76,31 @@ const api = {
   stand: (id) => stand(z, id),
   serie: () => serie(z, heute()),
   lauf: () => lauf(z, heute()),
+  monat: () => monat(z, heute()),
+  besterLauf: () => besterLauf(z, heute()),
+  istDa: () => istDa(z, heute()),
   eintragen,
   leitgedanke: () => leitgedankeAm(z, heute()),
   tagessatz: () => tagessatz(z, heute()),
   leitgedankeBearbeiten,
   istFrei: () => istFrei(z, heute()),
   hatEintrag: () => hatEintrag(z, heute()),
-  /* „Ich bin da": die Zahl oben. Steht heute schon eine Notiz, zählt der Tag
-     ohnehin — dann gibt es nichts umzuschalten, nur das zu sagen. */
+  /* „Heute bin ich dabei": der Knopf unter dem Monat. Ein zweites Tippen
+     schaltet nicht still zurück — vertippt ist selten, und ein Tag, der
+     einfach wieder verschwindet, fühlt sich schlecht an. Zurück geht es über
+     „Rückgängig" in der Meldung. Steht heute schon eine Notiz, zählt der
+     Tag ohnehin; dann gibt es nichts zu tun, nur das zu sagen. */
   da() {
-    if (!istDa(z, heute()) && vonTag(z, heute()).length) { melde("Der Tag zählt schon — du hast heute etwas notiert."); return; }
-    const satz = aendern(() => schalteDa(z, heute()));
-    melde(mitMoment(istDa(z, heute()) ? "Du bist da. Der Tag zählt." : "Zurückgenommen.", satz));
+    const t = heute();
+    const zurueck = ["Rückgängig", () => { aendern(() => schalteDa(z, t)); melde("Zurückgenommen."); }];
+    if (hatEintrag(z, t)) {
+      spueren(8);
+      if (istDa(z, t) && !vonTag(z, t).length) melde("Heute zählt schon.", [zurueck]);
+      else melde("Heute zählt schon — durch deine Notiz.");
+      return;
+    }
+    const m = aendern(() => schalteDa(z, t));
+    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
   neuerTracker: () => neuerTracker(),
@@ -124,11 +147,14 @@ function el(tag, klasse, text) {
 function eintragen(v, art) {
   const V = verzichte(z)[v];
   let neu = [], id = null;
-  const satz = aendern(() => {
+  const m = aendern(() => {
     neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art });
     id = z.ereignisse.at(-1).id;
   });
-  melde(mitMoment(ebenenText(neu, `Notiert: ${art === "habe" ? V.habe : V.drang}.`), satz), [
+  document.querySelector(`[data-focus="${art}-${v}"]`)?.classList.add("tipp");
+  if (!m?.heuteNeu) spueren(8);
+  const text = `Notiert: ${art === "habe" ? V.habe : V.drang}.${m?.heuteNeu ? " Der Tag zählt." : ""}`;
+  melde(mitMoment(ebenenText(neu, text), m), [
     ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)],
     ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }],
   ]);

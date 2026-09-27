@@ -8,7 +8,7 @@ import {
   schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
   BAUSTEINE, aktiv, schalteBaustein,
-  istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN,
+  istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN, monat,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -466,4 +466,36 @@ test("drei helle Farbwelten; die gewählte übersteht Speichern, Unbekanntes wir
   z.farbe = "flieder";
   assert.equal(aus(JSON.stringify(z)).farbe, "flieder");
   assert.equal(aus(JSON.stringify({ ...z, farbe: "neon" })).farbe, "papier");
+});
+
+test("der Monat: der Oktober als Kalender, Montag vorn, ein Tippen macht den Tag voll", () => {
+  const z = mit("kaffee");
+  const m = monat(z, "2026-10-14");
+  assert.equal(m.phase, "im");
+  assert.equal(m.zellen[0].tag, "2026-09-28", "der 1. Oktober 2026 ist ein Donnerstag");
+  assert.deepEqual(m.zellen.slice(0, 3).map((c) => c.art), ["rand", "rand", "rand"]);
+  assert.equal(m.zellen.filter((c) => c.art === "okt").length, 31);
+  assert.equal(m.dabei, 0);
+  const heute = m.zellen.find((c) => c.heute);
+  assert.deepEqual([heute.nr, heute.stand], [14, "offen"]);
+  assert.equal(m.zellen.find((c) => c.tag === "2026-10-13").stand, "leer", "vergangen ohne Eintrag: nichts bekannt");
+  assert.equal(m.zellen.find((c) => c.tag === "2026-10-15").stand, "kommt");
+
+  schalteDa(z, "2026-10-14");
+  notiere(z, { tag: "2026-10-02", zeit: "09:00", verzicht: "kaffee", art: "habe" });
+  const n = monat(z, "2026-10-14");
+  assert.equal(n.dabei, 2, "ein Konsum ist eine Notiz, der Tag zählt trotzdem");
+  assert.equal(n.zellen.find((c) => c.heute).stand, "dabei");
+});
+
+test("der Monat kurz vor dem Oktober: die Tage davor sind Vorlauf", () => {
+  const z = mit("kaffee");
+  schalteDa(z, "2026-09-26");
+  const m = monat(z, "2026-09-27");
+  assert.equal(m.phase, "vor");
+  assert.equal(m.zellen[0].tag, "2026-09-21", "ab dem Montag dieser Woche");
+  assert.ok(m.zellen.filter((c) => c.art !== "okt").every((c) => c.art === "vorlauf"));
+  assert.equal(m.vorlauf, 1);
+  assert.equal(m.dabei, 0);
+  assert.equal(monat(z, "2026-08-01").zellen.filter((c) => c.art === "vorlauf").length, 0, "Wochen vorher noch kein Vorlauf");
 });

@@ -29,13 +29,42 @@ Die Haltung ist klar: freiwillig beobachten, schnell notieren, Details nach eige
 - Aktionen: dunkel gefüllter Button schließt einen Schritt ab; Kontur für Alternativen; Textaktionen für Vertiefung. Auswahl ist durch Form/Markierung und Farbe sichtbar.
 - Touch: mindestens 44 × 44 px für Symbolaktionen, mindestens 44 px Höhe für Textaktionen. Sichtbare Fokusmarkierung, reduzierte Bewegung respektieren.
 - Meldungen: unten, damit Marke und Navigation frei bleiben. Meldungen mit Handlungen bleiben stehen, reine Bestätigungen verschwinden nach fünf Sekunden.
-- Tracker: horizontal scrollbar bei vielen oder langen Namen; der aktive Tab ist per Tastatur erreichbar. Keine Verkleinerung der Schrift, um Namen hineinzuzwingen.
+- Tracker: je eine Kachel im Raster; lange Namen brechen um, statt kleiner zu werden.
+
+## Der Monat im Zentrum (27. September 2026)
+
+Nach der Überarbeitung oben fühlte sich die App noch nicht befriedigend an. Der Grund lag nicht in der
+Bedienung, sondern in der Gewichtung:
+
+- Die größte Fläche war „Kaffee getrunken“, und sie füllte sich satt in Tonrot. Die stärkste
+  Rückmeldung kam also genau beim Konsum.
+- Das Gelingen hatte keine Handlung. „Ein Tag ohne Eintrag ist frei“ ist als Haltung richtig, heißt
+  aber auch: Wenn es gut läuft, passiert nichts. „Ich bin da“ und die Kette gab es nur als
+  ausgeschalteten Baustein.
+
+Deshalb:
+
+- **Oben steht immer der Monat**: der Oktober als Kalender, eine große Zahl („12 Tage dabei“) und
+  der Knopf „Heute bin ich dabei“. Ein Tippen füllt das Feld des Tages (es springt auf und zieht
+  einen Ring), die Zahl hüpft, das Telefon vibriert kurz, wo es das kann. An den Stufen 5, 8, 13, 21,
+  34 leuchtet der Monat auf und die Meldung sagt einen Satz. Das ist die befriedigende Handlung.
+- „Dabei“ behauptet keine Abstinenz. Es heißt: Ich bin im Commitment. Jede Notiz zählt den Tag
+  genauso, auch ein Konsum; dann steht der Knopf auf „Heute zählt · durch deine Notiz“.
+- Ein zweites Tippen schaltet nicht still zurück. Zurücknehmen geht über „Rückgängig“ in der Meldung.
+- **Notieren ist ruhig**: je Tracker eine Kachel in Flächenfarbe mit einem Streifen in der
+  Trackerfarbe, die Zahl in Tinte. Kein Tonrot, das sich füllt. Der Zählknopf aus smokefree ist
+  entfallen.
+- Vergangene Tage ohne Eintrag sind ein leises graues Feld, künftige ein Ring. Kein Rot, kein Kreuz.
+- Kurz vor dem Oktober (bis zwei Wochen) stehen die Tage davor als kleinerer Vorlauf im Kalender;
+  man kann also schon jetzt anfangen.
+- Der Baustein „Lauf und Kette“ heißt jetzt „Lauf“ und ergänzt den Monat um „Tage am Stück“, den
+  längsten Lauf und den Satz zum Tag. Die Kette selbst ist im Kalender aufgegangen.
 
 ## Bewusst offen
 
 Ein fehlender Eintrag beweist keine Abstinenz. Die bestehende Logik bezeichnet solche Tage teils als „frei“, während Kreise auch „unbekannt“ bedeuten. Diese fachliche Bedeutung sollte separat entschieden werden; diese Überarbeitung verändert die Zählung nicht.
 
-„Lauf und Kette“ sowie automatisch geöffnete Wissensebenen können trotz freundlicher Sprache Leistungsdruck erzeugen. Sie bleiben optional. Ob die drei Ansichten tatsächlich gebraucht werden, sollte mit wenigen realen Nutzerinnen und Nutzern erprobt werden.
+Der Lauf sowie automatisch geöffnete Wissensebenen können trotz freundlicher Sprache Leistungsdruck erzeugen. Sie bleiben optional. Ob die drei Ansichten tatsächlich gebraucht werden, sollte mit wenigen realen Nutzerinnen und Nutzern erprobt werden.
 
 Persistente Korrektur bezieht sich auf den jeweils letzten Hinweis; ein allgemeines Bearbeiten alter Einträge ist noch kein Bestandteil. Wissenstexte sind laut Quellcode fachlich ungeprüft und wurden hier nicht überarbeitet.
 

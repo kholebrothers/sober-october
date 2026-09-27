@@ -100,7 +100,7 @@ export const FARBWELTEN = {
 };
 
 export const ANSICHTEN = {
-  knopf: "Knopf — ein Tracker auf einmal",
+  knopf: "Knopf — der Monat und je Tracker eine Kachel",
   blatt: "Blatt — alles auf einer Seite",
   faden: "Faden — Text und eigene Worte",
 };
@@ -157,8 +157,8 @@ export const EBENEN = [
 export const BAUSTEINE = [
   { id: "leitgedanke", gruppe: "Oben", titel: "Leitgedanke", standard: true,
     text: "Ein eigener Satz, der dich begleitet." },
-  { id: "lauf", gruppe: "Oben", titel: "Lauf und Kette", standard: false,
-    text: "Tage dabei, die Kette auf der Fibonacci-Leiter, ein Satz zum Tag und kleine Momente an den Stufen." },
+  { id: "lauf", gruppe: "Oben", titel: "Lauf", standard: false,
+    text: "Unter dem Monat: wie viele Tage am Stück, dein längster Lauf und ein Satz zum Tag." },
   { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
   { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
@@ -450,6 +450,33 @@ export function heatWochen(heute) {
     wochen.push(woche);
   }
   return wochen;
+}
+
+/* ---- Der Monat -------------------------------------------------------------
+
+   Das Herz der Seite: der Oktober als Kalender, Montag vorn. Ein Tag ist
+   „dabei", sobald etwas drin steht — ein Tippen auf „Heute bin ich dabei"
+   oder irgendeine Notiz. Ein vergangener Tag ohne Eintrag ist „leer": nichts
+   bekannt, kein Urteil. Kurz vor dem Oktober (höchstens zwei Wochen) stehen
+   die Tage davor als Vorlauf mit darin; sonst füllen leere Ränder die erste
+   Woche auf. */
+export const VORLAUF_TAGE = 14;
+
+/** {phase, tag, noch, dabei, vorlauf, zellen: [{tag, nr, art: "okt"|"vorlauf"|"rand", stand, heute}]} */
+export function monat(z, heute) {
+  const o = oktober(heute);
+  const ende = verschiebe(o.start, 30);
+  const montag = (t) => verschiebe(t, -((alsDatum(t).getDay() + 6) % 7));
+  const mitVorlauf = o.phase === "vor" && o.noch <= VORLAUF_TAGE;
+  const von = montag(mitVorlauf ? heute : o.start);
+  const zellen = [];
+  for (let t = von; t <= ende; t = verschiebe(t, 1)) {
+    const art = t >= o.start ? "okt" : mitVorlauf ? "vorlauf" : "rand";
+    const stand = art === "rand" ? "rand" : t > heute ? "kommt" : dabei(z, t) ? "dabei" : t === heute ? "offen" : "leer";
+    zellen.push({ tag: t, nr: alsDatum(t).getDate(), art, stand, heute: t === heute });
+  }
+  const zaehle = (art) => zellen.filter((c) => c.art === art && c.stand === "dabei").length;
+  return { phase: o.phase, tag: o.tag, noch: o.noch, dabei: zaehle("okt"), vorlauf: zaehle("vorlauf"), zellen };
 }
 
 /* ---- Der Leitgedanke --------------------------------------------------------
