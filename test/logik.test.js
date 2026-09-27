@@ -15,7 +15,7 @@ import {
   setzeZeitVorher, freiAm, lebenszeit, dauer,
   gremlinStufe, setzeFuetterungstag, futterHinzu, fuettern, werkzeugBenutzt, istFuetterungstag,
   DAEMON_PHASEN, DAEMON_SEK, daemonStand,
-  REISE, offen, reiseWeiter, reiseStand, einrichten, mengen, ampelAlsWert, wertAlsAmpel,
+  REISE, offen, reiseWeiter, reiseStand, einrichten, AFFEKTE, mengen, ampelAlsWert, wertAlsAmpel,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -834,4 +834,14 @@ test("die Einrichtung: eins oder mehreres, ohne Fokus", () => {
   assert.equal(einrichten(z, [{ fest: "kippe" }, { fest: "kaffee" }, { name: "Lesen", art: "aufbauen" }]), "kippe");
   assert.equal(gewaehlt(z).length, 3);
   assert.equal(commitmentSatz(z), "Im Oktober lasse ich den Kaffee und die Kippe sein und baue Lesen auf.");
+});
+
+test("die Stimmung als Affekte nach Solms und Panksepp: so viele, wie da sind", () => {
+  assert.equal(AFFEKTE.length, 10);
+  const z = mit("kaffee");
+  schreibeTag(z, okt(4), { affekte: ["wollen", "suchen", "gibtsnicht", "suchen"] });
+  assert.deepEqual(z.tagebuch[okt(4)].affekte, ["suchen", "wollen"], "in fester Reihenfolge, ohne Doppelte und Unbekannte");
+  assert.deepEqual(aus(JSON.stringify(z)).tagebuch[okt(4)].affekte, ["suchen", "wollen"]);
+  schreibeTag(z, okt(4), { affekte: [] });
+  assert.equal(z.tagebuch[okt(4)], undefined);
 });

@@ -1,5 +1,5 @@
 /* =====================================================================
-   Die Seiten — unten eine Leiste wie in jeder App: Heute, Monat,
+   Die Seiten — unten eine Leiste wie in jeder App: Heute, Monat, „+",
    Tagebuch, Mehr
 
    „Heute" ist der Startschirm (die Ansichten in ansichten/). Die anderen
@@ -37,7 +37,14 @@ const symbol = (name) => {
 export function leiste(api, jetzt) {
   const n = el("nav", "leiste");
   n.setAttribute("aria-label", "Bereiche");
-  for (const [id, name] of [["heute", "Heute"], ["monat", "Monat"], ["tagebuch", "Tagebuch"], ["mehr", "Mehr"]]) {
+  for (const [id, name] of [["heute", "Heute"], ["monat", "Monat"], ["plus", ""], ["tagebuch", "Tagebuch"], ["mehr", "Mehr"]]) {
+    /* In der Mitte das „+", wie bei Instagram: festhalten, wie es dir geht. */
+    if (id === "plus") {
+      const p = knopf("+", "leiste-plus", () => api.festhalten());
+      p.setAttribute("aria-label", "Festhalten: Stimmung, Schlaf, Menge, Körper, Antrieb, Selbst");
+      n.append(p);
+      continue;
+    }
     const b = knopf("", "leiste-knopf", () => api.seite(id));
     b.append(symbol(id), el("span", null, name));
     if (id === jetzt) b.setAttribute("aria-current", "page");

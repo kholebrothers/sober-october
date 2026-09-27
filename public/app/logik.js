@@ -422,6 +422,7 @@ export function aus(text) {
       }
       if (e.daemon && typeof e.daemon === "object" && Number.isInteger(e.daemon.sek) && e.daemon.sek > 0 && e.daemon.sek <= 3600)
         t.daemon = { was: typeof e.daemon.was === "string" ? e.daemon.was.trim().slice(0, 140) : "", sek: e.daemon.sek };
+      if (Array.isArray(e.affekte)) { const a = AFFEKTE.map((x) => x.id).filter((id) => e.affekte.includes(id)); if (a.length) t.affekte = a; }
       if (Number.isInteger(e.schlafDauer) && e.schlafDauer >= 0 && e.schlafDauer < SCHLAF_DAUER.length) t.schlafDauer = e.schlafDauer;
       for (const x of SCHLAF_TEILE) if (Number.isInteger(e[x.id]) && e[x.id] >= 1 && e[x.id] <= 3) t[x.id] = e[x.id];
       if (e.menge && typeof e.menge === "object") {
@@ -755,6 +756,24 @@ export const SELBST_MAX = 2;
    Verlauf und Zusammenhänge sie lesen; der Schlaf ebenso, als Mittel der
    drei Teile. */
 export const ERFASSUNG = ["stimmung", "schlaf", "konsum", "satz", "koerper", "antrieb", "selbst"];
+
+/* Die Stimmung als Affekte, nach Mark Solms („The Hidden Spring"), der die
+   sieben emotionalen Grundsysteme von Jaak Panksepp übernimmt — SEEKING,
+   RAGE, FEAR, LUST, CARE, PANIC/GRIEF, PLAY —, ergänzt um Wollen und Mögen
+   (wanting und liking, nach Kent Berridge) und Ekel. Man wählt, was da ist,
+   so viele wie da sind; keins ist gut oder schlecht. */
+export const AFFEKTE = [
+  { id: "suchen", name: "Suchen", emoji: "🤩", quelle: "SEEKING — Neugier, Erwartung" },
+  { id: "spiel", name: "Spiel", emoji: "😄", quelle: "PLAY — Freude, Leichtigkeit" },
+  { id: "fuersorge", name: "Fürsorge", emoji: "🥰", quelle: "CARE — Zuwendung, Wärme" },
+  { id: "lust", name: "Lust", emoji: "😏", quelle: "LUST — Begehren" },
+  { id: "wut", name: "Wut", emoji: "😠", quelle: "RAGE — Ärger, Frust" },
+  { id: "angst", name: "Angst", emoji: "😨", quelle: "FEAR — Furcht, Anspannung" },
+  { id: "trauer", name: "Trauer", emoji: "😢", quelle: "PANIC/GRIEF — Verlust, Alleinsein" },
+  { id: "wollen", name: "Wollen", emoji: "🤤", quelle: "wanting — Verlangen, Drang" },
+  { id: "moegen", name: "Mögen", emoji: "😌", quelle: "liking — Genuss, Gefallen" },
+  { id: "ekel", name: "Ekel", emoji: "🤢", quelle: "disgust — Abwehr, Widerwille" },
+];
 export const AMPEL = ["schwer", "geht so", "gut"];
 export const SCHLAF_DAUER = ["4–6 h", "6–8 h", "8 h +"];
 export const SCHLAF_TEILE = [
@@ -804,8 +823,12 @@ export const SCHICHTEN = [
 
 /** Einen Teil des Tagebuchs setzen; leer (oder 0) heißt weg.
     werte: {schlaf: 1–5, …}; stimmung geht auch direkt (erste Fassung). */
-export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon, schlafDauer, schlafTeile, menge } = {}) {
+export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon, schlafDauer, schlafTeile, menge, affekte } = {}) {
   const t = { ...(z.tagebuch[tag] || {}) };
+  if (affekte !== undefined) {
+    const a = AFFEKTE.map((x) => x.id).filter((id) => affekte.includes(id));
+    if (a.length) t.affekte = a; else delete t.affekte;
+  }
   if (schlafDauer !== undefined) {
     if (Number.isInteger(schlafDauer) && schlafDauer >= 0 && schlafDauer < SCHLAF_DAUER.length) t.schlafDauer = schlafDauer; else delete t.schlafDauer;
   }

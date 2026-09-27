@@ -31,7 +31,7 @@ import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { leiste, monatSeite, tagebuchSeite, mehrSeite, funktionSeite } from "./seiten.js";
-import { erfassung, satzFeld } from "./erfassung.js";
+import { komponist, satzFeld } from "./erfassung.js";
 import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
@@ -195,7 +195,7 @@ const api = {
   stationen: () => REISE.map((r, i) => ({ titel: r.titel, wann: r.wann, offen: i < z.reise, naechste: i === z.reise })),
   reiseBis(was) { aendern(() => reiseBis(z, was)); },
   trackerWaehlen() { wahlOffen = true; zeichne(); scrollTo(0, 0); },
-  erfassungHeute: () => erfassung(erfassungFuer(heute(), () => zeichne())),
+  festhalten: () => festhalten(heute()),
   satzHeute: () => satzFeld(erfassungFuer(heute(), () => zeichne())),
   tagAntippen(tag) {
     if (tag > heute()) return;
@@ -547,7 +547,8 @@ function tagEinordnen(tag) {
     el("span", "leise klein", notizen.length ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
   l.append(da, tx);
   const kt = erfassungFuer(t, () => tagEinordnen(t));
-  k.append(l, satzFeld(kt), erfassung(kt));
+  const mehr = knopf("Stimmung, Schlaf, Menge … festhalten", "text", () => festhalten(t));
+  k.append(l, satzFeld(kt), mehr);
   k.append(knopf("Fertig", "gross", () => bogen.close()));
   zeigeBogen(k);
   bogen.scrollTop = y;
@@ -574,6 +575,21 @@ function erfassungFuer(t, neu) {
     },
     neu,
   };
+}
+
+/* Das „+" unten: der Vollbild-Check-in (erfassung.js). Er merkt sich,
+   welche Art zuletzt offen war. */
+let komponistArt = "stimmung";
+function festhalten(t) {
+  const zeige = () => {
+    const k = erfassungFuer(t, zeige);
+    k.titel = t === heute() ? "Heute" : tagesKopf(t);
+    const inhalt = komponist(k, komponistArt, (a) => { komponistArt = a; zeige(); }, () => bogen.close());
+    bogen.classList.add("vollbild");
+    zeigeBogen(inhalt);
+  };
+  bogen.addEventListener("close", () => { bogen.classList.remove("vollbild"); zeichne(); }, { once: true });
+  zeige();
 }
 
 /* Heute im Kalender angetippt: zum Tag auf dem Startschirm. Ist man schon

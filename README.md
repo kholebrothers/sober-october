@@ -21,13 +21,14 @@ Tracker (oder die Lebenszeit) öffnet Schicht 2; ein Werkzeug, zweimal benutzt, 
 etwas davon nie braucht, kommt mit viel Notieren genauso weiter. Unter dem Knopf steht, was als
 Nächstes zu tun ist. Was offen ist, bleibt offen. Wer schon vor der Reise etwas gewählt hatte, hat sie hinter sich.
 
-**Der Tag startet leer.** Oben das Commitment (der Satz, die Zahl, die Woche; der ganze Monat auf
-Antippen), darunter „Tag beginnen“. Ein Tippen darauf, auf „+“ oben oder auf heute in der Woche
-beginnt den Tag (er zählt als „dabei“), und direkt in der Seite steht, was sich festhalten lässt
-(`public/app/erfassung.js`): Stimmung (fünf Gesichter), Schlaf (Dauer 4–6 / 6–8 / 8 h + und
-Einschlafen, Durchschlafen, Aufwachen als Ampel), Konsum je Tracker als Menge, ein Satz, Körper und
-Antrieb als Ampel, Selbst. Was man einmal eingeblendet hat, ist am nächsten Tag wieder da. Die Ampel
-ist die einzige Stelle mit Rot; sie beschreibt ein Gefühl, nie ein Verhalten — der Konsum hat keine.
+**Der Tag.** Unten eine Leiste: Heute, Monat, „+“, Tagebuch, Mehr. Auf Heute oben das Commitment
+(der Satz, die Zahl, die Woche), darunter die Tracker als eine Leiste von Knöpfen mit ihrer Zahl
+(getan / würde gern / aufgebaut), eine feste Zeile für die letzte Notiz und ein Textfeld für den Tag.
+Das „+“ in der Mitte öffnet, wie beim Erstellen in Instagram, einen Vollbild-Check-in mit einem
+Wähler unten (`public/app/erfassung.js`): Stimmung als Affekte nach Mark Solms und Jaak Panksepp
+(Suchen, Spiel, Fürsorge, Lust, Wut, Angst, Trauer, dazu Wollen, Mögen, Ekel), Schlaf (Dauer und
+Ampel), Menge am Tag, Körper und Antrieb als Ampel, Selbst. Die Ampel ist die einzige Stelle mit
+Rot; sie beschreibt ein Gefühl, nie ein Verhalten. Alles Weitere steht unter „Mehr“.
 
 **Im Zentrum steht der Monat.** Oben in jeder Ansicht: der Oktober als Kalender und darunter
 ein Knopf, **„Heute bin ich dabei“**. Ein Tippen, und das Feld des Tages füllt sich, die Zahl der
