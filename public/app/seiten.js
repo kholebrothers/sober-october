@@ -14,7 +14,6 @@ import { monatInhalt } from "./bausteine/monat.js";
 import { tagebuch } from "./bausteine/tagebuch.js";
 import { verlauf } from "./bausteine/verlauf.js";
 import { karte as heatmapKarte } from "./bausteine/heatmap.js";
-import { werkzeugKarte } from "./bausteine/werkzeuge.js";
 import { gremlinKarte } from "./bausteine/gremlin.js";
 import { lebenszeitKarte } from "./bausteine/lebenszeit.js";
 import { gemeinsam } from "./bausteine/gemeinsam.js";
@@ -86,8 +85,8 @@ export function tagebuchSeite(api) {
 /* Jede Funktion: wie sie heißt, was sie tut, an welcher Station der Reise
    sie sich öffnet (null: immer da) und wie sie sich zeigt. */
 const FUNKTIONEN = [
-  { id: "werkzeuge", icon: "🧰", titel: "Werkzeuge", text: "Anker, Swish, Reframing, Wenn-dann — für den Moment, in dem der Drang kommt.", schluessel: "werkzeuge",
-    zeige: (api) => werkzeugKarte(api) },
+  { id: "werkzeuge", icon: "🧰", titel: "Werkzeuge", text: "Zum Durchwischen: Anker, Swish, Reframing, Wenn-dann, Dämonen zum Frühstück.", schluessel: "werkzeuge",
+    tun: (api) => api.entdecken("werkzeuge") },
   { id: "verlauf", icon: "📈", titel: "Verlauf und Zusammenhänge", text: "Körper und Antrieb über den Monat, neben Drang und Geschehen.", schluessel: "verlauf",
     zeige: (api) => verlauf(api) },
   { id: "lebenszeit", icon: "⏳", titel: "Lebenszeit", text: "Was Kaffee, Kippe, Video vorher kosteten — und was jetzt frei wird.", schluessel: "lebenszeit",
@@ -96,8 +95,8 @@ const FUNKTIONEN = [
     zeige: (api) => gemeinsam(api) || el("p", "leise", "Die Gruppe ist gerade nicht erreichbar. Alles andere läuft weiter.") },
   { id: "gremlin", icon: "👾", titel: "Dein Gremlin", text: "Der Teil, der von Drama lebt — und eine Aufgabe bekommt.", schluessel: "gremlin",
     zeige: (api) => gremlinKarte(api) },
-  { id: "wissen", icon: "📚", titel: "Wissen und Rückblick", text: "Wie ein Drang verläuft, Routinen, der Rückblick in Wochen.", schluessel: "ebenen",
-    zeige: (api) => wissen(api) },
+  { id: "wissen", icon: "📚", titel: "Wissen und Rückblick", text: "Zum Durchwischen: wie ein Drang verläuft, Routinen, der Rückblick.", schluessel: "ebenen",
+    tun: (api) => api.entdecken("wissen") },
   { id: "leitgedanke", icon: "🕯️", titel: "Leitgedanke", text: "Ein eigener Satz, der dich begleitet.", schluessel: "leitgedanke",
     tun: (api) => api.leitgedankeBearbeiten() },
   { id: "tracker", icon: "➕", titel: "Deine Tracker", text: "Etwas dazunehmen, abwählen, umbenennen.", schluessel: "tracker",
@@ -147,19 +146,6 @@ export function funktionSeite(api, id) {
   return s;
 }
 
-function wissen(api) {
-  const offen = api.EBENEN.filter((e) => api.stand(e.id) === "frei");
-  const k = el("div", "mehr-liste");
-  if (!offen.length) return el("p", "leise", "Noch nichts geöffnet. Die Ebenen öffnen sich durch Benutzen — ein Würde-gern-Moment, drei Tage mit Notizen, die erste Oktoberwoche.");
-  for (const e of offen) {
-    const b = knopf("", "ebene-knopf", () => api.oeffneEbene(e.id));
-    b.dataset.ebene = e.id;
-    b.append(el("span", "rubrik", e.rubrik), el("span", "serif", e.titel));
-    if (!api.zustand.frei[e.id].gesehen) b.append(el("span", "punkt", ""));
-    k.append(b);
-  }
-  return k;
-}
 
 function reise(api) {
   const l = el("ol", "reise-liste");

@@ -32,6 +32,7 @@ import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { leiste, monatSeite, tagebuchSeite, mehrSeite, funktionSeite } from "./seiten.js";
 import { komponist, satzFeld } from "./erfassung.js";
+import { feed } from "./feed.js";
 import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
@@ -196,10 +197,22 @@ const api = {
   reiseBis(was) { aendern(() => reiseBis(z, was)); },
   trackerWaehlen() { wahlOffen = true; zeichne(); scrollTo(0, 0); },
   festhalten: () => festhalten(heute()),
+  entdecken(start) {
+    bogen.classList.add("vollbild");
+    bogen.addEventListener("close", () => bogen.classList.remove("vollbild"), { once: true });
+    zeigeBogen(feed(api, () => bogen.close(), start));
+  },
   satzHeute: () => satzFeld(erfassungFuer(heute(), () => zeichne())),
   tagAntippen(tag) {
     if (tag > heute()) return;
     if (bogen.open) bogen.close();
+    /* Heute antippen heißt: heute bin ich dabei — und noch einmal, nicht mehr.
+       Zählt der Tag schon durch eine Notiz, bleibt er gezählt. */
+    if (tag === heute() && seite === "heute") {
+      if (!hatEintrag(z, tag)) api.da();
+      else if (istDa(z, tag) && !vonTag(z, tag).length && !z.tagebuch[tag]) api.daZurueck();
+      return;
+    }
     tagEinordnen(tag);
   },
   getragen: () => z.tagebuch[heute()]?.getragen || "",
@@ -394,6 +407,9 @@ function zeigeBogen(knoten) {
     titel.id = "bogen-titel";
     bogen.setAttribute("aria-labelledby", titel.id);
   } else bogen.removeAttribute("aria-labelledby");
+  /* Vollbild nur für den Check-in und den Feed; ein Werkzeug, das aus dem
+     Feed startet, kommt wieder als Blatt. */
+  if (!knoten.matches(".komponist, .feed")) bogen.classList.remove("vollbild");
   bogen.replaceChildren(knoten);
   if (!bogen.open) bogen.showModal();
 }

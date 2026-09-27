@@ -2,94 +2,144 @@
 
    Von oben nach unten, immer in derselben Ordnung, damit nichts springt:
 
-   1. Die Leiste der Tracker: je Tracker ein Knopf mit seiner Zahl von
-      heute — was du getan hast, und, darunter schlanker, was du gern
-      würdest. Was du aufbaust, ist ein Häkchen. Jedes Tippen zählt den Tag.
-   2. Eine feste Zeile für die letzte Notiz, mit „Details" und „rückgängig".
-   3. Ein Satz zum Tag — immer da, zum direkten Schreiben.
-   4. Ganz unten, was sonst ansteht (gestern nachtragen, die Reise).
+   1. Die Leiste: je Tracker, den du sein lässt, ein Knopf mit der Zahl von
+      heute — sie soll null bleiben. Ein Tippen öffnet am Knopf zwei
+      Optionen: „getrunken" (oder was der Tracker heißt) und „würde gern".
+      Wie oft du gern würdest, steht klein im Knopf.
+   2. Die Tagesliste: was du aufbaust, als Häkchen — eine Routine mit ihren
+      Schritten darunter; am Morgen die Morgenpraxis.
+   3. Eine feste Zeile für die letzte Notiz, mit „Details" und „rückgängig".
+   4. Ein Satz zum Tag — immer da.
+   5. Ganz unten, was sonst ansteht (gestern nachtragen, die Reise).
 
-   Stimmung, Schlaf, Menge, Körper, Antrieb, Selbst stehen hinter dem „+"
-   in der Leiste unten (erfassung.js). */
+   „Dabei" braucht keinen eigenen Knopf: jede Notiz zählt den Tag, und der
+   Tag in der Woche oben lässt sich antippen. Stimmung, Schlaf und der Rest
+   stehen hinter dem „+" in der Leiste unten (erfassung.js). */
 
 import { el, knopf, faerbe } from "../ansichten/teile.js";
 
 /* Ein Zeichen je Tracker; eigene bekommen ihren Anfangsbuchstaben. */
 const ZEICHEN = { kaffee: "☕", kippe: "🚬", video: "📺" };
-const zeichen = (v, V) => ZEICHEN[v] || (V.aufbau ? "" : V.name.slice(0, 1).toUpperCase());
+const zeichen = (v, V) => ZEICHEN[v] || V.name.slice(0, 1).toUpperCase();
+
+/* Welcher Knopf gerade seine Optionen zeigt. */
+let offen = null;
 
 export function heute(api) {
   const m = api.monat();
   if (m.phase === "nach") return null;
   const s = el("section", "heute");
   s.setAttribute("aria-label", "Heute");
-
-  const kopf = el("div", "heute-kopf");
-  kopf.append(el("h2", "heute-titel", "Heute"));
-  const nurNotiz = api.hatEintrag() && !api.istDa();
-  const da = knopf("", "da-pille", () => (api.istDa() ? api.daZurueck() : api.da()));
-  da.dataset.focus = "da";
-  da.setAttribute("aria-pressed", api.hatEintrag());
-  da.disabled = nurNotiz;
-  da.append(el("span", "da-pille-kreis", api.hatEintrag() ? "✓" : ""), el("span", null, nurNotiz ? "zählt durch deine Notiz" : "Heute dabei"));
-  da.setAttribute("aria-label", api.istDa() ? "Heute dabei. Antippen nimmt es zurück." : nurNotiz ? "Heute zählt durch deine Notiz." : "Heute dabei — antippen");
-  kopf.append(da);
-  s.append(kopf, leiste(api), letzte(api), api.satzHeute(), weiteres(api));
+  s.append(el("h2", "heute-titel", "Heute"));
+  const l = leiste(api);
+  if (l) s.append(l);
+  const t = tagesliste(api);
+  if (t) s.append(t);
+  s.append(letzte(api), api.satzHeute(), weiteres(api));
   return s;
 }
 
-/* ---- 1. Die Leiste der Tracker ------------------------------------------------ */
+/* ---- 1. Die Leiste ---------------------------------------------------------- */
 
 function leiste(api) {
   const { VERZICHTE } = api;
+  const lassen = api.gewaehlt().filter((v) => !VERZICHTE[v].aufbau);
+  if (!lassen.length) return null;
   const w = el("div", "tracker-leiste");
   w.dataset.katze = "weg";
-  const reihe = el("div", "tracker-reihe");
-  const drang = el("div", "tracker-reihe tracker-reihe-drang");
-  const routinen = [];
-  for (const v of api.gewaehlt()) {
+  for (const v of lassen) {
     const V = VERZICHTE[v];
     const es = api.heuteVon(v);
-    if (V.aufbau && V.schritte.length && api.ab(2)) { routinen.push([v, V]); continue; }
-    if (V.aufbau) {
-      const getan = es.some((e) => e.art === "getan");
-      const b = faerbe(knopf("", "tracker-chip tracker-chip-getan", () => api.eintragen(v, "getan")), VERZICHTE, v);
-      b.dataset.focus = `habe-${v}`;
-      b.setAttribute("aria-pressed", getan);
-      b.append(el("span", "tracker-chip-haken", getan ? "✓" : ""), el("span", "tracker-chip-name", V.name));
-      b.setAttribute("aria-label", `${V.name}: ${getan ? "heute getan. Antippen nimmt es zurück." : "als getan markieren."}`);
-      reihe.append(b);
-      continue;
+    const n = es.filter((e) => e.art === "habe").length, d = es.filter((e) => e.art === "drang").length;
+    const halter = faerbe(el("div", "tracker-halter"), VERZICHTE, v);
+    const b = knopf("", "tracker-chip", () => { offen = offen === v ? null : v; api.zeichne(); });
+    b.dataset.focus = `chip-${v}`;
+    b.setAttribute("aria-expanded", offen === v);
+    b.setAttribute("aria-label", `${V.name}: heute ${n}${d ? `, ${d}-mal würde gern` : ""}. Antippen zum Notieren.`);
+    b.append(el("span", "tracker-chip-zeichen", zeichen(v, V)), el("span", "tracker-chip-name", V.name));
+    if (d) b.append(el("span", "tracker-chip-gern", `💭${d}`));
+    const zahl = el("span", "tracker-chip-zahl", String(n));
+    if (!n) zahl.dataset.null = "";
+    b.append(zahl);
+    halter.append(b);
+    /* Die Optionen liegen über der Seite, am Knopf — nichts darunter rutscht. */
+    if (offen === v) {
+      const o = el("div", "tracker-optionen");
+      o.setAttribute("role", "menu");
+      const wahl = (text, art, klasse) => {
+        const x = knopf(text, `tracker-option ${klasse}`, () => { offen = null; api.eintragen(v, art); });
+        x.setAttribute("role", "menuitem");
+        x.dataset.focus = `${art}-${v}`;
+        return x;
+      };
+      const kurz = V.habe.replace(V.name, "").replace(/^\s*—\s*/, "").trim() || V.habe;
+      o.append(wahl(`+ ${kurz}`, "habe", ""), wahl("💭 würde gern", "drang", "gern"));
+      halter.append(o);
     }
-    const n = es.filter((e) => e.art === "habe").length;
-    const b = faerbe(knopf("", "tracker-chip", () => api.eintragen(v, "habe")), VERZICHTE, v);
-    b.dataset.focus = `habe-${v}`;
-    b.append(el("span", "tracker-chip-zeichen", zeichen(v, V)), el("span", "tracker-chip-name", V.name), el("span", "tracker-chip-zahl", String(n)));
-    b.setAttribute("aria-label", `${V.habe} — notieren. Heute ${n}.`);
-    reihe.append(b);
-
-    const d = es.filter((e) => e.art === "drang").length;
-    const db = faerbe(knopf("", "tracker-chip tracker-chip-drang", () => api.eintragen(v, "drang")), VERZICHTE, v);
-    db.dataset.focus = `drang-${v}`;
-    db.append(el("span", "tracker-chip-zeichen", zeichen(v, V)), el("span", "tracker-chip-zahl", String(d)));
-    db.setAttribute("aria-label", `${V.drang} — notieren. Heute ${d}.`);
-    drang.append(db);
-  }
-  w.append(reihe);
-  if (drang.childElementCount) {
-    const z = el("div", "tracker-drang-zeile");
-    z.append(el("span", "tracker-drang-wort", "würde gern"), drang);
-    w.append(z);
-  }
-  for (const [v, V] of routinen) {
-    const k = faerbe(el("div", "tracker"), VERZICHTE, v);
-    k.append(routine(api, v, V));
-    w.append(k);
+    w.append(halter);
   }
   return w;
 }
 
-/* ---- 2. Die letzte Notiz — oder ein Platzhalter derselben Höhe ----------------- */
+/* Ein Tippen irgendwo sonst schließt die Optionen. */
+document.addEventListener("pointerdown", (ev) => {
+  if (offen && !ev.target.closest?.(".tracker-halter")) { offen = null; document.querySelector(".tracker-optionen")?.remove(); document.querySelector(".tracker-chip[aria-expanded=true]")?.setAttribute("aria-expanded", "false"); }
+}, true);
+
+/* ---- 2. Die Tagesliste ------------------------------------------------------ */
+
+function tagesliste(api) {
+  const { VERZICHTE } = api;
+  const aufbau = api.gewaehlt().filter((v) => VERZICHTE[v].aufbau);
+  const praxis = api.ab(3) && api.morgenpraxisOffen();
+  if (!aufbau.length && !praxis) return null;
+  const l = el("ul", "tagesliste");
+  l.setAttribute("aria-label", "Für heute");
+  for (const v of aufbau) {
+    const V = VERZICHTE[v];
+    const li = faerbe(el("li", "tages-item"), VERZICHTE, v);
+    if (V.schritte.length) {
+      const getan = api.schritteGetan(v);
+      const kopf = el("div", "tages-kopf");
+      kopf.append(el("span", "tages-name", V.name), el("span", "tages-stand", `${getan.size} von ${V.schritte.length}`));
+      const mehr = knopf("…", "rund klein", () => api.trackerBearbeiten(v));
+      mehr.setAttribute("aria-label", `${V.name}: Schritte ändern`);
+      kopf.append(mehr);
+      li.append(kopf);
+      const u = el("ul", "tages-schritte");
+      u.replaceChildren(...V.schritte.map((t, i) => {
+        const x = el("li");
+        x.append(haken(getan.has(i), t, `schritt-${v}-${i}`, () => api.schritt(v, i)));
+        return x;
+      }));
+      li.append(u);
+      if (getan.size === V.schritte.length) li.dataset.fertig = "";
+    } else {
+      const getan = api.heuteVon(v).some((e) => e.art === "getan");
+      li.append(haken(getan, V.name, `habe-${v}`, () => api.eintragen(v, "getan")));
+    }
+    l.append(li);
+  }
+  if (praxis) {
+    const li = el("li", "tages-item tages-praxis");
+    const b = knopf("", "tages-haken", () => api.werkzeug("daemon"));
+    b.dataset.focus = "daemon";
+    b.append(el("span", "tages-kasten", ""), el("span", "tages-wort", "Morgenpraxis: Dämonen zum Frühstück"), el("span", "leise klein", "7 Min."));
+    li.append(b);
+    l.append(li);
+  }
+  return l;
+}
+
+function haken(an, text, fokus, tun) {
+  const b = knopf("", "tages-haken", tun);
+  b.dataset.focus = fokus;
+  b.setAttribute("aria-pressed", an);
+  b.append(el("span", "tages-kasten", an ? "✓" : ""), el("span", "tages-wort", text));
+  return b;
+}
+
+/* ---- 3. Die letzte Notiz — oder ein Platzhalter derselben Höhe ----------------- */
 
 function letzte(api) {
   const l = el("p", "tracker-letzte");
@@ -104,40 +154,10 @@ function letzte(api) {
   return l;
 }
 
-/* Eine Routine: Schritt für Schritt abhaken. */
-function routine(api, v, V) {
-  const getan = api.schritteGetan(v);
-  const k = el("div", "routine");
-  const kopf = el("div", "routine-kopf");
-  const mehr = knopf("…", "rund klein", () => api.trackerBearbeiten(v));
-  mehr.setAttribute("aria-label", `${V.name}: Schritte ändern`);
-  kopf.append(el("span", "tracker-name", V.name), el("span", "routine-stand", `${getan.size} von ${V.schritte.length}`), mehr);
-  k.append(kopf);
-  const l = el("ol", "routine-schritte");
-  V.schritte.forEach((t, i) => {
-    const li = el("li");
-    const b = knopf("", "routine-schritt", () => api.schritt(v, i));
-    b.setAttribute("aria-pressed", getan.has(i));
-    b.dataset.focus = `schritt-${v}-${i}`;
-    b.append(el("span", "routine-haken", getan.has(i) ? "✓" : ""), el("span", null, t));
-    li.append(b);
-    l.append(li);
-  });
-  k.append(l);
-  if (getan.size === V.schritte.length) k.dataset.fertig = "";
-  return k;
-}
-
-/* ---- 4. Was sonst ansteht --------------------------------------------------- */
+/* ---- 5. Was sonst ansteht --------------------------------------------------- */
 
 function weiteres(api) {
   const r = el("div", "heute-weiteres");
-  if (api.ab(3) && api.morgenpraxisOffen()) {
-    const d = knopf("", "daemon-hinweis", () => api.werkzeug("daemon"));
-    d.dataset.focus = "daemon";
-    d.append(el("span", null, "Morgenpraxis: Dämonen zum Frühstück"), el("span", "leise klein", "7 Min."));
-    r.append(d);
-  }
   const g = api.gesternOffen();
   if (g) {
     const n = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g));

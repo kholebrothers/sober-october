@@ -971,3 +971,48 @@ dialog#bogen.vollbild::backdrop { background:var(--paper); }
 .affekt-quelle { text-align:center; margin:0; }
 .komponist .erfassung-frage { text-align:center; }
 @media (max-width:360px) { .affekte { grid-template-columns:repeat(4, 1fr); } }
+
+/* ---- Heute: die Null-Knöpfe mit Optionen, die Tagesliste ----------------- */
+.heute-titel { margin:0; }
+.tracker-leiste { display:flex; flex-wrap:wrap; gap:8px; }
+.tracker-halter { position:relative; }
+.tracker-chip-zahl[data-null] { background:transparent; color:var(--v); border:1.5px solid var(--v); }
+.tracker-chip-gern { font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.tracker-chip[aria-expanded="true"] { box-shadow:0 0 0 3px color-mix(in oklab, var(--v) 25%, transparent); }
+.tracker-optionen { position:absolute; left:0; top:calc(100% + 6px); z-index:30; display:grid; gap:6px; min-width:200px; padding:8px;
+  border:1px solid var(--linie); border-radius:16px; background:var(--surface); box-shadow:0 12px 32px -10px #0005; }
+.tracker-option { min-height:48px; padding:8px 14px; border:1.5px solid var(--v); border-radius:12px; background:color-mix(in oklab, var(--v) 12%, var(--surface));
+  font:500 16px var(--sans); color:var(--ink); text-align:left; white-space:nowrap; }
+.tracker-option.gern { border-style:dashed; background:transparent; }
+.tracker-halter:last-child .tracker-optionen, .tracker-halter:nth-child(3) .tracker-optionen { left:auto; right:0; }
+.tagesliste { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.tages-item { padding:4px 12px; border:1px solid var(--linie); border-left:4px solid var(--v, var(--moss)); border-radius:var(--radius-control); background:var(--surface); }
+.tages-praxis { --v:var(--magenta); }
+.tages-kopf { display:flex; align-items:center; gap:10px; padding:6px 0 2px; }
+.tages-name { flex:1; font:500 17px var(--serif); }
+.tages-stand { font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.tages-schritte { list-style:none; margin:0 0 4px; padding:0 0 0 8px; }
+.tages-haken { display:flex; align-items:center; gap:12px; width:100%; min-height:46px; border:0; background:none; text-align:left; font:16px var(--sans); color:var(--ink); padding:4px 0; }
+.tages-kasten { width:24px; height:24px; flex:none; display:grid; place-items:center; border-radius:7px; border:1.5px solid var(--v, var(--moss)); color:var(--surface); font:700 14px var(--sans); }
+.tages-haken[aria-pressed="true"] .tages-kasten { background:var(--v, var(--moss)); }
+.tages-haken[aria-pressed="true"] .tages-wort { color:var(--leise); text-decoration:line-through; text-decoration-color:color-mix(in oklab, var(--leise) 50%, transparent); }
+.tages-wort { flex:1; }
+.tages-item[data-fertig] { background:color-mix(in oklab, var(--v, var(--moss)) 7%, var(--surface)); }
+
+/* ---- Entdecken: der Feed zum Hochwischen ---------------------------------- */
+.feed { position:relative; height:100dvh; }
+.feed-karten { height:100dvh; overflow-y:auto; scroll-snap-type:y mandatory; overscroll-behavior:contain; scrollbar-width:none; }
+.feed-karten::-webkit-scrollbar { display:none; }
+.feed-karte { height:100dvh; scroll-snap-align:start; scroll-snap-stop:always; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:14px;
+  max-width:480px; margin:0 auto; padding:max(64px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom));
+  background:radial-gradient(120% 60% at 50% 30%, color-mix(in oklab, var(--c) 14%, var(--paper)), var(--paper)); }
+.feed-zeichen { margin:0; font-size:64px; line-height:1; }
+.feed-titel { margin:0; font-size:34px; line-height:1.15; font-weight:500; }
+.feed-text { margin:0; font:19px/1.5 var(--serif); }
+.feed-los { margin-top:12px; min-height:52px; font-size:17px; background:var(--c) !important; color:var(--surface) !important; }
+.feed-karte[data-zu] .feed-titel, .feed-karte[data-zu] .feed-text { color:var(--leise); }
+.feed-zu { position:absolute; top:max(12px, env(safe-area-inset-top)); left:12px; width:44px; height:44px; border:0; border-radius:50%;
+  background:color-mix(in oklab, var(--paper) 80%, transparent); font-size:22px; color:var(--ink); z-index:2; }
+.feed-punkte { position:absolute; right:10px; top:50%; transform:translateY(-50%); display:grid; gap:6px; z-index:2; }
+.feed-punkte i { width:6px; height:6px; border-radius:50%; background:var(--linie-stark); }
+.feed-punkte i.an { background:var(--ink); height:18px; border-radius:3px; }

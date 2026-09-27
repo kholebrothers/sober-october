@@ -764,15 +764,15 @@ export const ERFASSUNG = ["stimmung", "schlaf", "konsum", "satz", "koerper", "an
    so viele wie da sind; keins ist gut oder schlecht. */
 export const AFFEKTE = [
   { id: "suchen", name: "Suchen", emoji: "🤩", quelle: "SEEKING — Neugier, Erwartung" },
-  { id: "spiel", name: "Spiel", emoji: "😄", quelle: "PLAY — Freude, Leichtigkeit" },
+  { id: "spiel", name: "Spiel", emoji: "🤪", quelle: "PLAY — Freude, Leichtigkeit" },
   { id: "fuersorge", name: "Fürsorge", emoji: "🥰", quelle: "CARE — Zuwendung, Wärme" },
-  { id: "lust", name: "Lust", emoji: "😏", quelle: "LUST — Begehren" },
-  { id: "wut", name: "Wut", emoji: "😠", quelle: "RAGE — Ärger, Frust" },
-  { id: "angst", name: "Angst", emoji: "😨", quelle: "FEAR — Furcht, Anspannung" },
-  { id: "trauer", name: "Trauer", emoji: "😢", quelle: "PANIC/GRIEF — Verlust, Alleinsein" },
+  { id: "lust", name: "Lust", emoji: "🔥", quelle: "LUST — Begehren" },
+  { id: "wut", name: "Wut", emoji: "🤬", quelle: "RAGE — Ärger, Frust" },
+  { id: "angst", name: "Angst", emoji: "😱", quelle: "FEAR — Furcht, Anspannung" },
+  { id: "trauer", name: "Trauer", emoji: "😭", quelle: "PANIC/GRIEF — Verlust, Alleinsein" },
   { id: "wollen", name: "Wollen", emoji: "🤤", quelle: "wanting — Verlangen, Drang" },
-  { id: "moegen", name: "Mögen", emoji: "😌", quelle: "liking — Genuss, Gefallen" },
-  { id: "ekel", name: "Ekel", emoji: "🤢", quelle: "disgust — Abwehr, Widerwille" },
+  { id: "moegen", name: "Mögen", emoji: "😋", quelle: "liking — Genuss, Gefallen" },
+  { id: "ekel", name: "Ekel", emoji: "🤮", quelle: "disgust — Abwehr, Widerwille" },
 ];
 export const AMPEL = ["schwer", "geht so", "gut"];
 export const SCHLAF_DAUER = ["4–6 h", "6–8 h", "8 h +"];
