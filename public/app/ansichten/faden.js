@@ -6,7 +6,7 @@
 
 import { AUSWAHL, tagesKopf } from "../logik.js";
 import { el, knopf, kopf, wasText, faerbe, plusTracker } from "./teile.js";
-import { oben, unten } from "../bausteine/index.js";
+import { oben } from "../bausteine/index.js";
 
 export function render(api) {
   const { zustand: z, VERZICHTE, EBENEN } = api;
@@ -54,7 +54,5 @@ export function render(api) {
   }
   if (!posten.length) faden.append(el("li", "leise", "Noch nichts. Der Tag steht da."));
   s.append(faden);
-  const u = unten(api, { ebenen: false });
-  if (u) s.append(u);
   return s;
 }

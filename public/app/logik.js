@@ -301,6 +301,19 @@ const REISE_STATION = new Map(REISE.flatMap((s, i) => s.oeffnet.map((k) => [k, i
 /** Ist dieser Teil auf der Reise schon erreicht? */
 export const offen = (z, was) => !REISE_STATION.has(was) || REISE_STATION.get(was) < z.reise;
 
+/** Die Station, an der sich ein Teil öffnet — oder null, wenn er immer da ist. */
+export const stationVon = (was) => (REISE_STATION.has(was) ? REISE[REISE_STATION.get(was)] : null);
+
+/** Bewusst schon jetzt öffnen: die Reise bis zu dieser Station, mit allem davor. */
+export function reiseBis(z, was) {
+  if (!REISE_STATION.has(was)) return;
+  const bis = REISE_STATION.get(was) + 1;
+  while (z.reise < bis) {
+    const s = REISE[z.reise++];
+    if (s.tiefe && z.tiefe < s.tiefe) z.tiefe = s.tiefe;
+  }
+}
+
 const erreicht = (z, s) => s.erfuellt(z) || nutzung(z) >= s.sonst;
 
 /** Die Reise weiter, so weit das Benutzen reicht. Gibt die neu erreichten

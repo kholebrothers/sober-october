@@ -19,7 +19,7 @@ import {
   setzeAnker, setzeSwish, planHinzu, planWeg,
   ZEIT_STUFEN, ZEIT_FUER, setzeZeitVorher, freiAm, lebenszeit, dauer,
   DAEMON_PHASEN, daemonStand,
-  REISE, offen, reiseWeiter, reiseStand, einrichten, ERFASSUNG,
+  REISE, offen, reiseWeiter, reiseStand, einrichten, stationVon, reiseBis,
   GREMLIN_STUFEN, GREMLIN_FUTTER_VORSCHLAEGE, WOCHENTAGE, gremlinStufe, setzeFuetterungstag, futterHinzu, futterWeg, fuettern, werkzeugBenutzt,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
@@ -30,7 +30,7 @@ import { werkzeuge } from "./werkzeuge.js";
 import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
-import { monatBlatt } from "./bausteine/monat.js";
+import { leiste, monatSeite, tagebuchSeite, mehrSeite, funktionSeite } from "./seiten.js";
 import { erfassung } from "./erfassung.js";
 import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
@@ -45,6 +45,9 @@ let wahlOffen = !gewaehlt(z).length;
 let einrichtungOffen = !gewaehlt(z).length && !offen(z, "tracker");
 let auswahl = [];          // [{schluessel, wahl}] in der Reihenfolge des Antippens
 let bestaetigen = false;
+/* Welche Seite unten gewählt ist (Heute, Monat, Tagebuch, Mehr) und, in
+   „Mehr", welche Funktion offen ist. */
+let seite = "heute", detail = null;
 
 const $ = (s) => document.querySelector(s);
 const heute = () => heuteTag();
@@ -187,9 +190,12 @@ const api = {
   tagEinordnen: (tag) => tagEinordnen(tag),
   /* Ein Tag im Kalender angetippt: was an dem Tag steht, und — für heute
      und vergangene Tage — ob man dabei war. Ein kommender Tag hat noch nichts. */
-  monatZeigen: () => monatZeigen(),
-  plus: () => zumHeute(),
-  erfassungHeute: () => erfassung(erfassungFuer(heute())),
+  seite(id, d = null) { seite = id; detail = d; if (bogen.open) bogen.close(); zeichne(); scrollTo(0, 0); },
+  station: (was) => stationVon(was),
+  stationen: () => REISE.map((r, i) => ({ titel: r.titel, wann: r.wann, offen: i < z.reise, naechste: i === z.reise })),
+  reiseBis(was) { aendern(() => reiseBis(z, was)); },
+  trackerWaehlen() { wahlOffen = true; zeichne(); scrollTo(0, 0); },
+  erfassungHeute: () => erfassung(erfassungFuer(heute(), () => zeichne())),
   tagAntippen(tag) {
     if (tag > heute()) return;
     if (bogen.open) bogen.close();
@@ -554,23 +560,16 @@ function erfassungFuer(t, neu) {
     heute: t === heute(),
     eintrag: () => z.tagebuch[t] || {},
     lassen: gewaehlt(z).filter((v) => !V[v].aufbau).map((v) => ({ id: v, name: V[v].name })),
-    offen: z.checkin,
-    schreibe(was) { aendern(() => schreibeTag(z, t, was)); spueren(8); neu?.(); },
-    zeigeArt(art, an) {
-      aendern(() => {
-        const s = new Set(z.checkin);
-        if (an) s.add(art); else s.delete(art);
-        z.checkin = ERFASSUNG.filter((a) => s.has(a));
-      });
-      neu?.();
-      if (an) setTimeout(() => document.querySelector(`.erfassung-feld[data-art="${art}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 50);
-    },
+    schreibe(was) { aendern(() => schreibeTag(z, t, was)); spueren(8); neu(); },
+    neu,
   };
 }
 
 /* Zum heutigen Tag auf dem Startschirm; ist er noch leer, beginnt er. */
 function zumHeute() {
-  if (!hatEintrag(z, heute())) api.da();
+  if (bogen.open) bogen.close();
+  seite = "heute"; detail = null;
+  if (!hatEintrag(z, heute())) api.da(); else zeichne();
   setTimeout(() => document.querySelector(".heute")?.scrollIntoView({ block: "start", behavior: "smooth" }), 50);
 }
 
@@ -619,14 +618,7 @@ function leitgedankeBearbeiten() {
    tut; er wirkt sofort, ohne Speichern-Knopf. */
 function einstellungen() {
   const k = el("div", "bogen-inhalt einstellungen");
-  k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)),
-    offen(z, "tracker")
-      ? knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); })
-      : knopf("Anders anfangen: neu wählen", "text", () => { bogen.close(); auswahl = []; bestaetigen = false; einrichtungOffen = true; zeichne(); }));
-
-  const r = reiseKarte();
-  if (r) k.append(r);
-  if (offen(z, "tiefe2")) k.append(tiefeWahl("einst-tiefe"));
+  k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, "Darstellung und Daten"));
 
   const ans = el("fieldset", "frage");
   ans.append(el("legend", "serif", "Ansicht"));
@@ -662,39 +654,22 @@ function einstellungen() {
   farbe.append(wahl, el("p", "leise klein", "Gilt für die helle Darstellung. Im Dunkeln bleibt es beim warmen Braun."));
   k.append(farbe);
 
-  let gruppe = null, feld = null;
-  for (const b of BAUSTEINE.filter((x) => x.schicht <= z.tiefe && offen(z, x.id))) {
-    if (b.gruppe !== gruppe) {
-      gruppe = b.gruppe;
-      feld = el("fieldset", "frage bausteine");
-      feld.append(el("legend", "serif", gruppe === "Darstellung" ? "Darstellung" : `Bausteine · ${gruppe}`));
-      k.append(feld);
-    }
-    const l = el("label", "baustein");
-    const i = Object.assign(document.createElement("input"), { type: "checkbox", checked: aktiv(z, b.id) });
-    i.addEventListener("change", () => {
-      aendern(() => schalteBaustein(z, b.id, i.checked));
-      if (b.id === "abends") tageszeitSetzen();
-      if (b.id === "gemeinsam" && i.checked) aktualisieren();
-      const y = bogen.scrollTop;
-      const index = [...bogen.querySelectorAll(".baustein input")].indexOf(i);
-      einstellungen();
-      bogen.querySelectorAll(".baustein input")[index]?.focus({ preventScroll: true });
-      bogen.scrollTop = y;
+  /* Abends ruhiger: der einzige Schalter, der hier bleibt. Was die App
+     sonst kann, steht unter „Mehr". */
+  const abends = el("label", "baustein");
+  const ai = Object.assign(document.createElement("input"), { type: "checkbox", checked: aktiv(z, "abends") });
+  ai.addEventListener("change", () => { aendern(() => schalteBaustein(z, "abends", ai.checked)); tageszeitSetzen(); });
+  const at = el("span", "baustein-text");
+  at.append(el("span", null, "Abends ruhiger"), el("span", "leise klein", "Nach Sonnenuntergang wird die Seite eine Spur ruhiger."));
+  abends.append(ai, at);
+  k.append(abends);
+
+  if (z.gemeinsam) {
+    const weg = knopf(`Du gehst als ${z.gemeinsam.name} mit. Die Gruppe verlassen`, "text klein", () => {
+      if (!weg.dataset.sicher) { weg.dataset.sicher = "1"; weg.textContent = "Wirklich? Name und Tage werden vom Server gelöscht. Noch einmal tippen."; return; }
+      gruppeVerlassen();
     });
-    const t = el("span", "baustein-text");
-    t.append(el("span", null, b.titel), el("span", "leise klein", b.text));
-    l.append(i, t);
-    feld.append(l);
-    if (b.id === "leitgedanke" && aktiv(z, b.id))
-      feld.append(knopf("Leitgedanken ändern", "text klein baustein-mehr", () => leitgedankeBearbeiten()));
-    if (b.id === "gemeinsam" && z.gemeinsam) {
-      const weg = knopf(`Du gehst als ${z.gemeinsam.name} mit. Die Gruppe verlassen`, "text klein baustein-mehr", () => {
-        if (!weg.dataset.sicher) { weg.dataset.sicher = "1"; weg.textContent = "Wirklich? Name und Tage werden vom Server gelöscht. Noch einmal tippen."; return; }
-        gruppeVerlassen();
-      });
-      feld.append(weg);
-    }
+    k.append(weg);
   }
 
   const daten = el("div", "frage");
@@ -709,8 +684,8 @@ function einstellungen() {
     weg.dataset.sicher = "1";
     weg.textContent = "Wirklich löschen? Noch einmal tippen.";
   });
-  daten.append(weg);
-  k.append(daten, knopf("schließen", "gross leise", () => bogen.close()));
+  daten.append(weg, knopf("Neu anfangen: auswählen, worauf du achtest", "text", () => { bogen.close(); auswahl = []; bestaetigen = false; einrichtungOffen = true; zeichne(); }));
+  k.append(daten, knopf("Fertig", "gross", () => bogen.close()));
   zeigeBogen(k);
 }
 
@@ -770,7 +745,6 @@ function wahlSeite() {
   s.append(neu);
 
   s.append(aufbauWahl());
-  if (offen(z, "tiefe2")) s.append(tiefeWahl("wahl-tiefe"));
 
   const los = knopf("Mit meiner Auswahl starten", "gross", () => { wahlOffen = false; zeichne(); });
   los.disabled = !gewaehlt(z).length;
@@ -840,21 +814,6 @@ function aufbauWahl() {
   return k;
 }
 
-/* Wie tief? Drei Karten, eine gewählt; wirkt sofort. */
-function tiefeWahl(klasse) {
-  const fs = el("fieldset", `frage ${klasse}`);
-  fs.append(el("legend", "serif", "Wie tief willst du gehen?"));
-  for (const t of TIEFEN.filter((x) => x.n === 1 || offen(z, `tiefe${x.n}`))) {
-    const l = el("label", "ansicht-option tiefe-option");
-    const i = Object.assign(document.createElement("input"), { type: "radio", name: `tiefe-${klasse}`, value: String(t.n), checked: z.tiefe === t.n });
-    i.addEventListener("change", () => { aendern(() => { z.tiefe = t.n; }); if (bogen.open) einstellungen(); });
-    l.dataset.tiefe = t.n;
-    l.append(i, el("span", "serif", `${t.n} · ${t.name}`), el("span", "leise klein", t.text));
-    fs.append(l);
-  }
-  fs.append(el("p", "leise klein", "Jede Schicht nimmt die vorigen mit. Du kannst jederzeit wechseln; nichts geht verloren."));
-  return fs;
-}
 
 /* Ein neuer Tracker, aus jeder Ansicht heraus über „+". Er ist gleich
    gewählt; die Knopf-Ansicht springt auf ihn. */
@@ -943,10 +902,6 @@ function eigenerTracker(id) {
   zeigeBogen(f);
 }
 
-/* Der ganze Monat als Blatt; ein Wechsel der Ebene zeichnet es neu. */
-function monatZeigen() {
-  zeigeBogen(monatBlatt(api, () => monatZeigen()));
-}
 
 /* ---- Die Einrichtung ----------------------------------------------------------
 
@@ -1041,23 +996,6 @@ function einrichtungSeite() {
   return s;
 }
 
-/* Die Reise in den Einstellungen: was schon offen ist, was als Nächstes kommt. */
-function reiseKarte() {
-  const st = reiseStand(z);
-  if (!st.naechste) return null;
-  const k = el("div", "frage reise-karte");
-  k.append(el("p", "serif", "Deine Reise"),
-    el("p", "leise klein", "Was du benutzt, öffnet das Nächste."));
-  const l = el("ol", "reise-liste");
-  REISE.forEach((r, i) => {
-    const li = el("li");
-    li.dataset.stand = i < z.reise ? "offen" : i === z.reise ? "naechste" : "zu";
-    li.append(el("span", "reise-titel", r.titel), el("span", "reise-tag", i < z.reise ? "✓ offen" : r.wann));
-    l.append(li);
-  });
-  k.append(l, el("p", "leise klein", st.noch));
-  return k;
-}
 
 
 /* ---- Zeichnen -------------------------------------------------------------- */
@@ -1080,7 +1018,13 @@ function zeichne() {
   const innerhalb = buehne.contains(fokus);
   const schluessel = fokus?.dataset.focus;
   const name = fokus?.getAttribute("aria-label") || fokus?.textContent;
-  buehne.replaceChildren(ansicht ? ansicht.render(api) : einrichtungOffen ? einrichtungSeite() : wahlSeite());
+  if (!ansicht) buehne.replaceChildren(einrichtungOffen ? einrichtungSeite() : wahlSeite());
+  else {
+    const inhalt = seite === "monat" ? monatSeite(api) : seite === "tagebuch" ? tagebuchSeite(api)
+      : seite === "mehr" ? (detail ? funktionSeite(api, detail) : mehrSeite(api)) : ansicht.render(api);
+    buehne.replaceChildren(inhalt, leiste(api, seite));
+  }
+  buehne.dataset.seite = ansicht ? seite : "";
   gremlin.pruefen();
   if (letzteStufe === null) letzteStufe = gremlinStufe(z, heute()).n;
   if (innerhalb) {

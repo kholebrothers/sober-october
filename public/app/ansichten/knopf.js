@@ -5,7 +5,7 @@
    Häkchen am Tag; ab Schicht 2 wird eine Routine mit Schritten zur Liste. */
 
 import { el, knopf, kopf, faerbe } from "./teile.js";
-import { oben, unten } from "../bausteine/index.js";
+import { oben } from "../bausteine/index.js";
 
 export function render(api) {
   const { zustand: z, VERZICHTE } = api;
@@ -78,8 +78,6 @@ export function render(api) {
   /* Die Tracker gehören zum Tag: solange er nicht begonnen ist, stehen sie nicht da. */
   if (api.hatEintrag()) s.append(raster);
 
-  const u = unten(api);
-  if (u) s.append(u);
   return s;
 }
 

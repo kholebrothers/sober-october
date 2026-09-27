@@ -3,9 +3,9 @@
 
    Ein Tag startet leer. Ist er begonnen, schlägt die Erfassung vor, was
    sich festhalten lässt: Stimmung, Schlaf, Konsum, ein Satz, Körper,
-   Antrieb, Selbst. Ein Tippen auf einen Vorschlag blendet ihn ein; was
-   einmal eingeblendet war, ist beim nächsten Tag wieder da. Jede Eingabe
-   ist ein Tippen auf eine Kategorie — keine Skalen, kein Speichern-Knopf.
+   Antrieb, Selbst — als eine Reihe. Ein Tippen klappt genau eine Art auf;
+   jede Eingabe ist ein Tippen auf eine Kategorie — keine Skalen, kein
+   Speichern-Knopf.
 
    Dieselbe Erfassung steht auf dem Startschirm (heute) und im Blatt eines
    anderen Tages (aus dem Kalender). Sie weiß nichts vom Speicher: `k`
@@ -28,7 +28,7 @@ const ART = {
   selbst: { icon: "✨", name: "Selbst" },
 };
 
-/** Steht an dem Tag schon etwas in dieser Art? Dann ist sie offen. */
+/** Steht an dem Tag schon etwas in dieser Art? */
 function hatWert(art, e) {
   if (art === "stimmung") return !!e.stimmung;
   if (art === "schlaf") return e.schlafDauer !== undefined || SCHLAF_TEILE.some((x) => e[x.id]);
@@ -38,45 +38,43 @@ function hatWert(art, e) {
   return AMPEL_SYSTEME[art].some((id) => e[id]);
 }
 
+/* Welche Art gerade aufgeklappt ist — immer höchstens eine, je Tag. Eine
+   Ansichtssache, kein Datum: sie steht neben dem Zustand, nicht darin. */
+let auf = { tag: null, art: null };
+
 /**
- * @param k {tag, eintrag(): Tagebuch-Eintrag des Tages, lassen: [{id, name}],
- *           offen: [Arten], schreibe(was), zeigeArt(art, an), heute: bool}
+ * Eine Reihe Vorschläge; ein Tippen klappt genau einen auf, ein zweites
+ * klappt ihn wieder zu. Was schon festgehalten ist, zeigt sich im
+ * Vorschlag selbst (das Gesicht, ein Häkchen) — so bleibt die Seite ruhig.
+ * @param k {tag, eintrag(), lassen: [{id, name}], schreibe(was), neu(), heute}
  */
 export function erfassung(k) {
   const e = k.eintrag();
   const arten = ERFASSUNG.filter((a) => a !== "konsum" || k.lassen.length);
-  const offen = new Set([...k.offen, ...arten.filter((a) => hatWert(a, e))]);
+  if (auf.tag !== k.tag) auf = { tag: k.tag, art: null };
   const w = el("div", "erfassung");
-
-  for (const art of arten.filter((a) => offen.has(a))) w.append(feld(art, k, e));
-
-  const rest = arten.filter((a) => !offen.has(a));
-  if (rest.length) {
-    const h = el("div", "erfassung-hinzu");
-    h.append(el("p", "rubrik", offen.size ? "Mehr festhalten" : "Was möchtest du festhalten?"));
-    const r = el("div", "erfassung-vorschlaege");
-    for (const art of rest) {
-      const b = knopf("", "erfassung-vorschlag", () => k.zeigeArt(art, true));
-      b.dataset.focus = `hinzu-${art}`;
-      b.append(el("span", "erfassung-icon", ART[art].icon), el("span", null, ART[art].name));
-      r.append(b);
-    }
-    h.append(r);
-    w.append(h);
+  const r = el("div", "erfassung-vorschlaege");
+  for (const art of arten) {
+    const offen = auf.art === art, da = hatWert(art, e);
+    const b = knopf("", "erfassung-vorschlag", () => { auf = { tag: k.tag, art: offen ? null : art }; k.neu(); });
+    b.dataset.focus = `hinzu-${art}`;
+    b.setAttribute("aria-expanded", offen);
+    if (da) b.dataset.da = "";
+    b.append(el("span", "erfassung-icon", art === "stimmung" && e.stimmung ? GESICHTER[e.stimmung - 1] : ART[art].icon),
+      el("span", null, ART[art].name));
+    if (da && art !== "stimmung") b.append(el("span", "erfassung-da", "✓"));
+    r.append(b);
   }
+  w.append(r);
+  if (auf.art && arten.includes(auf.art)) w.append(feld(auf.art, k, e));
   return w;
 }
 
-/* Ein Feld: Überschrift mit Symbol, rechts ein leises „ausblenden". */
+/* Das aufgeklappte Feld. */
 function feld(art, k, e) {
   const f = el("section", "erfassung-feld");
   f.dataset.art = art;
-  const kopf = el("div", "erfassung-kopf");
-  kopf.append(el("span", "erfassung-icon", ART[art].icon), el("h3", null, ART[art].name));
-  const weg = knopf("×", "erfassung-weg", () => k.zeigeArt(art, false));
-  weg.setAttribute("aria-label", `${ART[art].name} ausblenden`);
-  kopf.append(weg);
-  f.append(kopf);
+  f.setAttribute("aria-label", ART[art].name);
   f.append(...INHALT[art](k, e));
   return f;
 }

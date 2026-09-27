@@ -4,7 +4,7 @@
    die eingeschalteten Bausteine. */
 
 import { el, knopf, kopf, wasText, faerbe, plusTracker } from "./teile.js";
-import { oben, unten } from "../bausteine/index.js";
+import { oben } from "../bausteine/index.js";
 
 export function render(api) {
   const { zustand: z, VERZICHTE } = api;
@@ -34,7 +34,5 @@ export function render(api) {
     s.append(zeile);
   }
   if (api.offen("tracker")) s.append(plusTracker(api, "+ weiterer Tracker"));
-  const u = unten(api);
-  if (u) s.append(u);
   return s;
 }

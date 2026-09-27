@@ -29,14 +29,6 @@ export function monat(api) {
      gibt es auf Antippen. Der Tag selbst steht darunter (heute()). */
   s.append(el("p", "monat-commitment serif", api.commitmentSatz()), kopf(m), woche(api, m));
 
-  if (api.aktiv("lauf")) {
-    const n = api.serie(), best = api.besterLauf();
-    const l = el("p", "monat-lauf leise");
-    l.append(el("span", null, `${n} ${n === 1 ? "Tag" : "Tage"} am Stück`));
-    if (best > n) l.append(el("span", null, `längster Lauf ${best}`));
-    l.append(el("span", "monat-satz", api.tagessatz()));
-    s.append(l);
-  }
   return s;
 }
 
@@ -73,31 +65,36 @@ function woche(api, m) {
   const w = el("div", "woche-streifen");
   const g = tage(api, m.zellen.slice(start, start + 7), { id: "dabei" });
   g.setAttribute("aria-label", "Diese Woche");
-  const mehr = knopf("Ganzer Monat ›", "text klein woche-monat", () => api.monatZeigen());
+  const mehr = knopf("Ganzer Monat ›", "text klein woche-monat", () => api.seite("monat"));
   mehr.dataset.focus = "monat-zeigen";
   w.append(g, mehr);
   return w;
 }
 
-/* Der ganze Monat, als Blatt: jeder Tag antippbar, ab Schicht 3 durch jede
-   Ebene lesbar. `neu` zeichnet das Blatt nach einem Wechsel der Ebene neu. */
-export function monatBlatt(api, neu) {
+/* Der ganze Monat: jeder Tag antippbar, die Etappe, ab Schicht 3 durch jede
+   Ebene lesbar. `neu` zeichnet nach einem Wechsel der Ebene neu. */
+export function monatInhalt(api, neu) {
   const m = api.monat();
   const schichten = api.schichten();
   const S = (api.ab(3) && schichten.find((x) => x.id === schicht)) || schichten[0];
-  const k = el("div", "bogen-inhalt");
   const s = el("section", "monat monat-blatt");
   s.dataset.schicht = S.id;
   s.style.setProperty("--schicht", S.farbe);
-  s.append(el("p", "rubrik", "Dein Oktober"), kopf(m), etappe(api));
+  s.append(kopf(m), etappe(api));
   if (api.ab(3)) s.append(ebenenWahl(api, schichten, S, neu));
   const g = tage(api, m.zellen, S);
   g.setAttribute("aria-label", m.phase === "vor"
     ? `Oktober, noch nicht begonnen. Vorlauf: ${m.vorlauf} ${m.vorlauf === 1 ? "Tag" : "Tage"} dabei.`
     : `Oktober: ${m.dabei} von ${m.phase === "im" ? m.tag : 31} Tagen dabei.`);
   s.append(g, el("p", "leise klein", "Tipp einen Tag an, um zu sehen, was da steht, oder um etwas nachzutragen."));
-  k.append(s);
-  return k;
+  if (api.aktiv("lauf")) {
+    const n = api.serie(), best = api.besterLauf();
+    const l = el("p", "monat-lauf leise");
+    l.append(el("span", null, `${n} ${n === 1 ? "Tag" : "Tage"} am Stück`));
+    if (best > n) l.append(el("span", null, `längster Lauf ${best}`));
+    s.append(l);
+  }
+  return s;
 }
 
 /* Die große Zahl zählt, was wächst: im Oktober die Tage dabei, davor der

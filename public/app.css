@@ -834,3 +834,41 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
 .selbst-chip:disabled { opacity:.4; }
 .tag-blatt > .gross { width:100%; margin-top:8px; }
 .tag-blatt .erfassung-feld { background:var(--paper); }
+
+/* ---- Die Leiste unten: Heute, Monat, Tagebuch, Mehr --------------------- */
+#buehne[data-seite]:not([data-seite=""]) { padding-bottom:calc(96px + env(safe-area-inset-bottom)); }
+.leiste { position:fixed; left:0; right:0; bottom:0; z-index:40; display:grid; grid-template-columns:repeat(4, 1fr);
+  padding:6px max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-bottom)); border-top:1px solid var(--linie);
+  background:color-mix(in oklab, var(--paper) 88%, transparent); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+.leiste-knopf { display:grid; justify-items:center; gap:2px; min-height:48px; padding:4px 0; border:0; background:none; color:var(--leise); font:500 11px var(--sans); }
+.leiste-knopf svg { width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.leiste-knopf[aria-current="page"] { color:var(--moss); }
+.leiste-knopf[aria-current="page"] svg { stroke-width:2.1; }
+@media (min-width:720px) { .leiste { left:50%; right:auto; width:480px; transform:translateX(-50%); border:1px solid var(--linie); border-bottom:0; border-radius:20px 20px 0 0; } }
+
+/* ---- Seiten ------------------------------------------------------------- */
+.seite { display:grid; gap:16px; }
+.seiten-kopf { display:grid; gap:4px; padding-top:8px; }
+.seiten-titel { margin:0; font-size:30px; font-weight:500; }
+.seiten-zurueck { justify-self:start; color:var(--leise) !important; padding-left:0 !important; }
+.seiten-hilfe { margin:-8px 0 0; }
+.mehr-liste { display:grid; gap:0; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); overflow:hidden; }
+.mehr-zeile { display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:12px; min-height:60px; padding:10px 16px; text-align:left;
+  border:0; border-bottom:1px solid var(--linie); background:none; }
+.mehr-zeile:last-child { border-bottom:0; }
+.mehr-icon { font-size:22px; text-align:center; }
+.mehr-text { display:grid; gap:1px; min-width:0; }
+.mehr-titel { font:500 16px var(--sans); }
+.mehr-pfeil { color:var(--leise); font-size:20px; }
+.mehr-zeile[data-zu] .mehr-titel { color:var(--leise); }
+.mehr-zeile[data-zu] .mehr-pfeil { font-size:14px; opacity:.7; }
+.zu-karte { display:grid; gap:12px; padding:20px; border:1px dashed var(--linie-stark); border-radius:var(--radius-card); }
+.zu-karte p { margin:0; }
+.seite > .gross { justify-self:stretch; }
+
+/* ---- Erfassung als eine Reihe, ein Feld offen --------------------------- */
+.erfassung-vorschlag[data-da] { border-style:solid; border-color:color-mix(in oklab, var(--moss) 50%, var(--linie)); background:color-mix(in oklab, var(--moss) 6%, var(--surface)); }
+.erfassung-vorschlag[aria-expanded="true"] { border-style:solid; border-color:var(--ink); background:var(--surface); }
+.erfassung-da { color:var(--moss); font-weight:700; }
+/* Die Dev-Uhr (nur Vorschau) sitzt über der Leiste, nicht auf ihr. */
+html body:has(.leiste) #dev-uhr { bottom:calc(78px + env(safe-area-inset-bottom)); }
