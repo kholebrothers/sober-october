@@ -11,15 +11,35 @@ und beliebig viele **eigene Tracker** mit selbst geschriebenem Namen, etwa „Al
 jederzeit dazu, über ⋯ → „Tracker wählen oder hinzufügen“. Die Namen bleiben im Gerät; an kur-core
 gingen nur die Schlüssel (`eigen`, `eigen-…`).
 
-**Die App fängt klein an.** Zu sehen sind nur die Tracker, je mit „habe“ und „würde gern“, dazu dein
-Leitgedanke. **Loggen ist ein Tippen:** es notiert sofort; die Meldung danach bietet „Details“ (die
-Fragen, freiwillig) und „Zurück“ (vertippt). Einen Knopf „heute ohne“ oder „frei nehmen“ gibt es
-nicht: ein Tag ohne Eintrag ist ein freier Tag. Alles Weitere ist ein **Baustein**, den man unter ⋯ dazunimmt:
+**Im Zentrum steht der Monat.** Oben in jeder Ansicht: der Oktober als Kalender und darunter
+ein Knopf, **„Heute bin ich dabei“**. Ein Tippen, und das Feld des Tages füllt sich, die Zahl der
+Tage dabei springt, das Telefon tippt kurz zurück; an den Stufen 5, 8, 13, 21 und 34 leuchtet der
+Monat auf. Kurz vor dem Oktober zählen die Tage davor als Vorlauf. Ein vergangener Tag ohne Eintrag
+ist ein leises graues Feld: nichts bekannt, kein Urteil.
+
+Über dem Kalender die **Etappe** (aus lifetracker): die Kette des laufenden Laufs, eingerastet auf
+der Fibonacci-Leiter 5, 8, 13, 21, 34 — „6 von 8 Tagen“. Unter dem Knopf eine Zeile **„Was hat dich
+heute getragen?“** und der **Tages-Check-in**: die Systeme unter den Symptomen, je fünf Stufen —
+Körper (Schlaf, Verdauung, Bewegung, Ernährung) und Antrieb (Stimmung, Antrieb, Motivation, Lust),
+dazu die Selbst-Markierungen aus lifetracker. **Verlauf und Zusammenhänge** zeigt sie über den Monat
+neben Drang und Geschehen und sagt in Sätzen, was zusammenfällt. Ist gestern leer geblieben, lässt er sich nachtragen. Unten steht **Dein Tagebuch**: jeder
+Tag eine Zeile. Das alles bleibt auf dem Gerät. **Farbe heißt Ebene:** Der Monat lässt sich durch jede
+Ebene lesen — Dabei (Grün), Körper (Blau), Antrieb (Gelb), Selbst (Lila), Drang (Cyan), Geschehen
+(Orange); siehe [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
+
+Darunter die Tracker, je eine Kachel für „habe“ und darunter „würde gern“. **Notieren ist ein
+Tippen:** es notiert sofort und zählt den Tag genauso; die Meldung danach bietet „Details“ (die
+Fragen, freiwillig) und „Rückgängig“ (vertippt). Die Kacheln bleiben ruhig — Farbe nur als Streifen,
+die Zahl in Tinte —, denn Beobachten soll sich nicht wie Belohnung anfühlen, und nicht wie Strafe.
+Einen Knopf „heute ohne“ gibt es nicht. Alles Weitere ist ein **Baustein**, den man unter ⋯ dazunimmt:
 
 | Baustein | Wo | Was |
 |---|---|---|
+| Gemeinsam *(an)* | unter dem Monat | mit anderen durch den Oktober: wer heute dabei ist, jede Reise als Reihe |
 | Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
-| Lauf und Kette | oben | Tage dabei, die Kette auf der Fibonacci-Leiter 5, 8, 13, 21, 34, Satz zum Tag, kleine Momente. Die Zahl ist zugleich „Ich bin da“: antippen, und der Tag zählt — jede andere Notiz zählt ihn genauso |
+| Lauf | im Monat | Tage am Stück, der längste Lauf und ein Satz zum Tag (die Etappe steht immer da) |
+| Verlauf und Zusammenhänge *(an)* | unten | Körper und Antrieb über den Monat neben Drang und Geschehen; was zusammenfällt |
+| Dein Tagebuch *(an)* | unten | jeder Tag eine Zeile: Satz, Stimmung, Selbst; fehlende Tage nachtragen |
 | Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
 | Wissen und Rückblick | unten | Ebenen, die sich durch Benutzen öffnen; der Rückblick in Wochen |
 | Abends ruhiger *(an)* | Darstellung | nach Sonnenuntergang eine Spur ruhiger |
@@ -37,14 +57,22 @@ welche Fragen er beantwortet hat und welche offen sind.
 
 ## Wo die Daten liegen
 
-**Nur im Browser** (localStorage, Schlüssel `sober-october`). Es gibt keinen Server, kein Konto und
-keine Anfragen nach außen. In den Einstellungen lässt sich alles auf dem Gerät löschen.
+**Was du notierst, bleibt im Browser** (localStorage, Schlüssel `sober-october`): Einträge, Gefühle,
+Antworten, Leitgedanken, die Namen eigener Tracker. In den Einstellungen lässt sich alles auf dem Gerät
+löschen.
 
-Später soll die **Teilnahme** — und nur sie — auf einen Server nach dem Muster von kur-core, für die
-Community-Erfahrung der Vier-Wochen-Kur (ein Link, kein Login, eigene und kollektive Tage). Gemeint
-sind Name, Commitment und die Tage, an denen etwas notiert wurde. Einträge, Gefühle und Reflexionen
-bleiben im Gerät. `fuerKern()` in `public/app/logik.js` liefert diese Teilnahme schon heute. Die Tests
-prüfen sie gegen den Wertevertrag von kur-core.
+**Gemeinsam** (Baustein, von selbst an): Die Reise geht jede:r für sich, aber nicht allein. Wer
+mitgeht, gibt einen Vornamen an; ein Link, kein Login, wie bei kur-core. Die Gruppe sieht dann, wer
+heute dabei ist, und jede Reise als eine Reihe. Auf den Server
+(`server/`, eine D1) kommt dafür genau das, was `fuerKern()` hergibt: **der Name, was man sein lässt
+(nur als Schlüssel — eigene Tracker bleiben namenlos) und die Tage „dabei“**. Der Server nimmt auch
+nichts anderes an (`server/api.js`). Wer die Gruppe verlässt, dessen Name und Tage werden gelöscht.
+Höchstens 20 Leute; wer den Link hat, kann als jede Person schreiben — das Muster ist für Leute, die
+sich kennen.
+
+Live und Vorschauen teilen sich eine D1, getrennt über den Raum: die Live-Adresse ist `live`, alle
+anderen (Vorschau, localhost) sind `vorschau`. Ist der Server nicht erreichbar, fehlt nur die Karte
+„Gemeinsam“; alles andere läuft offline weiter.
 
 ## Aufbau
 
@@ -58,11 +86,15 @@ ausgeliefert, wie es im Repo steht.
     public/app/haupt.js        Verdrahtung: Wahl, Bogen, Einstellungen, render()
     public/app/ebenen.js       Inhalte der Ebenen (Texte ungeprüft, siehe dort)
     public/app/ansichten/      knopf.js, blatt.js, faden.js und teile.js (Kopfzeile, Helfer)
-    public/app/bausteine/      oben.js (Leitgedanke, Lauf, freie Tage), unten.js, heatmap.js
+    public/app/bausteine/      oben.js (Leitgedanke), monat.js (Kalender, „Heute bin ich dabei“, Lauf), unten.js, heatmap.js
     public/kern/               aus kur-core kopiert: datum.js, uhr.js (Dev-Uhr); sonne.js aus lifetracker
     public/sw.js               Service Worker; SCHALE muss jede Datei nennen (test/pwa.test.js)
-    public/knopf/              aus smokefree kopiert: der Zählknopf
-    test/                      node --test; kur-core-wertevertrag.js ist eine Kopie
+    public/app/gemeinsam.js    Gruppe: Abgleich mit dem Server und Anzeige — ohne DOM, getestet
+    public/app/netz.js         /api/: Abruf mit ETag, Senden
+    server/                    Worker nur für /api/*, API und Schema der Teilnahme (nach kur-core)
+    test/                      node --test; kur-core-wertevertrag.js und d1-attrappe.js sind Kopien
+
+UX-Bewertung und gemeinsame Gestaltungsregeln: [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 
 Woher was stammt: [docs/HERKUNFT.md](docs/HERKUNFT.md).
 
@@ -97,3 +129,8 @@ z3e. Danach:
     gh secret set CLOUDFLARE_API_TOKEN -R kholebrothers/sober-october
 
 Solange das Secret fehlt, scheitert der Schritt „Live“ bzw. „Vorschau“. Die Tests laufen trotzdem.
+
+**Gemeinsam braucht eine D1, die App nicht.** Vorerst ist keine gebunden: der Worker antwortet
+`keine-datenbank`, und die Karte „Gemeinsam“ bleibt unsichtbar. Einschalten: dem Token *D1 · Edit*
+geben und die Bindung einfügen, die in `wrangler.jsonc` im Kommentar steht. Wrangler legt die D1 beim
+nächsten Ausliefern an, die Tabellen legt der Worker selbst an — kein Migrationsschritt.

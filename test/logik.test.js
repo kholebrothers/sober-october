@@ -8,7 +8,8 @@ import {
   schalteFrei, istFrei, tagessatz, moment, wochen, wasTraegt,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
   BAUSTEINE, aktiv, schalteBaustein,
-  istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN,
+  istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN, monat,
+  SCHICHTEN, STIMMUNG, SELBST, schreibeTag, tagebuchZeilen, SYSTEME, zusammenhaenge, verlauf, eingeschaetzt,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -55,9 +56,9 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
   assert.ok(neu.some((e) => e.id === "routine"));
 });
 
-test("die App fängt klein an: nur Leitgedanke und Abendruhe sind von selbst an", () => {
+test("die App fängt klein an: Leitgedanke, Gemeinsam, Tagebuch, Verlauf und Abendruhe sind von selbst an", () => {
   const z = neuerZustand();
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "abends"]);
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);
   schalteBaustein(z, "gibtsnicht", true);
@@ -466,4 +467,124 @@ test("drei helle Farbwelten; die gewählte übersteht Speichern, Unbekanntes wir
   z.farbe = "flieder";
   assert.equal(aus(JSON.stringify(z)).farbe, "flieder");
   assert.equal(aus(JSON.stringify({ ...z, farbe: "neon" })).farbe, "papier");
+});
+
+test("der Monat: der Oktober als Kalender, Montag vorn, ein Tippen macht den Tag voll", () => {
+  const z = mit("kaffee");
+  const m = monat(z, "2026-10-14");
+  assert.equal(m.phase, "im");
+  assert.equal(m.zellen[0].tag, "2026-09-28", "der 1. Oktober 2026 ist ein Donnerstag");
+  assert.deepEqual(m.zellen.slice(0, 3).map((c) => c.art), ["rand", "rand", "rand"]);
+  assert.equal(m.zellen.filter((c) => c.art === "okt").length, 31);
+  assert.equal(m.dabei, 0);
+  const heute = m.zellen.find((c) => c.heute);
+  assert.deepEqual([heute.nr, heute.stand], [14, "offen"]);
+  assert.equal(m.zellen.find((c) => c.tag === "2026-10-13").stand, "leer", "vergangen ohne Eintrag: nichts bekannt");
+  assert.equal(m.zellen.find((c) => c.tag === "2026-10-15").stand, "kommt");
+
+  schalteDa(z, "2026-10-14");
+  notiere(z, { tag: "2026-10-02", zeit: "09:00", verzicht: "kaffee", art: "habe" });
+  const n = monat(z, "2026-10-14");
+  assert.equal(n.dabei, 2, "ein Konsum ist eine Notiz, der Tag zählt trotzdem");
+  assert.equal(n.zellen.find((c) => c.heute).stand, "dabei");
+});
+
+test("der Monat kurz vor dem Oktober: die Tage davor sind Vorlauf", () => {
+  const z = mit("kaffee");
+  schalteDa(z, "2026-09-26");
+  const m = monat(z, "2026-09-27");
+  assert.equal(m.phase, "vor");
+  assert.equal(m.zellen[0].tag, "2026-09-21", "ab dem Montag dieser Woche");
+  assert.ok(m.zellen.filter((c) => c.art !== "okt").every((c) => c.art === "vorlauf"));
+  assert.equal(m.vorlauf, 1);
+  assert.equal(m.dabei, 0);
+  assert.equal(monat(z, "2026-08-01").zellen.filter((c) => c.art === "vorlauf").length, 0, "Wochen vorher noch kein Vorlauf");
+});
+
+test("das Tagebuch: Stimmung, Selbst, getragen — und der Tag zählt", () => {
+  const z = mit("kaffee");
+  const t = "2026-10-14";
+  schreibeTag(z, t, { stimmung: 4, selbst: [6, 6, 1, 3], getragen: "  der Spaziergang  " });
+  assert.deepEqual(z.tagebuch[t], { stimmung: 4, selbst: [6, 1], getragen: "der Spaziergang" }, "höchstens zwei Selbst");
+  assert.equal(hatEintrag(z, t), true, "einordnen zählt den Tag wie eine Notiz");
+  assert.deepEqual(fuerKern(z, t).eintraege, [{ date: t, habit: "dabei", value: true }]);
+  assert.ok(!JSON.stringify(fuerKern(z, t)).includes("Spaziergang"), "was im Tagebuch steht, bleibt im Gerät");
+  schreibeTag(z, t, { getragen: "" });
+  assert.equal(z.tagebuch[t].getragen, undefined);
+  schreibeTag(z, t, { stimmung: 0, selbst: [] });
+  assert.equal(z.tagebuch[t], undefined, "leer heißt weg");
+});
+
+test("das Tagebuch übersteht Speichern; Unsinn wird verworfen", () => {
+  const z = mit("kaffee");
+  schreibeTag(z, "2026-10-02", { stimmung: 1, selbst: [0] });
+  assert.deepEqual(aus(JSON.stringify(z)).tagebuch, z.tagebuch);
+  const roh = { ...z, tagebuch: { "gestern": { stimmung: 3 }, "2026-10-03": { stimmung: 9, selbst: [99, "x"], getragen: 5 } } };
+  assert.deepEqual(aus(JSON.stringify(roh)).tagebuch, {});
+});
+
+test("die Ebenen: jede eine Farbe, jede ein Wert von 0 bis 1", () => {
+  const z = mit("kaffee");
+  const t = "2026-10-14";
+  schreibeTag(z, t, { stimmung: STIMMUNG.length, selbst: [2] });
+  notiere(z, { tag: t, zeit: "10:00", verzicht: "kaffee", art: "drang" });
+  schreibeTag(z, t, { werte: { schlaf: 1, bewegung: 3 } });
+  const w = Object.fromEntries(SCHICHTEN.map((s) => [s.id, s.wert(z, t)]));
+  assert.deepEqual(w, { dabei: 1, koerper: 0.4, antrieb: 1, selbst: 0.5, drang: 1 / 3, geschehen: 0 },
+    "Körper und Antrieb sind der Mittelwert der angegebenen Systeme");
+  assert.equal(new Set(SCHICHTEN.map((s) => s.farbe)).size, SCHICHTEN.length, "keine Farbe doppelt");
+  assert.ok(!SCHICHTEN.some((s) => /rot|red/.test(s.farbe)), "kein Rot");
+  assert.equal(SELBST.length, 11);
+});
+
+test("das Tagebuch in Zeilen: jeder Tag eine, neu nach alt, leere Tage auch", () => {
+  const z = mit("kaffee");
+  schreibeTag(z, "2026-10-02", { stimmung: 2, selbst: [6], getragen: "Tee statt Kaffee" });
+  schalteDa(z, "2026-10-03");
+  const zeilen = tagebuchZeilen(z, "2026-10-04");
+  assert.deepEqual(zeilen.map((x) => x.tag), ["2026-10-04", "2026-10-03", "2026-10-02", "2026-10-01"]);
+  assert.deepEqual(zeilen.map((x) => x.dabei), [false, true, true, false]);
+  assert.deepEqual([zeilen[2].kopf, zeilen[2].getragen, zeilen[2].stimmung, zeilen[2].selbst], ["Tag 2", "Tee statt Kaffee", 2, ["Selbstfürsorge"]]);
+  assert.equal(zeilen[0].heute, true);
+  schalteDa(z, "2026-09-20");
+  assert.equal(tagebuchZeilen(z, "2026-10-04").at(-1).tag, "2026-09-20", "wer schon im Vorlauf war, sieht ihn");
+  assert.equal(tagebuchZeilen(z, "2026-12-31").length, 45, "höchstens 45 Tage");
+});
+
+test("die Systeme unter den Symptomen: acht, zwei Gruppen, je fünf Stufen", () => {
+  assert.deepEqual(SYSTEME.map((x) => x.id), ["schlaf", "verdauung", "bewegung", "ernaehrung", "stimmung", "antrieb", "motivation", "lust"]);
+  const z = mit("kaffee");
+  schreibeTag(z, "2026-10-05", { werte: { schlaf: 2, lust: 5, verdauung: 9, erfunden: 3 } });
+  assert.deepEqual(z.tagebuch["2026-10-05"], { schlaf: 2, lust: 5 }, "Unbekanntes und Unsinn fallen weg");
+  assert.equal(eingeschaetzt(z, "2026-10-05"), 2);
+  assert.deepEqual(aus(JSON.stringify(z)).tagebuch, z.tagebuch);
+  schreibeTag(z, "2026-10-05", { werte: { schlaf: 0, lust: 0 } });
+  assert.equal(z.tagebuch["2026-10-05"], undefined);
+});
+
+test("Zusammenhänge: erst mit genug Tagen auf beiden Seiten, dann nach Größe", () => {
+  const z = mit("kaffee");
+  const tage = [];
+  for (let d = 1; d <= 8; d++) {
+    const t = okt(d);
+    tage.push(t);
+    const schlecht = d <= 4;
+    schreibeTag(z, t, { werte: { schlaf: schlecht ? 1 : 5, stimmung: 3 } });
+    for (let i = 0; i < (schlecht ? 3 : 0); i++) notiere(z, { tag: t, zeit: "10:00", verzicht: "kaffee", art: "drang" });
+  }
+  const zs = zusammenhaenge(z, tage);
+  assert.equal(zs.length, 1, "Stimmung immer mittel: kein Vergleich");
+  assert.deepEqual([zs[0].system.id, zs[0].ziel, zs[0].unten, zs[0].oben],
+    ["schlaf", "drang", { tage: 4, schnitt: 3 }, { tage: 4, schnitt: 0 }]);
+  assert.deepEqual(zusammenhaenge(z, tage.slice(0, 5)), [], "nur ein Tag mit gutem Schlaf: zu wenig");
+});
+
+test("der Verlauf: je System eine Reihe, Drang und Geschehen darunter", () => {
+  const z = mit("kaffee");
+  schreibeTag(z, okt(2), { werte: { schlaf: 5 } });
+  notiere(z, { tag: okt(1), zeit: "10:00", verzicht: "kaffee", art: "habe" });
+  const v = verlauf(z, [okt(1), okt(2)]);
+  assert.deepEqual(v.map((r) => r.id).slice(-3), ["lust", "drang", "geschehen"]);
+  assert.deepEqual(v[0].werte, [0, 1]);
+  assert.deepEqual(v.at(-1).werte, [1 / 3, 0]);
 });

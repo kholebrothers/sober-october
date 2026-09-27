@@ -11,7 +11,7 @@
  * VORRAT hochzählen, wenn sich die Liste ändert — dann wird alles Alte beim
  * nächsten Start weggeräumt. test/pwa.test.js prüft, dass SCHALE vollständig ist.
  */
-const VORRAT = "sober-october-2";
+const VORRAT = "sober-october-7";
 
 const SCHALE = [
   "/",
@@ -22,19 +22,23 @@ const SCHALE = [
   "/app/logik.js",
   "/app/speicher.js",
   "/app/ebenen.js",
+  "/app/gemeinsam.js",
+  "/app/netz.js",
   "/app/ansichten/blatt.js",
   "/app/ansichten/faden.js",
   "/app/ansichten/knopf.js",
   "/app/ansichten/teile.js",
   "/app/bausteine/index.js",
   "/app/bausteine/oben.js",
+  "/app/bausteine/monat.js",
+  "/app/bausteine/gemeinsam.js",
+  "/app/bausteine/tagebuch.js",
+  "/app/bausteine/verlauf.js",
   "/app/bausteine/unten.js",
   "/app/bausteine/heatmap.js",
   "/kern/datum.js",
   "/kern/sonne.js",
   "/kern/uhr.js",
-  "/knopf/knopf.css",
-  "/knopf/knopf.js",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/icon-maskable-512.png",
@@ -74,6 +78,8 @@ self.addEventListener("fetch", (ev) => {
   if (anfrage.method !== "GET") return;
   const url = new URL(anfrage.url);
   if (url.origin !== self.location.origin) return;
+  // Die Gruppe kommt immer frisch vom Server, nie aus dem Vorrat.
+  if (url.pathname.startsWith("/api/")) return;
 
   if (url.pathname.startsWith("/icons/")) {
     ev.respondWith(caches.match(anfrage).then((t) => t || netzUndMerken(anfrage)));

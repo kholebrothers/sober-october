@@ -7,17 +7,20 @@
    Drang ohne Zwischenschritt, die vier Grundgefühle.
    ===================================================================== */
 
-import { heute as heuteTag } from "../kern/datum.js";
+import { heute as heuteTag, verschiebe } from "../kern/datum.js";
 import {
   FRAGEN, EBENEN, ANSICHTEN, FARBWELTEN, BAUSTEINE, aktiv, schalteBaustein, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
   notiere, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   istDa, schalteDa, hatEintrag, ergaenze, entferne,
-  tagesKopf,
+  tagesKopf, monat, besterLauf, SCHICHTEN, STIMMUNG, SELBST, SELBST_MAX, schreibeTag, tagebuchZeilen,
+  SYSTEME, GRUPPEN, STUFEN, eingeschaetzt, verlauf, zusammenhaenge,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
+import { holen, senden, erreichbar } from "./netz.js";
+import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { faerbe } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
@@ -33,24 +36,35 @@ const heute = () => heuteTag();
 const jetztZeit = () => new Date().toTimeString().slice(0, 5);
 
 /* Jede Änderung geht hierdurch. Sie vergleicht den Lauf davor und danach:
-   ist heute gerade dazugekommen, pulsiert sein Glied einmal; erreichen die
-   Tage dabei eine Stufe der Leiter, leuchtet der Kopf kurz auf und der Satz
-   zur Stufe kommt zurück, damit der Aufrufer ihn mit seiner Meldung sagt. */
+   ist heute gerade dazugekommen, füllt sich sein Feld im Monat sichtbar, die
+   Zahl springt, und das Telefon tippt einmal leise zurück. Erreichen die
+   Tage dabei eine Stufe der Leiter (5, 8, 13, 21, 34), leuchtet der Monat
+   kurz auf. Zurück kommt der Moment, damit der Aufrufer ihn mit seiner
+   Meldung sagt. */
 function aendern(f) {
   const stand = () => ({ lauf: lauf(z, heute()), serie: serie(z, heute()) });
   const vor = gewaehlt(z).length ? stand() : null;
   f();
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
-  if (!vor || !gewaehlt(z).length || wahlOffen || !aktiv(z, "lauf")) return "";
+  planeAbgleich();
+  if (!vor || !gewaehlt(z).length || wahlOffen) return null;
   const m = moment(vor, stand());
-  if (m.heuteNeu) document.querySelector(".glied[data-heute]")?.classList.add("pling");
-  if (m.stufe) document.querySelector(".lauf")?.classList.add("blitz");
-  return m.satz;
+  if (m.heuteNeu) {
+    document.querySelector(".monat-tag[data-heute]")?.classList.add("pling");
+    document.querySelector(".monat-zahl")?.classList.add("hoch");
+    document.querySelector(".da-knopf")?.classList.add("jetzt");
+    spueren(m.stufe ? [14, 70, 22] : 14);
+  }
+  if (m.stufe) document.querySelector(".monat")?.classList.add("blitz");
+  return m;
 }
 
-/** Eine Meldung, an die ein Stufensatz angehängt wird, wenn es einen gibt. */
-const mitMoment = (text, satz) => (satz ? (text ? `${text} ${satz}` : satz) : text);
+/* Ein kurzes Tippen zurück, wo das Gerät es kann (Android; iOS schweigt). */
+const spueren = (muster) => { try { navigator.vibrate?.(muster); } catch {} };
+
+/** Eine Meldung, an die der Satz zur Stufe angehängt wird, wenn es einen gibt. */
+const mitMoment = (text, m) => (m?.satz ? (text ? `${text} ${m.satz}` : m.satz) : text);
 
 /* ---- Was die Ansichten benutzen ---------------------------------------- */
 
@@ -66,20 +80,77 @@ const api = {
   stand: (id) => stand(z, id),
   serie: () => serie(z, heute()),
   lauf: () => lauf(z, heute()),
+  monat: () => monat(z, heute()),
+  besterLauf: () => besterLauf(z, heute()),
+  istDa: () => istDa(z, heute()),
   eintragen,
   leitgedanke: () => leitgedankeAm(z, heute()),
   tagessatz: () => tagessatz(z, heute()),
   leitgedankeBearbeiten,
   istFrei: () => istFrei(z, heute()),
   hatEintrag: () => hatEintrag(z, heute()),
-  /* „Ich bin da": die Zahl oben. Steht heute schon eine Notiz, zählt der Tag
-     ohnehin — dann gibt es nichts umzuschalten, nur das zu sagen. */
+  /* „Heute bin ich dabei": der Knopf unter dem Monat. Ein zweites Tippen
+     schaltet nicht still zurück — vertippt ist selten, und ein Tag, der
+     einfach wieder verschwindet, fühlt sich schlecht an. Zurück geht es über
+     „Rückgängig" in der Meldung. Steht heute schon eine Notiz, zählt der
+     Tag ohnehin; dann gibt es nichts zu tun, nur das zu sagen. */
   da() {
-    if (!istDa(z, heute()) && vonTag(z, heute()).length) { melde("Der Tag zählt schon — du hast heute etwas notiert."); return; }
-    const satz = aendern(() => schalteDa(z, heute()));
-    melde(mitMoment(istDa(z, heute()) ? "Du bist da. Der Tag zählt." : "Zurückgenommen.", satz));
+    const t = heute();
+    const zurueck = ["Rückgängig", () => { aendern(() => schalteDa(z, t)); melde("Zurückgenommen."); }];
+    if (hatEintrag(z, t)) {
+      spueren(8);
+      if (istDa(z, t) && !vonTag(z, t).length) melde("Heute zählt schon.", [zurueck]);
+      else melde("Heute zählt schon — durch deine Notiz.");
+      return;
+    }
+    const m = aendern(() => schalteDa(z, t));
+    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [["Wie war der Tag?", () => tagEinordnen()], zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
+  schichten: () => SCHICHTEN,
+  schichtWert: (id, tag) => SCHICHTEN.find((x) => x.id === id).wert(z, tag),
+  eingeschaetzt: () => eingeschaetzt(z, heute()),
+  systemeAnzahl: SYSTEME.length,
+  verlauf: (tage) => verlauf(z, tage),
+  zusammenhaenge: (tage) => zusammenhaenge(z, tage),
+  monatsTage: () => monat(z, heute()).zellen.filter((c) => c.art !== "rand").map((c) => c.tag),
+  tagEinordnen: (tag) => tagEinordnen(tag),
+  getragen: () => z.tagebuch[heute()]?.getragen || "",
+  getragenSetzen(text) {
+    const m = aendern(() => schreibeTag(z, heute(), { getragen: text }));
+    melde(mitMoment(z.tagebuch[heute()]?.getragen ? `Im Tagebuch.${m?.heuteNeu ? " Der Tag zählt." : ""}` : "Satz entfernt.", m));
+  },
+  tagebuchZeilen: () => tagebuchZeilen(z, heute()),
+  stimmungWort: (n) => STIMMUNG[n - 1],
+  /* Gestern leer geblieben, aber es gibt schon etwas vorher: dann darf man
+     ihn nachtragen (aus lifetracker, „Noch kurz aufschreiben"). */
+  gesternOffen() {
+    const g = verschiebe(heute(), -1);
+    const imMonat = monat(z, heute()).zellen.some((c) => c.tag === g && c.art !== "rand");
+    const schonDa = [...z.daTage, ...z.ereignisse.map((e) => e.tag), ...Object.keys(z.tagebuch)].some((t) => t < g);
+    return imMonat && schonDa && !hatEintrag(z, g) ? g : null;
+  },
+  gruppe: () => gruppeFuerAnzeige(),
+  mitgehen,
+  binIch(id, name) {
+    aendern(() => { z.gemeinsam = { id, name }; });
+    melde(`Willkommen zurück, ${name}. Dieses Gerät geht jetzt mit.`);
+  },
+  alleinBleiben() {
+    aendern(() => schalteBaustein(z, "gemeinsam", false));
+    melde("Du gehst allein. In den Einstellungen (⋯) kannst du jederzeit mitgehen.");
+  },
+  async linkTeilen() {
+    const url = location.origin + "/";
+    try {
+      if (navigator.share) { await navigator.share({ title: "Sober October", text: "Geh mit mir durch den Oktober.", url }); return; }
+      await navigator.clipboard.writeText(url);
+      melde("Link kopiert. Wer ihn öffnet, kann mitgehen.");
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+      melde(`Der Link: ${url}`);
+    }
+  },
   neuerTracker: () => neuerTracker(),
   springeZu: null,
   oeffneEbene,
@@ -87,11 +158,110 @@ const api = {
   zeichne: () => zeichne(),
 };
 
+/* ---- Gemeinsam ------------------------------------------------------------
+
+   Der Stand der Gruppe kommt vom Server (netz.js). Die Seite wartet nie
+   auf ihn: sie zeichnet sofort und noch einmal, wenn er da ist. Nach jeder
+   Änderung gleicht sie ab, was an den Server muss (gemeinsam.js) — nur
+   Tage dabei und das Commitment, nie was notiert ist. */
+
+let gruppenStand = null;
+
+function gruppeFuerAnzeige() {
+  if (!aktiv(z, "gemeinsam") || !erreichbar || !gruppenStand) return null;
+  const tage = monat(z, heute()).zellen.filter((c) => c.art !== "rand").map((c) => c.tag);
+  const g = gruppe(z, gruppenStand, heute(), tage);
+  return { ...g, ich: binDabei(z, gruppenStand), tage, heuteTag: heute(), heuteSatz: namenListe(g.heute) };
+}
+
+/* Neu zeichnen, aber nicht unter den Fingern weg: wer gerade tippt (den
+   Namen, einen Tracker), behält sein Feld. */
+function zeichneLeise() {
+  const f = document.activeElement;
+  if (f && f.matches("#buehne input")) return;
+  zeichne();
+}
+
+async function aktualisieren() {
+  if (!aktiv(z, "gemeinsam")) return;
+  const vorher = erreichbar;
+  const { stand, neu } = await holen();
+  gruppenStand = stand;
+  if (z.gemeinsam && stand && !binDabei(z, stand)) {
+    // Auf einem anderen Gerät verabschiedet: hier auch.
+    z.gemeinsam = null;
+    sichern(z);
+  }
+  if (neu || vorher !== erreichbar) zeichneLeise();
+}
+
+let abgleichTimer, abgleichLaeuft = false;
+function planeAbgleich() {
+  clearTimeout(abgleichTimer);
+  if (z.gemeinsam && aktiv(z, "gemeinsam")) abgleichTimer = setTimeout(abgleichen, 700);
+}
+
+async function abgleichen() {
+  if (abgleichLaeuft) { planeAbgleich(); return; }
+  abgleichLaeuft = true;
+  try {
+    await aktualisieren();
+    if (!z.gemeinsam || !gruppenStand) return;
+    const a = abgleich(z, gruppenStand, heute());
+    const person = z.gemeinsam.id;
+    for (const t of a.tage) await senden("/api/entry", { person, date: t.date, value: t.value });
+    if (a.commitment) await senden("/api/setting", { person, value: a.commitment, ab: heute() });
+    if (a.tage.length || a.commitment) await aktualisieren();
+  } catch (e) {
+    if (e.schluessel === "person-unbekannt") { z.gemeinsam = null; sichern(z); zeichneLeise(); }
+    // Sonst (offline, Server weg): beim nächsten Mal wieder. Nichts geht verloren,
+    // der Abgleich rechnet jedes Mal neu aus diesem Gerät.
+  } finally {
+    abgleichLaeuft = false;
+  }
+}
+
+const GRUPPEN_FEHLER = {
+  "name-leer": "Wie heißt du? Ein Vorname reicht.",
+  "name-zu-lang": "Ein kürzerer Name, bitte — höchstens 24 Zeichen.",
+  "name-vergeben": "Den Namen gibt es in der Gruppe schon. Bist du das? Dann „Schon dabei, auf einem anderen Gerät?“.",
+  "gruppe-voll": "Die Gruppe ist voll: zwanzig gehen schon mit.",
+  netz: "Gerade kein Netz. Versuch es gleich noch einmal.",
+};
+
+async function mitgehen(name) {
+  try {
+    const p = await senden("/api/einrichtung", { name, commitment: gewaehlt(z) });
+    aendern(() => { z.gemeinsam = { id: p.id, name: p.name }; });
+    melde(`Du gehst mit, ${p.name}. Schön, dass du da bist.`);
+    await abgleichen();
+  } catch (e) {
+    melde(GRUPPEN_FEHLER[e.schluessel] || "Das hat nicht geklappt. Versuch es gleich noch einmal.");
+  }
+}
+
+async function gruppeVerlassen() {
+  try {
+    await senden("/api/abschied", { person: z.gemeinsam.id });
+  } catch (e) {
+    if (e.schluessel !== "person-unbekannt") { melde(GRUPPEN_FEHLER[e.schluessel] || "Das hat nicht geklappt."); return; }
+  }
+  bogen.close();
+  aendern(() => { z.gemeinsam = null; });
+  await aktualisieren();
+  melde("Du bist aus der Gruppe gegangen. Dein Name und deine Tage sind vom Server gelöscht.");
+}
+
 /* ---- Der Bogen ---------------------------------------------------------- */
 
 const bogen = $("#bogen");
 
 function zeigeBogen(knoten) {
+  const titel = knoten.querySelector("h2") || knoten.querySelector(".rubrik");
+  if (titel) {
+    titel.id = "bogen-titel";
+    bogen.setAttribute("aria-labelledby", titel.id);
+  } else bogen.removeAttribute("aria-labelledby");
   bogen.replaceChildren(knoten);
   if (!bogen.open) bogen.showModal();
 }
@@ -119,13 +289,16 @@ function el(tag, klasse, text) {
 function eintragen(v, art) {
   const V = verzichte(z)[v];
   let neu = [], id = null;
-  const satz = aendern(() => {
+  const m = aendern(() => {
     neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art });
     id = z.ereignisse.at(-1).id;
   });
-  melde(mitMoment(ebenenText(neu, `Notiert: ${art === "habe" ? V.habe : V.drang}.`), satz), [
+  document.querySelector(`[data-focus="${art}-${v}"]`)?.classList.add("tipp");
+  if (!m?.heuteNeu) spueren(8);
+  const text = `Notiert: ${art === "habe" ? V.habe : V.drang}.${m?.heuteNeu ? " Der Tag zählt." : ""}`;
+  melde(mitMoment(ebenenText(neu, text), m), [
     ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)],
-    ["Zurück", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }],
+    ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }],
   ]);
 }
 
@@ -212,6 +385,113 @@ function oeffneEbene(id) {
   k.append(el("p", "rubrik", e.rubrik), el("h2", null, e.titel), ebenenInhalt(id, z, heute()),
     knopf("schließen", "text", () => bogen.close()));
   zeigeBogen(k);
+}
+
+/* ---- Wie war der Tag? --------------------------------------------------------
+
+   Das Tagebuch des Tages, drei Ebenen, jede in ihrer Farbe: die Stimmung
+   (fünf Stufen), die Selbst-Markierungen aus lifetracker (höchstens zwei)
+   und ein Satz, was getragen hat. Alles freiwillig, alles bleibt auf dem
+   Gerät. Es gilt, was beim Speichern dasteht. */
+function tagEinordnen(tag) {
+  const t = tag || heute();
+  const istHeute = t === heute();
+  const vorher = z.tagebuch[t] || {};
+  const f = el("form", "bogen-inhalt einordnen");
+  f.append(el("p", "rubrik", `${tagesKopf(t)} · Tages-Check-in`), el("h2", null, istHeute ? "Wie geht es dir heute?" : "Wie ging es dir an dem Tag?"),
+    el("p", "leise", "Kaffee, Kippe, Video sind die Oberfläche. Hier geht es um das darunter. Je Reihe ein Tippen; was du auslässt, bleibt leer. Nur auf diesem Gerät."));
+  /* Ein vergangener Tag: nachtragen, dass man dabei war. */
+  let da = null;
+  if (!istHeute && !istDa(z, t)) {
+    const l = el("label", "baustein");
+    da = Object.assign(document.createElement("input"), { type: "checkbox", checked: !hatEintrag(z, t) });
+    const tx = el("span", "baustein-text");
+    tx.append(el("span", null, "An dem Tag war ich dabei"), el("span", "leise klein", "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
+    l.append(da, tx);
+    f.append(l);
+  }
+
+  /* Körper und Antrieb: je System eine Reihe, fünf Stufen zwischen zwei
+     Polen. Ein Tippen wählt, ein zweites auf dieselbe Stufe nimmt sie weg. */
+  const gruppen = Object.entries(GRUPPEN).map(([gid, gr]) => {
+    const fs = el("fieldset", "frage ebene-frage systeme");
+    fs.style.setProperty("--c", gr.farbe);
+    fs.append(el("legend", "serif", gr.name));
+    for (const x of SYSTEME.filter((y) => y.gruppe === gid)) {
+      const reihe = el("div", "system");
+      reihe.setAttribute("role", "radiogroup");
+      reihe.setAttribute("aria-label", `${x.name}: von ${x.pole[0]} bis ${x.pole[1]}`);
+      reihe.append(el("span", "system-name", x.name));
+      const stufen = el("span", "system-stufen");
+      for (let n = 1; n <= STUFEN; n++) {
+        const l = el("label", "stufe");
+        const inp = Object.assign(document.createElement("input"), { type: "radio", name: x.id, value: String(n), checked: vorher[x.id] === n });
+        inp.setAttribute("aria-label", `${x.name} ${n} von ${STUFEN}${n === 1 ? `, ${x.pole[0]}` : n === STUFEN ? `, ${x.pole[1]}` : ""}`);
+        inp.dataset.war = inp.checked ? "1" : "";
+        inp.addEventListener("click", () => {
+          if (inp.dataset.war) { inp.checked = false; inp.dataset.war = ""; return; }
+          for (const o of stufen.querySelectorAll("input")) o.dataset.war = "";
+          inp.dataset.war = "1";
+        });
+        l.style.setProperty("--w", `${Math.round(25 + (n / STUFEN) * 75)}%`);
+        l.append(inp, el("span", "stufe-kreis"));
+        stufen.append(l);
+      }
+      const pole = el("span", "system-pole");
+      pole.append(el("span", null, x.pole[0]), el("span", null, x.pole[1]));
+      reihe.append(stufen, pole);
+      fs.append(reihe);
+    }
+    return fs;
+  });
+
+  const selbst = el("fieldset", "frage ebene-frage");
+  selbst.style.setProperty("--c", "var(--lila)");
+  selbst.append(el("legend", "serif", istHeute ? "Was hat sich heute gezeigt?" : "Was hat sich an dem Tag gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
+  const chips = el("span", "chips");
+  SELBST.forEach((wort, i) => {
+    const c = el("label", "chip");
+    c.style.setProperty("--c", "var(--lila)");
+    const inp = Object.assign(document.createElement("input"), { type: "checkbox", name: "selbst", value: String(i), checked: (vorher.selbst || []).includes(i) });
+    c.append(inp, el("span", null, wort));
+    chips.append(c);
+  });
+  /* Höchstens zwei: ist das Maß voll, sind die übrigen still gesperrt. */
+  const sperren = () => {
+    const n = chips.querySelectorAll("input:checked").length;
+    for (const i of chips.querySelectorAll("input")) i.disabled = !i.checked && n >= SELBST_MAX;
+  };
+  chips.addEventListener("change", sperren);
+  sperren();
+  selbst.append(chips);
+
+  const getragen = el("label", "frage ebene-frage");
+  getragen.style.setProperty("--c", "var(--magenta)");
+  const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher.getragen || "", autocomplete: "off", maxLength: 280,
+    placeholder: "Der Kaffee mit Ben, der Spaziergang …" });
+  getragen.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
+
+  f.append(...gruppen, selbst, getragen);
+  const speichern = () => {
+    const d = new FormData(f);
+    let m = null;
+    bogen.close();
+    m = aendern(() => {
+      schreibeTag(z, t, {
+        werte: Object.fromEntries(SYSTEME.map((x) => [x.id, Number(d.get(x.id)) || 0])),
+        selbst: d.getAll("selbst").map(Number),
+        getragen: d.get("getragen") || "",
+      });
+      if (da && da.checked && !istDa(z, t)) schalteDa(z, t);
+    });
+    const steht = hatEintrag(z, t);
+    melde(mitMoment(!steht ? "Nichts eingetragen." : istHeute ? `Check-in gespeichert: ${eingeschaetzt(z, t)} von ${SYSTEME.length}.${m?.heuteNeu ? " Der Tag zählt." : ""}` : `${tagesKopf(t)} ist nachgetragen.`, m));
+  };
+  const unten = el("div", "wahlreihe");
+  unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));
+  f.append(unten);
+  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
+  zeigeBogen(f);
 }
 
 /* ---- Der Leitgedanke ------------------------------------------------------ */
@@ -310,8 +590,11 @@ function einstellungen() {
     i.addEventListener("change", () => {
       aendern(() => schalteBaustein(z, b.id, i.checked));
       if (b.id === "abends") tageszeitSetzen();
+      if (b.id === "gemeinsam" && i.checked) aktualisieren();
       const y = bogen.scrollTop;
+      const index = BAUSTEINE.findIndex((eintrag) => eintrag.id === b.id);
       einstellungen();
+      bogen.querySelectorAll(".baustein input")[index]?.focus({ preventScroll: true });
       bogen.scrollTop = y;
     });
     const t = el("span", "baustein-text");
@@ -320,11 +603,18 @@ function einstellungen() {
     feld.append(l);
     if (b.id === "leitgedanke" && aktiv(z, b.id))
       feld.append(knopf("Leitgedanken ändern", "text klein baustein-mehr", () => leitgedankeBearbeiten()));
+    if (b.id === "gemeinsam" && z.gemeinsam) {
+      const weg = knopf(`Du gehst als ${z.gemeinsam.name} mit. Die Gruppe verlassen`, "text klein baustein-mehr", () => {
+        if (!weg.dataset.sicher) { weg.dataset.sicher = "1"; weg.textContent = "Wirklich? Name und Tage werden vom Server gelöscht. Noch einmal tippen."; return; }
+        gruppeVerlassen();
+      });
+      feld.append(weg);
+    }
   }
 
   const daten = el("div", "frage");
   daten.append(el("p", "serif", "Deine Daten"),
-    el("p", "leise klein", "Alles, was du notierst, liegt nur auf diesem Gerät, in diesem Browser. Nichts davon geht an einen Server."));
+    el("p", "leise klein", "Alles, was du notierst, liegt nur auf diesem Gerät, in diesem Browser. Gehst du gemeinsam mit, kennt der Server nur deinen Namen, was du sein lässt, und an welchen Tagen du dabei warst — sonst nichts."));
   const weg = knopf("Alles auf diesem Gerät löschen", "text", () => {
     if (weg.dataset.sicher) {
       loeschen();
@@ -346,9 +636,14 @@ function melde(text, aktionen = []) {
   const m = $("#meldung");
   m.replaceChildren(el("span", null, text));
   for (const [t, tun] of aktionen) m.append(knopf(t, "melde-knopf", () => { m.hidden = true; tun(); }));
+  if (aktionen.length) {
+    const schliessen = knopf("×", "melde-knopf meldung-schliessen", () => { m.hidden = true; });
+    schliessen.setAttribute("aria-label", "Meldung schließen");
+    m.append(schliessen);
+  }
   m.hidden = false;
   clearTimeout(meldeTimer);
-  meldeTimer = setTimeout(() => (m.hidden = true), aktionen.length ? 7000 : 3600);
+  if (!aktionen.length) meldeTimer = setTimeout(() => (m.hidden = true), 5000);
 }
 
 /* ---- Commitment wählen ----------------------------------------------------- */
@@ -362,6 +657,7 @@ function wahlSeite() {
   const unterKopf = el("div", "wahl-unterkopf");
   const alles = knopf(alle ? "✓ Alles" : "Alles", "chip-knopf", () => aendern(() => schalteAlles(z)));
   alles.setAttribute("aria-pressed", alle);
+  alles.dataset.focus = "wahl-alles";
   alles.title = "Kaffee, Kippe und Video auf einmal";
   unterKopf.append(el("span", "leise", "Eins reicht. Bereitschaft genügt."), alles);
   s.append(unterKopf);
@@ -378,12 +674,15 @@ function wahlSeite() {
       if (z.commitment[id]) delete z.commitment[id]; else z.commitment[id] = { drang: true };
     }));
     b.setAttribute("aria-pressed", an);
+    b.dataset.focus = `wahl-${id}`;
     b.prepend(el("span", "wahl-haken", an ? "✓" : ""));
     zeile.append(b);
     if (an) {
       const d = knopf("würde gern", "chip-knopf klein", () => aendern(() => { z.commitment[id].drang = !z.commitment[id].drang; }));
       d.setAttribute("aria-pressed", z.commitment[id].drang);
+      d.dataset.focus = `wahl-drang-${id}`;
       d.title = "Auch die Momente notieren, in denen ich gern würde";
+      d.setAttribute("aria-label", `${V[id].name}: Würde-gern-Momente mitnotieren`);
       zeile.append(d);
     }
     if (V[id].eigen) {
@@ -393,7 +692,7 @@ function wahlSeite() {
     }
     liste.append(zeile);
   }
-  s.append(liste);
+  s.append(liste, el("p", "leise klein wahl-hilfe", "„Würde gern“ schaltet das Notieren von Verlangen ein. Du kannst es jederzeit ändern."));
 
   const neu = el("form", "wahl-neu");
   const i = Object.assign(document.createElement("input"), {
@@ -411,7 +710,7 @@ function wahlSeite() {
   });
   s.append(neu);
 
-  const los = knopf("So ist es.", "gross", () => { wahlOffen = false; zeichne(); });
+  const los = knopf("Mit meiner Auswahl starten", "gross", () => { wahlOffen = false; zeichne(); });
   los.disabled = !gewaehlt(z).length;
   s.append(los, el("p", "leise klein", "Du kannst jederzeit Tracker dazunehmen oder abwählen. Was du notierst, bleibt auf diesem Gerät."));
   return s;
@@ -499,14 +798,29 @@ function zeichne() {
   const buehne = $("#buehne");
   const ansicht = wahlOffen || !gewaehlt(z).length ? null : ANSICHT[z.ansicht] || knopfAnsicht;
   buehne.dataset.ansicht = ansicht ? z.ansicht : "wahl";
+  // Gleiche Aktion bleibt nach dem Neuzeichnen per Tastatur erreichbar.
+  const fokus = document.activeElement;
+  const innerhalb = buehne.contains(fokus);
+  const schluessel = fokus?.dataset.focus;
+  const name = fokus?.getAttribute("aria-label") || fokus?.textContent;
   buehne.replaceChildren(ansicht ? ansicht.render(api) : wahlSeite());
+  if (innerhalb) {
+    const ziel = schluessel
+      ? [...buehne.querySelectorAll("[data-focus]")].find((e) => e.dataset.focus === schluessel)
+      : [...buehne.querySelectorAll("button")].find((e) => (e.getAttribute("aria-label") || e.textContent) === name);
+    ziel?.focus({ preventScroll: true });
+  }
 }
 
 /* Ein neuer Tag, während die App offen stand: beim Zurückkommen neu zeichnen. */
 let zuletzt = heute();
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && heute() !== zuletzt) { zuletzt = heute(); zeichne(); }
+  if (document.visibilityState !== "visible") return;
+  if (heute() !== zuletzt) { zuletzt = heute(); zeichne(); }
+  aktualisieren();
 });
+/* Die Gruppe: einmal die Minute nachsehen, solange die Seite zu sehen ist. */
+setInterval(() => { if (document.visibilityState === "visible") aktualisieren(); }, 60 * 1000);
 /* Ein anderer Tab hat gespeichert. */
 addEventListener("storage", (e) => { if (e.key === "sober-october") { z = laden(); zeichne(); } });
 
@@ -528,4 +842,5 @@ if (navigator.serviceWorker && location.protocol !== "file:")
   addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
 zeichne();
+aktualisieren().then(planeAbgleich);
 requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add("bereit")));

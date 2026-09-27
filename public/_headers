@@ -8,8 +8,6 @@
   Cache-Control: no-cache
 /kern/*
   Cache-Control: no-cache
-/knopf/*
-  Cache-Control: no-cache
 /sw.js
   Cache-Control: no-cache
 /manifest.webmanifest
