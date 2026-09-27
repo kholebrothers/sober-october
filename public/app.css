@@ -194,6 +194,9 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 
 #meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:50; }
 #meldung[hidden] { display:none; }
+/* Die Meldung liegt über dem, was man gerade antippt: der Text lässt Tippen durch, nur ihre Knöpfe fangen es. */
+#meldung { pointer-events:none; }
+#meldung button { pointer-events:auto; }
 .melde-knopf { background:none; border:0; padding:4px 0; color:inherit; font-size:14px; font-weight:600; text-decoration:underline; text-underline-offset:3px; opacity:.9; }
 
 /* Ansicht Knopf: unter dem Monat je Tracker eine Kachel. Ruhig: Farbe nur

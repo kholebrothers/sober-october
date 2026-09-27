@@ -742,7 +742,7 @@ test("die Reise: man fängt mit einem Kern an, der Rest öffnet sich durch Benut
   schalteDa(z, okt(1));
   notiere(z, { tag: okt(1), zeit: "08:00", verzicht: "kippe", art: "habe" });
   assert.deepEqual(reiseWeiter(z), []);
-  assert.match(reiseStand(z).noch, /Noch ein Eintrag/);
+  assert.equal(reiseStand(z).noch, "Als Nächstes: Ein Satz zum Tag · noch ein Eintrag");
   notiere(z, { tag: okt(1), zeit: "09:00", verzicht: "kippe", art: "habe" });
   assert.deepEqual(reiseWeiter(z).map((s) => s.titel), ["Ein Satz zum Tag"]);
   assert.equal(aktiv(z, "tagebuch"), true);
@@ -750,7 +750,7 @@ test("die Reise: man fängt mit einem Kern an, der Rest öffnet sich durch Benut
   // Viele Tage „dabei" allein öffnen nichts Weiteres — Warten reicht nicht.
   for (let d = 2; d <= 8; d++) schalteDa(z, okt(d));
   assert.deepEqual(reiseWeiter(z), []);
-  assert.match(reiseStand(z).noch, /zwei|2 Sätze/);
+  assert.equal(reiseStand(z).noch, "Als Nächstes: Der Moment davor · noch 2 Sätze zum Tag");
 
   // 2 · Den Satz zum Tag benutzen.
   schreibeTag(z, okt(1), { getragen: "Der Spaziergang" });

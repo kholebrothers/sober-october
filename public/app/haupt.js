@@ -120,7 +120,7 @@ const api = {
     }
     const m = aendern(() => schalteDa(z, t));
     gremlin.freut(1, document.querySelector(".da-knopf"));
-    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), offen(z, "satz") ? [["Wie war der Tag?", () => tagEinordnen()], zurueck] : [zurueck]);
+    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), ab(z, 3) ? [["Check-in", () => tagEinordnen()], zurueck] : [zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
   offen: (was) => offen(z, was),
@@ -419,7 +419,18 @@ function el(tag, klasse, text) {
    nichts, bleibt der Eintrag, wie er ist. */
 function eintragen(v, art) {
   const V = verzichte(z)[v];
-  if (V.aufbau) art = "getan";
+  if (V.aufbau) {
+    art = "getan";
+    /* Aufbauen ist ein Häkchen am Tag, kein Zähler: ein zweites Tippen
+       nimmt es zurück. Dafür braucht es keine Meldung mit „Rückgängig". */
+    const getan = vonTag(z, heute(), v).filter((e) => e.art === "getan" && !Number.isInteger(e.schritt));
+    if (getan.length) {
+      aendern(() => { for (const e of getan) entferne(z, e.id); });
+      spueren(8);
+      melde(`${V.name}: zurückgenommen.`);
+      return;
+    }
+  }
   let neu = [], id = null;
   const m = aendern(() => {
     neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art });
@@ -433,7 +444,7 @@ function eintragen(v, art) {
   const text = `${art === "getan" ? `Getan: ${V.name}.` : `Notiert: ${art === "habe" ? V.habe : V.drang}.`}${m?.heuteNeu ? " Der Tag zählt." : ""}`;
   const zurueck = ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }];
   const details = ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)];
-  melde(mitMoment(ebenenText(neu, text), m), art === "getan" ? [zurueck]
+  melde(mitMoment(ebenenText(neu, text), m), art === "getan" ? []
     : art === "drang" && ab(z, 2) ? [["Werkzeug", () => W.menue(id)], details, zurueck]
     : [details, zurueck]);
 }
@@ -805,7 +816,9 @@ function melde(text, aktionen = []) {
   }
   m.hidden = false;
   clearTimeout(meldeTimer);
-  if (!aktionen.length) meldeTimer = setTimeout(() => (m.hidden = true), 5000);
+  /* Keine Meldung wartet darauf, weggeklickt zu werden: eine reine
+     Bestätigung geht nach gut drei Sekunden, eine mit Knöpfen nach acht. */
+  meldeTimer = setTimeout(() => (m.hidden = true), aktionen.length ? 8000 : 3500);
 }
 
 /* ---- Commitment wählen ----------------------------------------------------- */

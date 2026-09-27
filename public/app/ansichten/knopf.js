@@ -38,9 +38,11 @@ export function render(api) {
     }
     const b = knopf("", "kachel-knopf", () => api.eintragen(v, "habe"));
     b.dataset.focus = `habe-${v}`;
-    b.append(el("span", "kachel-name", V.name), el("strong", "kachel-zahl", String(habe)),
-      el("span", "kachel-wort", V.aufbau ? "+ getan" : `+ ${V.habe}`));
-    b.setAttribute("aria-label", V.aufbau ? `${V.name}: getan notieren. Heute ${habe}.` : `${V.habe} notieren. Heute ${habe}.`);
+    /* Aufbauen ist ein Häkchen am Tag; Sein-lassen zählt, wie oft. */
+    b.append(el("span", "kachel-name", V.name), el("strong", "kachel-zahl", V.aufbau ? (habe ? "✓" : "–") : String(habe)),
+      el("span", "kachel-wort", V.aufbau ? (habe ? "heute getan" : "+ getan") : `+ ${V.habe}`));
+    if (V.aufbau) b.setAttribute("aria-pressed", habe > 0);
+    b.setAttribute("aria-label", V.aufbau ? `${V.name}: ${habe ? "heute getan. Antippen nimmt es zurück." : "getan notieren."}` : `${V.habe} notieren. Heute ${habe}.`);
     kachel.append(b);
 
     if (!V.aufbau && z.commitment[v].drang && api.offen("drang")) {

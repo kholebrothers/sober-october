@@ -254,8 +254,8 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
    dann ein Werkzeug. Wer das eine nie braucht, kommt mit viel Notieren
    genauso weiter (`sonst`: so viele Einträge insgesamt).
 
-   `wann` ist die kurze Bedingung für die Liste, `noch(z)` der Satz, was
-   jetzt fehlt. `oeffnet` nennt Schlüssel: Bausteine (siehe BAUSTEINE) und
+   `wann` ist die kurze Bedingung für die Liste, `noch(z)` in wenigen
+   Worten, was jetzt noch fehlt — ein Hinweis, keine Aufgabe. `oeffnet` nennt Schlüssel: Bausteine (siehe BAUSTEINE) und
    Teile, die kein Baustein sind. Was in keiner Station steht, ist von
    Anfang an da. Was einmal offen ist, bleibt offen. */
 
@@ -272,33 +272,27 @@ export const REISE = [
   { titel: "Ein Satz zum Tag", wann: "3 Einträge", sonst: 3,
     text: "Unter dem Knopf steht jetzt eine Zeile: Was hat dich heute getragen? Daraus wird dein Tagebuch.",
     erfuellt: (z) => nutzung(z) >= 3,
-    noch: (z) => { const n = 3 - nutzung(z); return `Noch ${n === 1 ? "ein Eintrag" : `${n} Einträge`} — „dabei“ oder notiert —, dann öffnet sich: Ein Satz zum Tag`; },
+    noch: (z) => { const n = 3 - nutzung(z); return `noch ${n === 1 ? "ein Eintrag" : `${n} Einträge`}`; },
     oeffnet: ["satz", "tagebuch"] },
   { titel: "Der Moment davor", wann: "2 Sätze", sonst: 12,
     text: "Du kannst jetzt auch notieren, wenn du gern würdest — ohne dass etwas passiert. Dazu ein Leitgedanke und, wenn du magst, andere, die mitgehen.",
     erfuellt: (z) => saetze(z) >= 2,
-    noch: (z) => `Schreib noch ${mal(2 - saetze(z), "Satz", "Sätze")} zum Tag, dann öffnet sich: Der Moment davor`,
+    noch: (z) => `noch ${mal(2 - saetze(z), "Satz", "Sätze")} zum Tag`,
     oeffnet: ["drang", "leitgedanke", "gemeinsam"] },
   { titel: "Mehr als eins", wann: "Würde gern oder Leitgedanke", sonst: 25,
     text: "Jetzt kannst du weitere Tracker dazunehmen, sehen, wie viel Lebenszeit frei wird, und die Ansicht wählen.",
     erfuellt: (z) => drangMomente(z) >= 2 || z.leitgedanken.length > 0 || !!z.gemeinsam,
-    noch: (z) => hatLassen(z)
-      ? `Notier noch ${drangMomente(z) ? "einen Moment, in dem" : "zwei Momente, in denen"} du gern würdest — oder schreib deinen Leitgedanken. Dann öffnet sich: Mehr als eins`
-      : "Schreib deinen eigenen Leitgedanken — oder geh gemeinsam mit. Dann öffnet sich: Mehr als eins",
+    noch: (z) => hatLassen(z) ? `noch ${drangMomente(z) ? "ein" : "zwei"} „würde gern“ oder ein eigener Leitgedanke` : "ein eigener Leitgedanke",
     oeffnet: ["tracker", "lebenszeit", "lauf", "heatmap", "ansicht"] },
   { titel: "Formen", tiefe: 2, wann: "Zweiter Tracker oder Lebenszeit", sonst: 40,
     text: "Werkzeuge für den Moment, in dem der Drang kommt, Wenn-dann-Pläne und Routinen in kleinen Schritten.",
     erfuellt: (z) => benutzteTracker(z) >= 2 || Object.keys(z.zeitVorher).length > 0,
-    noch: (z) => hatLassen(z)
-      ? "Notier etwas bei einem zweiten Tracker — oder sag bei Lebenszeit, wie viel Zeit es dich vorher gekostet hat. Dann öffnet sich: Formen"
-      : "Nimm einen zweiten Tracker dazu und notier dort etwas. Dann öffnet sich: Formen",
+    noch: (z) => (hatLassen(z) ? "ein zweiter Tracker oder die Lebenszeit" : "ein zweiter Tracker"),
     oeffnet: ["tiefe2", "werkzeuge"] },
   { titel: "Nervensystem", tiefe: 3, wann: "Werkzeug benutzt", sonst: 60,
     text: "Der Tages-Check-in für Körper und Antrieb, Zusammenhänge über den Monat — und dein Gremlin zeigt sich.",
     erfuellt: (z) => z.gremlin.werkzeugTage.length >= 2 || z.werkzeug.plaene.length > 0,
-    noch: (z) => z.gremlin.werkzeugTage.length
-      ? "Benutz noch einmal ein Werkzeug — oder leg einen Wenn-dann-Plan an. Dann öffnet sich: Nervensystem"
-      : "Probier ein Werkzeug aus, zweimal — oder leg einen Wenn-dann-Plan an. Dann öffnet sich: Nervensystem",
+    noch: (z) => (z.gremlin.werkzeugTage.length ? "noch einmal ein Werkzeug" : "ein Werkzeug, an zwei Tagen"),
     oeffnet: ["tiefe3", "verlauf", "gremlin", "ebenen"] },
 ];
 
@@ -325,7 +319,7 @@ export function reiseWeiter(z) {
     sagt, was man tun kann, damit sie sich öffnet. */
 export function reiseStand(z) {
   const naechste = REISE[z.reise] || null;
-  return { naechste, noch: naechste ? naechste.noch(z) : "" };
+  return { naechste, noch: naechste ? `Als Nächstes: ${naechste.titel} · ${naechste.noch(z)}` : "" };
 }
 
 /** Der Kern: die eine Sache, mit der die Reise beginnt. Ersetzt, was
