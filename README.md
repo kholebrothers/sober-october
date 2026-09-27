@@ -55,6 +55,15 @@ Drei Ansichten, umschaltbar in den Einstellungen (⋯): **Knopf** (Standard), **
 Sie stammen aus dem Prototyp auf dem Branch `prototyp-zurueckhaltend`; dort steht in `NOTIZ.md`,
 welche Fragen er beantwortet hat und welche offen sind.
 
+**Drei Schichten, drei Tiefen** (beim Start und unter ⋯ wählbar): 1 · Beobachten — einfaches
+Tracking; 2 · Formen — Routinen in Schritten, Wenn-dann-Pläne und NLP-Kurzwerkzeuge (Anker, Swish, Reframing); 3 · Nervensystem —
+Tages-Check-in, Ebenen, Verlauf und der **Gremlin** (nach Possibility Management, SPARK 099): taucht nach
+ein paar Tagen auf, und je nach Beziehung — erkennen, erleben, Hunger spüren, bewusst füttern, arbeiten
+lassen — wird aus dem wilden Gremlin eine frei lebende Katze. Dazu ab Schicht 1 die **Lebenszeit**: was
+Kaffee, Kippe, Video vorher kosteten und was jetzt frei wird. Tracker gibt es zum **Sein-lassen** und zum **Aufbauen** (etwa eine
+Morgenroutine); wer nichts sein lässt, kann die App genauso nutzen. Siehe
+[docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
+
 ## Wo die Daten liegen
 
 **Was du notierst, bleibt im Browser** (localStorage, Schlüssel `sober-october`): Einträge, Gefühle,
@@ -91,8 +100,13 @@ ausgeliefert, wie es im Repo steht.
     public/sw.js               Service Worker; SCHALE muss jede Datei nennen (test/pwa.test.js)
     public/app/gemeinsam.js    Gruppe: Abgleich mit dem Server und Anzeige — ohne DOM, getestet
     public/app/netz.js         /api/: Abruf mit ETag, Senden
+    public/app/werkzeuge.js    Schicht 2: Anker, Swish, Reframing, Wenn-dann
+    public/app/gremlin/        Schicht 3: die Figur, ihre Sätze, die Naht zum Begleiter
+    public/begleiter/          aus kur-core kopiert: der Begleiter (Mechanik)
     server/                    Worker nur für /api/*, API und Schema der Teilnahme (nach kur-core)
     test/                      node --test; kur-core-wertevertrag.js und d1-attrappe.js sind Kopien
+
+Das Konzept, aus allen Wünschen zusammengefasst und mit dem Stand abgeglichen: [docs/KONZEPT.md](docs/KONZEPT.md).
 
 UX-Bewertung und gemeinsame Gestaltungsregeln: [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 

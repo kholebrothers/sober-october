@@ -10,6 +10,11 @@ import {
   BAUSTEINE, aktiv, schalteBaustein,
   istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN, monat,
   SCHICHTEN, STIMMUNG, SELBST, schreibeTag, tagebuchZeilen, SYSTEME, zusammenhaenge, verlauf, eingeschaetzt,
+  TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte,
+  setzeAnker, setzeSwish, planHinzu, planWeg, PLAENE_MAX,
+  setzeZeitVorher, freiAm, lebenszeit, dauer,
+  gremlinStufe, setzeFuetterungstag, futterHinzu, fuettern, werkzeugBenutzt, istFuetterungstag,
+  DAEMON_PHASEN, DAEMON_SEK, daemonStand,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -56,9 +61,12 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
   assert.ok(neu.some((e) => e.id === "routine"));
 });
 
-test("die App fängt klein an: Leitgedanke, Gemeinsam, Tagebuch, Verlauf und Abendruhe sind von selbst an", () => {
+test("die App fängt klein an: auf Schicht 1 Leitgedanke, Gemeinsam, Tagebuch und Abendruhe, auf Schicht 3 auch der Verlauf", () => {
   const z = neuerZustand();
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "lebenszeit", "tagebuch", "abends"]);
+  z.tiefe = 3;
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "lebenszeit", "tagebuch", "verlauf", "werkzeuge", "gremlin", "abends"]);
+  z.tiefe = 1;
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);
   schalteBaustein(z, "gibtsnicht", true);
@@ -587,4 +595,129 @@ test("der Verlauf: je System eine Reihe, Drang und Geschehen darunter", () => {
   assert.deepEqual(v.map((r) => r.id).slice(-3), ["lust", "drang", "geschehen"]);
   assert.deepEqual(v[0].werte, [0, 1]);
   assert.deepEqual(v.at(-1).werte, [1 / 3, 0]);
+});
+
+test("drei Schichten: neu fängt man bei 1 an, ein alter Stand hatte alles", () => {
+  assert.deepEqual(TIEFEN.map((t) => t.name), ["Beobachten", "Formen", "Nervensystem"]);
+  assert.equal(neuerZustand().tiefe, 1);
+  assert.equal(aus(JSON.stringify({ v: 1, commitment: { kaffee: { drang: true } } })).tiefe, 3, "wer schon da war, verliert nichts");
+  const z = mit("kaffee");
+  z.tiefe = 2;
+  assert.equal(aus(JSON.stringify(z)).tiefe, 2);
+  schalteBaustein(z, "verlauf", true);
+  assert.equal(aktiv(z, "verlauf"), false, "Schicht 3 bleibt zu, auch wenn eingeschaltet");
+  z.tiefe = 3;
+  assert.equal(aktiv(z, "verlauf"), true);
+});
+
+test("aufbauen statt lassen: eine Morgenroutine mit Schritten", () => {
+  const z = mit("kaffee");
+  const vorschlag = AUFBAU_VORSCHLAEGE[0];
+  const id = fuegeEigenenHinzu(z, vorschlag.name, { art: "aufbauen", schritte: vorschlag.schritte });
+  const V = verzichte(z)[id];
+  assert.equal(V.aufbau, true);
+  assert.equal(V.schritte.length, 4);
+  assert.deepEqual(z.commitment[id], { drang: false }, "beim Aufbauen gibt es kein würde gern");
+  assert.equal(commitmentSatz(z), "Im Oktober lasse ich den Kaffee sein und baue Morgenroutine auf.");
+
+  assert.equal(schalteSchritt(z, okt(3), "07:00", id, 0), true);
+  schalteSchritt(z, okt(3), "07:05", id, 2);
+  assert.deepEqual([...schritteGetan(z, okt(3), id)].sort(), [0, 2]);
+  assert.equal(hatEintrag(z, okt(3)), true, "ein Schritt zählt den Tag");
+  assert.equal(schalteSchritt(z, okt(3), "07:10", id, 0), false, "zweites Tippen nimmt ihn weg");
+  assert.deepEqual([...schritteGetan(z, okt(3), id)], [2]);
+
+  setzeSchritte(z, id, ["  Wasser ", "", "Dehnen"]);
+  const zurueck = aus(JSON.stringify(z));
+  assert.deepEqual(zurueck.eigene.find((e) => e.id === id), { id, name: "Morgenroutine", art: "aufbauen", schritte: ["Wasser", "Dehnen"] });
+  assert.equal(zurueck.ereignisse.filter((e) => e.art === "getan").length, 1);
+});
+
+test("nur aufbauen, ohne Verzicht, geht auch", () => {
+  const z = neuerZustand();
+  fuegeEigenenHinzu(z, "Bewegung", { art: "aufbauen" });
+  assert.equal(commitmentSatz(z), "Im Oktober baue ich Bewegung auf.");
+  assert.equal(gewaehlt(z).length, 1);
+});
+
+test("Werkzeuge: Anker, Swish und Wenn-dann bleiben, Unsinn fällt weg", () => {
+  const z = mit("kaffee");
+  setzeAnker(z, "  Am See, morgens, ganz ruhig ", "");
+  setzeSwish(z, "Die Kaffeemaschine im Büro", "Ich, wach und klar, mit Tee");
+  assert.equal(planHinzu(z, "Wenn ich ins Büro komme", "dann trinke ich zuerst ein Glas Wasser"), true);
+  assert.equal(planHinzu(z, "", "irgendwas"), false);
+  assert.deepEqual(z.werkzeug, {
+    anker: { moment: "Am See, morgens, ganz ruhig", geste: "Daumen und Zeigefinger" },
+    swish: { ausloeser: "Die Kaffeemaschine im Büro", ziel: "Ich, wach und klar, mit Tee" },
+    plaene: [{ wenn: "ich ins Büro komme", dann: "trinke ich zuerst ein Glas Wasser" }],
+  });
+  assert.deepEqual(aus(JSON.stringify(z)).werkzeug, z.werkzeug);
+  for (let i = 0; i < PLAENE_MAX + 2; i++) planHinzu(z, `wenn ${i}`, "dann");
+  assert.equal(z.werkzeug.plaene.length, PLAENE_MAX);
+  planWeg(z, 0);
+  assert.equal(z.werkzeug.plaene.length, PLAENE_MAX - 1);
+  assert.deepEqual(aus(JSON.stringify({ ...z, werkzeug: { anker: { moment: 5 }, plaene: "x" } })).werkzeug, { anker: null, swish: null, plaene: [] });
+});
+
+test("Lebenszeit: was vorher Zeit kostete, was jetzt frei wird — nur an Tagen mit Angabe", () => {
+  const z = mit("kaffee", "video");
+  setzeZeitVorher(z, "kaffee", 30);
+  setzeZeitVorher(z, "video", 120);
+  schreibeTag(z, okt(1), { zeit: { kaffee: 0, video: 30 }, fuer: ["zweckfrei", "routine", "unsinn"] });
+  schreibeTag(z, okt(2), { zeit: { video: 180 } });
+  assert.equal(freiAm(z, okt(1)), 120, "30 + 90");
+  assert.equal(freiAm(z, okt(2)), 0, "mehr als vorher ist nie weniger als null");
+  assert.equal(freiAm(z, okt(3)), null, "nichts angegeben: nichts bekannt");
+  assert.deepEqual(lebenszeit(z, [okt(1), okt(2), okt(3)]), { tage: 2, frei: 120, fuer: { zweckfrei: 1, routine: 1 } });
+  assert.equal(dauer(80), "1 Std. 20 Min.");
+  assert.equal(dauer(120), "2 Std.");
+  const zurueck = aus(JSON.stringify(z));
+  assert.deepEqual([zurueck.zeitVorher, zurueck.tagebuch], [z.zeitVorher, z.tagebuch]);
+  assert.ok(!JSON.stringify(fuerKern(z, okt(1))).includes("zweckfrei"), "Lebenszeit bleibt im Gerät");
+});
+
+test("die Gremlin-Beziehung: fünf Schritte nach SPARK 099, aus dem Verhalten gerechnet", () => {
+  const z = mit("kaffee");
+  const t = (n) => `2026-10-${String(n).padStart(2, "0")}`;   // der 3. Oktober 2026 ist ein Samstag
+  assert.equal(gremlinStufe(z, t(3)).n, 0, "am Anfang ist er noch nicht da");
+  for (const d of [1, 2, 3]) schalteDa(z, t(d));
+  assert.equal(gremlinStufe(z, t(3)).n, 1, "nach drei Tagen dabei: erkennen");
+  notiere(z, { tag: t(2), zeit: "10:00", verzicht: "kaffee", art: "drang" });
+  notiere(z, { tag: t(3), zeit: "10:00", verzicht: "kaffee", art: "drang" });
+  assert.equal(gremlinStufe(z, t(3)).n, 2, "Drang an zwei Tagen bemerkt: erleben");
+  werkzeugBenutzt(z, t(2)); werkzeugBenutzt(z, t(3)); werkzeugBenutzt(z, t(3));
+  assert.equal(gremlinStufe(z, t(3)).n, 3, "zwei Tage mit Werkzeug: Hunger spüren");
+
+  assert.equal(fuettern(z, t(3), "Serie"), false, "ohne Fütterungstag kein Füttern");
+  setzeFuetterungstag(z, 6);
+  assert.equal(istFuetterungstag(z, t(3)), true);
+  assert.equal(fuettern(z, t(2), "Serie"), false, "nicht außerhalb seines Tags");
+  assert.equal(fuettern(z, t(3), "Serie"), true);
+  assert.equal(fuettern(z, t(3), "noch mehr"), false, "einmal am Tag");
+  assert.equal(gremlinStufe(z, t(3)).n, 4, "nach Plan gefüttert");
+
+  for (let d = 4; d <= 10; d++) schalteDa(z, t(d));
+  fuettern(z, t(10), "");   // nicht hungrig zählt auch: warten bis zum nächsten Samstag
+  assert.equal(gremlinStufe(z, t(10)).n, 5, "zweimal nach Plan, acht Tage dabei: im Dienst");
+  assert.equal(gremlinStufe(z, t(31)).n, 1, "schläft die Beziehung ein, verwildert er wieder");
+
+  assert.equal(futterHinzu(z, " Etwas Süßes "), true);
+  assert.equal(futterHinzu(z, "Etwas Süßes"), false);
+  assert.deepEqual(aus(JSON.stringify(z)).gremlin, z.gremlin);
+});
+
+test("Dämonen zum Frühstück: sieben Minuten, vier Phasen; der Dämon bleibt im Gerät", () => {
+  assert.equal(DAEMON_SEK, 7 * 60);
+  assert.deepEqual(DAEMON_PHASEN.map((p) => p.id), ["schuetteln", "einladen", "entladen", "ruhe"]);
+  assert.deepEqual([daemonStand(0).phase.id, daemonStand(0).rest], ["schuetteln", 120]);
+  assert.deepEqual([daemonStand(130).phase.id, daemonStand(130).rest], ["einladen", 50]);
+  assert.equal(daemonStand(DAEMON_SEK).fertig, true);
+  const z = mit("kaffee");
+  schreibeTag(z, okt(2), { daemon: { was: "  das Gespräch mit der Chefin ", sek: 420 } });
+  assert.deepEqual(z.tagebuch[okt(2)].daemon, { was: "das Gespräch mit der Chefin", sek: 420 });
+  assert.equal(hatEintrag(z, okt(2)), true, "die Praxis zählt den Tag");
+  assert.deepEqual(aus(JSON.stringify(z)).tagebuch, z.tagebuch);
+  assert.ok(!JSON.stringify(fuerKern(z, okt(2))).includes("Chefin"));
+  schreibeTag(z, okt(2), { daemon: null });
+  assert.equal(z.tagebuch[okt(2)], undefined);
 });

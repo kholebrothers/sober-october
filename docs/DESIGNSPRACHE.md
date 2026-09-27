@@ -123,6 +123,86 @@ mindestens drei Tage stehen, sagt ein Satz, was zusammenfällt: „Schlaf und Dr
 Offen: welche Linsen die Systeme später ordnen sollen (die Nachricht nannte Solms; der zweite Name
 war unklar). Heute ordnen sie sich schlicht in Körper und Antrieb.
 
+## Drei Schichten
+
+Die App ist nicht nur für Verzicht. Wer im Oktober etwas **aufbaut** (eine Morgenroutine, Bewegung,
+früher schlafen), nimmt einen Tracker zum Aufbauen: grün, ein Tippen heißt „getan“, nie Orange. Und
+man wählt beim Start, **wie tief** man gehen will; jede Schicht nimmt die vorigen mit.
+
+| Schicht | Was | Was dazukommt |
+| --- | --- | --- |
+| 1 · Beobachten | einfaches Tracking | Monat, „Heute bin ich dabei“, Etappe, Tracker (lassen oder aufbauen), Satz zum Tag, Tagebuch |
+| 2 · Formen | Verhalten verändern | Routinen in Schritten, Wenn-dann-Pläne, NLP-Kurzwerkzeuge (Anker, Swish, Reframing) |
+| 3 · Nervensystem | beobachten und verändern | Tages-Check-in (Körper, Antrieb), Ebenen des Monats, Verlauf und Zusammenhänge, Wissen, der Gremlin |
+
+Wer vor den Schichten schon da war, landet auf Schicht 3 und verliert nichts.
+
+**Werkzeuge (Schicht 2)** — für den Moment, in dem der Drang kommt; über die Karte „Werkzeuge“ oder
+direkt aus der Meldung nach „würde gern“. Übungen, keine Therapie; fachlich ungeprüft:
+
+- **Anker:** einen ruhigen, klaren Moment erinnern, am stärksten Punkt eine Geste (Daumen und
+  Zeigefinger), fünf Durchgänge. Abrufen: die Geste, lang ausatmen, der Moment in einem Satz.
+- **Swish:** das Bild kurz vor dem Drang groß und hell, unten links klein das Bild von dir, wie du sein
+  willst — ein Tipp, und sie tauschen; kurz leer; fünfmal, schneller werdend.
+- **Reframing:** „Welche gute Absicht hat der Drang?“ und drei andere Wege dorthin. Die Antwort hängt
+  an der Notiz des Drangs; auf Wunsch wird daraus ein Wenn-dann-Plan.
+- **Wenn-dann:** ein Moment und eine kleine Handlung; die ersten stehen im Drang-Moment gleich oben.
+
+## Lebenszeit
+
+Kaffee, Kippe, Video kosten Zeit. Die Karte „Lebenszeit“ (ab Schicht 1, unter dem Monat) fragt je
+Tracker einmal, wie viel Zeit er vorher am Tag gekostet hat, und dann, wenn man will, wie viel heute.
+Groß steht, was heute frei geworden ist, darunter der Oktober bisher, und die Frage: Wofür war die freie
+Zeit — Routinen, Menschen, draußen, Ruhe, oder einfach zweckfrei. Gezählt werden nur Tage mit Angabe:
+ein leerer Tag ist nichts bekannt, nicht „alles gespart“. Mehr als vorher ist nie weniger als null.
+
+## Dämonen zum Frühstück (Schicht 3)
+
+Eine Morgenpraxis nach Ilan Stephani, „Iss deine Dämonen zum Frühstück“: Statt zu warten, bis dich
+im Lauf des Tages ein Trigger eiskalt erwischt, holst du ihn dir morgens freiwillig auf den Teller.
+Sieben Minuten, vier Phasen, die App hält die Zeit, vibriert beim Wechsel und hält den Bildschirm an:
+
+1. **Schütteln** (2 Min.) — den Körper kräftig schütteln, tief atmen, Energie hochfahren.
+2. **Einladen** (1 Min.) — die Situation oder Person vorstellen, die heute triggern könnte; wer mag,
+   notiert vorher seinen „Dämon des Tages“ (bleibt im Gerät).
+3. **Entladen** (2,5 Min.) — der Körper drückt aus, was kommt: Wut, Frust, Zittern, Töne.
+4. **Ruhe** (1,5 Min.) — langsam herunterfahren, still werden, nachspüren.
+
+Morgens (4–11 Uhr) steht ein Hinweis im Monat, sonst ist sie unter „Werkzeuge“. Eine Praxis zählt
+den Tag und steht im Tagebuch (Punkt in Magenta). Hinweis in der Übung: „Wenn es zu viel wird:
+aufhören, Füße auf den Boden, lang ausatmen. Die Übung ersetzt keine Therapie.“
+
+## Der Gremlin (Schicht 3)
+
+Grundlage ist Clinton Callahan, [SPARK 099](https://sparks.nextculture.org/res/sparks/Spark-099-en.pdf)
+(Possibility Management, CC BY-SA 4.0): „Wenn du deinen Gremlin nicht bewusst fütterst, frisst er
+dich.“ Der Gremlin — König oder Königin deiner Unterwelt — lebt von niedrigem Drama: Lästern, Klagen,
+Adrenalin, Schuld, Heimlichkeit. Er ist weder gut noch böse und lässt sich weder ändern noch verbannen.
+Was sich ändert, ist die **Beziehung**, in fünf Schritten. Die App rechnet die Stufe aus dem Verhalten
+der letzten Wochen; schläft die Beziehung ein, verwildert er wieder:
+
+| Stufe | SPARK 099 | Wann | Figur |
+| --- | --- | --- | --- |
+| 0 | — | vor dem dritten Tag dabei | noch nicht da |
+| 1 | Erkennen | drei Tage dabei | wilder Gremlin, böser Blick |
+| 2 | Erleben | Drang an zwei Tagen bemerkt (14 Tage) | Gremlin |
+| 3 | Hunger spüren | Werkzeug an zwei Tagen (14 Tage) | Gremlin |
+| 4 | Füttern nach Plan | Fütterungstag gewählt, einmal eingehalten (14 Tage) | halb Katze, Haut und Schopf des Gremlins |
+| 5 | Im Dienst | zweimal eingehalten (21 Tage), acht Tage dabei (14 Tage) | frei lebende Katze — mit Gremlin-Augen |
+
+Der Gremlin selbst ändert sich nicht (SPARK 099); die Figur zeigt, wo die Beziehung steht. Am Ende
+steht eine frei lebende Katze, die mit dir arbeitet und trotzdem gelbe Gremlin-Augen hat.
+
+**Bewusst füttern** (Karte „Dein Gremlin“): ein fester Tag in der Woche, Futter, das *du* wählst
+(Vorschläge: eine Folge Serie ohne schlechtes Gewissen, etwas Süßes, laut mitsingen …). Nur an seinem
+Tag, einmal; „nicht hungrig“ zählt auch — dann nächste Woche, nicht vorher. Was ernste Folgen hat
+(Alkohol, Streit, Glücksspiel, Rasen), gehört nicht auf die Liste. Dazwischen, bei einem Drang, sagt er
+ab Stufe 4: „Ich hab Hunger. Aber heute ist nicht mein Tag. Sitz. Ich weiß.“
+
+Seine Sätze (`public/app/gremlin/saetze.js`, **Entwurf zum Gegenlesen**) sagen ehrlich, was er will,
+und machen die Falle damit sichtbar; sie beschämen nie. Mit der Stufe ändert sich der Ton: erst frech
+und hungrig, zuletzt ein Verbündeter.
+
 ## Bewusst offen
 
 Ein fehlender Eintrag beweist keine Abstinenz. Die bestehende Logik bezeichnet solche Tage teils als „frei“, während Kreise auch „unbekannt“ bedeuten. Diese fachliche Bedeutung sollte separat entschieden werden; diese Überarbeitung verändert die Zählung nicht.

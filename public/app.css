@@ -192,7 +192,7 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .zitat { display:block; font-family:var(--serif); font-style:italic; color:var(--ink); }
 .zitat.wahl { font-family:var(--sans); font-style:normal; font-size:13px; color:var(--leise); }
 
-#meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
+#meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:50; }
 #meldung[hidden] { display:none; }
 .melde-knopf { background:none; border:0; padding:4px 0; color:inherit; font-size:14px; font-weight:600; text-decoration:underline; text-underline-offset:3px; opacity:.9; }
 
@@ -524,3 +524,145 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .zusammenhaenge li { padding-left:10px; border-left:3px solid var(--f); font-size:14px; line-height:1.4; }
 .verlauf > p.klein { margin:0; }
 @media (max-width:360px) { .checkin-stand { font-size:12px; } .system-name { font-size:14px; } }
+
+/* Aufbauen: grün, weil es wächst. Kein Orange — getan ist kein Geschehen. */
+.kachel[data-aufbau] { --v:var(--moss); }
+.kachel:has(.routine) { grid-column:1 / -1; }
+.routine { display:grid; gap:8px; padding:12px 14px; border:1px solid color-mix(in oklab, var(--moss) 30%, var(--linie)); border-radius:var(--radius-card);
+  background:color-mix(in oklab, var(--moss) 6%, var(--surface)); box-shadow:inset 0 4px 0 var(--moss); }
+.routine[data-fertig] { background:color-mix(in oklab, var(--moss) 14%, var(--surface)); }
+.routine-kopf { display:flex; align-items:center; gap:10px; }
+.routine-kopf .kachel-name { flex:1; }
+.routine-stand { font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.routine-schritte { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.routine-schritt { display:flex; align-items:center; gap:10px; width:100%; min-height:var(--touch); padding:6px 10px; border:1px solid var(--linie);
+  border-radius:var(--radius-control); background:var(--surface); text-align:left; transition:background-color .25s ease, transform .12s ease; }
+.routine-schritt:active { transform:scale(.98); }
+.routine-haken { width:22px; height:22px; flex:none; display:grid; place-items:center; border-radius:50%; border:1.5px solid var(--moss); color:var(--surface); font-size:13px; font-weight:700; }
+.routine-schritt[aria-pressed="true"] { background:color-mix(in oklab, var(--moss) 10%, var(--surface)); }
+.routine-schritt[aria-pressed="true"] .routine-haken { background:var(--moss); }
+.routine-schritt[aria-pressed="true"] > span:last-child { color:var(--leise); }
+.routine-schritt.tipp .routine-haken { animation:pling .5s cubic-bezier(.2,1.6,.4,1); }
+
+/* Die Auswahl beim Start: was man aufbaut, und wie tief. */
+.aufbau-wahl { display:grid; gap:8px; margin-top:24px; }
+.aufbau-wahl h2 { margin:0; }
+.aufbau-wahl p { margin:0; }
+.chips-reihe { display:flex; flex-wrap:wrap; gap:8px; }
+.aufbau-chip { --v:var(--moss); min-height:var(--touch); padding:8px 14px; font-size:14px; }
+.wahl-tiefe { margin-top:24px; gap:8px; }
+.tiefe-option { grid-template-columns:auto 1fr; }
+.tiefe-option[data-tiefe="1"] { --c:var(--moss); }
+.tiefe-option[data-tiefe="2"] { --c:var(--teal); }
+.tiefe-option[data-tiefe="3"] { --c:var(--lila); }
+.tiefe-option:has(input:checked) { border-color:var(--c); background:color-mix(in oklab, var(--c) 8%, var(--paper)); }
+.tiefe-option input { accent-color:var(--c); }
+.frage textarea { font:inherit; font-size:16px; padding:10px 12px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; resize:vertical; }
+
+/* Werkzeuge (Schicht 2): jedes in seiner Farbe, als Streifen und Punkt. */
+.werkzeug-reihe { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+.werkzeug-chip { display:flex; align-items:center; gap:8px; min-height:var(--touch); padding:8px 12px; border:1px solid var(--linie);
+  border-left:3px solid var(--c); border-radius:var(--radius-control); background:var(--surface); text-align:left; font-size:14px; }
+.werkzeug-plan { margin:0; font-family:var(--serif); font-style:italic; }
+.werkzeuge > p.klein { color:var(--leise); }
+.werkzeug-liste { display:grid; gap:8px; }
+.werkzeug-knopf { display:grid; gap:2px; width:100%; padding:12px 14px; border:1px solid var(--linie); border-left:4px solid var(--c);
+  border-radius:var(--radius-control); background:var(--paper); text-align:left; }
+.werkzeug-plaene { display:grid; gap:4px; padding:10px 12px; border-radius:var(--radius-control); background:color-mix(in oklab, var(--gelb) 10%, var(--paper)); }
+.werkzeug-plaene .rubrik { margin-bottom:2px; }
+.werkzeug-schritt { display:grid; grid-template-columns:24px 1fr; gap:8px; margin:0; font-family:var(--serif); }
+.werkzeug-nr { width:22px; height:22px; border-radius:50%; display:grid; place-items:center; background:var(--hm-leer); font:600 12px var(--sans); }
+.werkzeug-ruhe { text-align:center; justify-items:center; }
+.werkzeug-gross { font-size:24px !important; }
+.werkzeug-liste-plaene { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.werkzeug-liste-plaene li { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+
+/* Swish: das große helle Auslöserbild, unten links klein das Zielbild. Beim
+   Tippen tauschen sie in --dauer; danach kurz leer. */
+.swish { position:relative; height:220px; border-radius:var(--radius-card); background:var(--ink); overflow:hidden; --dauer:1000ms; }
+.swish-bild { position:absolute; display:grid; place-items:center; padding:14px; text-align:center; font-family:var(--serif); border-radius:14px;
+  transition:all var(--dauer) cubic-bezier(.3,.7,.2,1); }
+.swish-ausloeser { inset:14px; background:var(--surface); color:var(--ink); font-size:18px; opacity:1; }
+.swish-ziel { left:14px; bottom:14px; width:28%; height:26%; background:color-mix(in oklab, var(--teal) 25%, var(--ink)); color:var(--surface); font-size:9px; opacity:.55; overflow:hidden; }
+.swish[data-lauf] .swish-ausloeser { inset:40%; opacity:0; }
+.swish[data-lauf] .swish-ziel { left:14px; bottom:14px; width:calc(100% - 28px); height:calc(100% - 28px); background:var(--teal); font-size:18px; opacity:1; }
+.swish[data-leer] .swish-bild { opacity:0; transition:opacity .25s; }
+@media (prefers-reduced-motion: reduce) { .swish-bild { transition:none; } }
+
+/* Der Gremlin (Schicht 3). Seine Farben liest die Leinwand über ein
+   Messelement (gremlin/index.js); die Blase des Begleiters will --bg. */
+:root {
+  --bg:var(--surface);
+  --gremlin-o:color-mix(in oklab, var(--moss) 30%, var(--ink)); --gremlin-k:var(--ink);
+  --gremlin-f:color-mix(in oklab, var(--moss) 55%, var(--surface)); --gremlin-s:color-mix(in oklab, var(--moss) 80%, var(--ink));
+  --gremlin-e:var(--gelb); --gremlin-w:var(--surface); --gremlin-b:var(--magenta);
+  --gremlin-c:color-mix(in oklab, var(--lila) 70%, var(--surface)); --gremlin-c2:var(--lila);
+}
+
+/* Lebenszeit: groß, was heute frei geworden ist. Grün, weil es wächst. */
+.lebenszeit { display:grid; gap:14px; padding:18px 20px; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); }
+.lz-kopf { display:grid; gap:4px; }
+.lz-kopf .rubrik { margin:0; }
+.lz-gross { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:10px; }
+.lz-zahl { font:600 32px/1.1 var(--sans); color:var(--moss); font-variant-numeric:tabular-nums; display:inline-block; }
+.lz-zahl.hoch { animation:hoch .5s cubic-bezier(.2,1.6,.4,1); }
+.lz-wort { font:500 16px var(--serif); }
+.lz-monat { margin:0; font-size:13px; }
+.lz-reihe { display:grid; gap:6px; padding-left:10px; border-left:3px solid var(--v); }
+.lz-frage { font-family:var(--serif); font-size:15px; }
+.lz-name { display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; font-weight:500; }
+.lz-aendern { margin-left:auto; padding:0 !important; min-height:0 !important; }
+.lz-stufen { display:grid; grid-template-columns:repeat(8, minmax(0, 1fr)); gap:4px; }
+.lz-stufe { min-height:36px; padding:0; border:1px solid var(--linie); border-radius:8px; background:transparent; font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--leise); }
+.lz-stufe[data-vorher] { border-style:dashed; border-color:var(--linie-stark); }
+.lz-stufe[aria-checked="true"] { background:var(--moss); border-color:var(--moss); color:var(--surface); font-weight:600; }
+.lz-fuer { display:grid; gap:6px; }
+.lz-chip { --v:var(--moss); min-height:36px; }
+@media (max-width:360px) { .lz-stufen { grid-template-columns:repeat(4, minmax(0, 1fr)); } }
+
+/* Die frei lebende Katze (Stufe 5): warme Töne, die Augen bleiben gelb. */
+:root {
+  --katze-o:color-mix(in oklab, var(--clay) 25%, var(--ink)); --katze-k:var(--ink);
+  --katze-s:color-mix(in oklab, var(--gelb) 30%, var(--leise)); --katze-f:color-mix(in oklab, var(--gelb) 30%, var(--mist));
+  --katze-c:var(--teal); --katze-c2:color-mix(in oklab, var(--teal) 60%, var(--ink));
+}
+
+/* Dein Gremlin: die fünf Schritte als Leiter, sein Tag, sein Futter. */
+.gremlin-karte { gap:12px; }
+.gr-leiter { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:4px; }
+.gr-stufe { font-size:10.5px; line-height:1.2; text-align:center; padding:6px 2px; border-radius:8px; background:var(--hm-leer); color:var(--leise); overflow-wrap:anywhere; }
+.gr-stufe[data-an] { background:color-mix(in oklab, var(--moss) 22%, var(--surface)); color:var(--ink); }
+.gr-stufe[data-jetzt] { background:var(--moss); color:var(--surface); font-weight:600; }
+.gr-text { margin:0; font-size:15px; }
+.gr-fuettern { display:grid; gap:6px; padding:12px 14px; border-radius:var(--radius-control); background:color-mix(in oklab, var(--lila) 8%, var(--paper)); border-left:3px solid var(--lila); }
+.gr-fuettern p { margin:0; }
+.gr-heute { font-size:17px; }
+.gr-tage { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:4px; }
+.gr-futter { --v:var(--lila); min-height:var(--touch); }
+.gr-vorschlag { border-style:dashed; }
+.gr-futterliste { display:grid; gap:6px; }
+.gr-futterliste p { margin:0; }
+.gr-quelle { margin:0; font-size:11px; }
+
+/* Dämonen zum Frühstück: die Phasen als Leiste, groß die Uhr. Jede Phase
+   hat ihren Ton; beim Wechsel pulsiert die Fläche einmal. */
+.daemon-phasen { margin:0; padding-left:20px; display:grid; gap:6px; }
+.daemon-phasen li { display:grid; gap:1px; }
+.daemon { --d:var(--magenta); text-align:center; justify-items:center; transition:background-color .6s ease; }
+.daemon[data-phase="schuetteln"] { --d:var(--clay); }
+.daemon[data-phase="einladen"] { --d:var(--lila); }
+.daemon[data-phase="entladen"] { --d:var(--magenta); }
+.daemon[data-phase="ruhe"] { --d:var(--teal); }
+.daemon { background:color-mix(in oklab, var(--d) 8%, var(--surface)); }
+.daemon[data-wechsel] { animation:druck .6s ease; }
+.daemon-leiste { display:flex; gap:4px; width:100%; }
+.daemon-leiste span { height:6px; border-radius:3px; background:var(--hm-leer); overflow:hidden; }
+.daemon-leiste i { display:block; height:100%; width:0; background:var(--d); }
+.daemon-name { margin:0; font-size:28px; }
+.daemon-uhr { margin:0; font:600 56px/1 var(--sans); font-variant-numeric:tabular-nums; color:var(--d); }
+.daemon-text { margin:0; font-size:17px; max-width:30ch; }
+.daemon-heute { margin:0; min-height:1.4em; font-style:italic; }
+.daemon-hinweis { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:var(--touch); padding:8px 14px; border:1px dashed var(--magenta);
+  border-radius:var(--radius-control); background:color-mix(in oklab, var(--magenta) 6%, transparent); text-align:left; font-size:14px; }
+.tb-punkte .p-daemon { background:var(--magenta); border-radius:2px; }
+@media (prefers-reduced-motion: reduce) { .daemon[data-wechsel] { animation:none; } }

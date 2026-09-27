@@ -55,22 +55,63 @@ export function verzichte(z) {
   const alle = { ...VERZICHTE };
   z.eigene.forEach((e, i) => {
     const name = saubererName(e.name) || "Eigenes";
-    alle[e.id] = { name, satz: name, habe: `${name} — ist geschehen`, drang: `würde gern: ${name}`,
-      eigen: true, farbe: EIGEN_FARBEN[i % EIGEN_FARBEN.length] };
+    alle[e.id] = e.art === "aufbauen"
+      ? { name, satz: name, habe: `${name} — getan`, drang: "", eigen: true, aufbau: true, schritte: e.schritte || [], farbe: "var(--moss)" }
+      : { name, satz: name, habe: `${name} — ist geschehen`, drang: `würde gern: ${name}`, eigen: true, farbe: EIGEN_FARBEN[i % EIGEN_FARBEN.length] };
   });
   return alle;
 }
 
 /** Ein eigener Tracker mehr. Gibt seine id zurück, oder null ohne Namen. Er
     ist gleich gewählt; einen gleichnamigen gibt es nicht zweimal. */
-export function fuegeEigenenHinzu(z, name) {
-  const n = saubererName(name);
+export function fuegeEigenenHinzu(z, name, { art = "lassen", schritte } = {}) {
+  const n = art === "aufbauen" ? String(name || "").replace(/\s+/g, " ").trim().slice(0, EIGEN_LAENGE) : saubererName(name);
   if (!n) return null;
   const da = z.eigene.find((e) => saubererName(e.name).toLowerCase() === n.toLowerCase());
   const id = da ? da.id : z.eigene.some((e) => e.id === EIGEN) ? `eigen-${neueId().slice(0, 8)}` : EIGEN;
-  if (!da) z.eigene.push({ id, name: n });
-  z.commitment[id] ||= { drang: true };
+  if (!da) {
+    const e = { id, name: n };
+    if (art === "aufbauen") { e.art = "aufbauen"; e.schritte = sauberSchritte(schritte); }
+    z.eigene.push(e);
+  }
+  z.commitment[id] ||= { drang: art !== "aufbauen" };
   return id;
+}
+
+/* ---- Aufbauen -------------------------------------------------------------
+
+   Nicht jede:r lässt etwas sein. Wer im Oktober etwas aufbaut — eine
+   Morgenroutine, Bewegung, früher schlafen —, nimmt einen Tracker zum
+   Aufbauen. Ein Tippen heißt „getan"; es zählt den Tag wie jede Notiz und
+   ist nie „Geschehen" (Orange), sondern grün. Ab Schicht 2 kann ein solcher
+   Tracker Schritte haben: eine Routine als Folge kleiner Handgriffe. */
+export const AUFBAU_VORSCHLAEGE = [
+  { name: "Morgenroutine", schritte: ["Ein Glas Wasser", "Fenster auf, drei tiefe Atemzüge", "Fünf Minuten bewegen", "Den Tag in einem Satz"] },
+  { name: "Bewegung" },
+  { name: "Früh ins Bett" },
+  { name: "Draußen sein" },
+];
+const SCHRITTE_MAX = 8;
+export const sauberSchritte = (l) =>
+  (Array.isArray(l) ? l : []).map((x) => String(x || "").replace(/\s+/g, " ").trim().slice(0, 60)).filter(Boolean).slice(0, SCHRITTE_MAX);
+
+export function setzeSchritte(z, id, schritte) {
+  const e = z.eigene.find((x) => x.id === id && x.art === "aufbauen");
+  if (!e) return false;
+  e.schritte = sauberSchritte(schritte);
+  return true;
+}
+
+/** Welche Schritte einer Routine an einem Tag getan sind: Set der Indizes. */
+export const schritteGetan = (z, tag, id) =>
+  new Set(z.ereignisse.filter((e) => e.tag === tag && e.verzicht === id && e.art === "getan" && Number.isInteger(e.schritt)).map((e) => e.schritt));
+
+/** Einen Schritt an- oder abhaken. */
+export function schalteSchritt(z, tag, zeit, id, i) {
+  const da = z.ereignisse.findIndex((e) => e.tag === tag && e.verzicht === id && e.art === "getan" && e.schritt === i);
+  if (da >= 0) { z.ereignisse.splice(da, 1); return false; }
+  z.ereignisse.push({ id: neueId(), tag, zeit, verzicht: id, art: "getan", schritt: i, antworten: {} });
+  return true;
 }
 
 export function benenneEigenen(z, id, name) {
@@ -154,29 +195,49 @@ export const EBENEN = [
    Einstellungen dazunimmt oder weglässt. `standard` sagt, was ein neuer
    Zustand von sich aus zeigt — nur der Leitgedanke und die Abendruhe, weil
    beide nichts fordern. */
+/* Drei Schichten, drei Tiefen. Man wählt beim Start, wie tief man gehen
+   will, und kann es jederzeit ändern; jede Schicht nimmt die vorigen mit.
+   Ein Baustein gehört zu einer Schicht und erscheint erst ab ihr. */
+export const TIEFEN = [
+  { n: 1, name: "Beobachten", text: "Einfach festhalten: jeden Tag ein Check-in, was du lässt oder aufbaust, ein Satz zum Tag." },
+  { n: 2, name: "Formen", text: "Verhalten verändern: Routinen in kleinen Schritten, Wenn-dann-Pläne, schnelle Werkzeuge für den Drang-Moment." },
+  { n: 3, name: "Nervensystem", text: "Tiefer schauen: Körper und Antrieb täglich einschätzen, Zusammenhänge über den Monat, der Gremlin." },
+];
+
 export const BAUSTEINE = [
-  { id: "leitgedanke", gruppe: "Oben", titel: "Leitgedanke", standard: true,
+  { id: "leitgedanke", schicht: 1, gruppe: "Oben", titel: "Leitgedanke", standard: true,
     text: "Ein eigener Satz, der dich begleitet." },
-  { id: "lauf", gruppe: "Oben", titel: "Lauf", standard: false,
+  { id: "lauf", schicht: 1, gruppe: "Oben", titel: "Lauf", standard: false,
     text: "Unter der Etappe: wie viele Tage am Stück, dein längster Lauf und ein Satz zum Tag." },
-  { id: "gemeinsam", gruppe: "Oben", titel: "Gemeinsam", standard: true,
+  { id: "gemeinsam", schicht: 1, gruppe: "Oben", titel: "Gemeinsam", standard: true,
     text: "Mit anderen durch den Oktober: wer heute dabei ist, und jede Reise als Farbe. Geteilt wird nur dein Name, was du sein lässt, und an welchen Tagen du dabei warst." },
-  { id: "tagebuch", gruppe: "Unten", titel: "Dein Tagebuch", standard: true,
+  { id: "lebenszeit", schicht: 1, gruppe: "Oben", titel: "Lebenszeit", standard: true,
+    text: "Wie viel Zeit Kaffee, Kippe, Video vorher gekostet haben — und wie viel jetzt frei wird: für Routinen, oder einfach zweckfrei." },
+  { id: "tagebuch", schicht: 1, gruppe: "Unten", titel: "Dein Tagebuch", standard: true,
     text: "Jeder Tag eine Zeile: dein Satz, die Stimmung, was sich gezeigt hat. Fehlt ein Tag, lässt er sich nachtragen." },
-  { id: "verlauf", gruppe: "Unten", titel: "Verlauf und Zusammenhänge", standard: true,
+  { id: "verlauf", schicht: 3, gruppe: "Unten", titel: "Verlauf und Zusammenhänge", standard: true,
     text: "Körper und Antrieb über den Monat, neben Drang und Geschehen — und in Sätzen, was zusammenfällt." },
-  { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
+  { id: "heatmap", schicht: 1, gruppe: "Unten", titel: "Heatmap", standard: false,
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
-  { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
+  { id: "ebenen", schicht: 3, gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
     text: "Ebenen, die sich durch Benutzen öffnen: wie ein Drang verläuft, Routinen, Neues an die Stelle, der Rückblick in Wochen." },
-  { id: "abends", gruppe: "Darstellung", titel: "Abends ruhiger", standard: true,
+  { id: "werkzeuge", schicht: 2, gruppe: "Unten", titel: "Werkzeuge", standard: true,
+    text: "Anker, Swish, Reframing und Wenn-dann-Pläne — kurz, für den Moment, in dem der Drang kommt." },
+  { id: "gremlin", schicht: 3, gruppe: "Unten", titel: "Gremlin", standard: true,
+    text: "Der Begleiter am Rand, nach dem Possibility Management: der Teil, der von Drama lebt. Er sagt laut, was er will — und bekommt eine Aufgabe." },
+  { id: "abends", schicht: 1, gruppe: "Darstellung", titel: "Abends ruhiger", standard: true,
     text: "Nach Sonnenuntergang wird die Seite eine Spur ruhiger." },
 ];
 
 export function aktiv(z, id) {
+  const b = BAUSTEINE.find((x) => x.id === id);
+  if (!b || b.schicht > z.tiefe) return false;
   if (id in z.bausteine) return z.bausteine[id];
-  return !!BAUSTEINE.find((b) => b.id === id)?.standard;
+  return !!b.standard;
 }
+
+/** Ab welcher Tiefe etwas da ist, das kein Baustein ist. */
+export const ab = (z, n) => z.tiefe >= n;
 
 export function schalteBaustein(z, id, an = !aktiv(z, id)) {
   if (!BAUSTEINE.some((b) => b.id === id)) return;
@@ -186,7 +247,9 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {} };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1,
+    werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {},
+    gremlin: { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] } };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -200,7 +263,9 @@ export function aus(text) {
   if (Array.isArray(roh.eigene))
     for (const e of roh.eigene)
       if (e && EIGEN_ID.test(e.id) && saubererName(e.name) && !z.eigene.some((x) => x.id === e.id))
-        z.eigene.push({ id: e.id, name: String(e.name).slice(0, EIGEN_LAENGE) });
+        z.eigene.push(e.art === "aufbauen"
+          ? { id: e.id, name: String(e.name).slice(0, EIGEN_LAENGE), art: "aufbauen", schritte: sauberSchritte(e.schritte) }
+          : { id: e.id, name: String(e.name).slice(0, EIGEN_LAENGE) });
   // Die eine eigene Definition von vorher wird der erste eigene Tracker.
   if (roh.eigen && saubererName(roh.eigen.name) && !z.eigene.some((x) => x.id === EIGEN))
     z.eigene.unshift({ id: EIGEN, name: String(roh.eigen.name).slice(0, EIGEN_LAENGE) });
@@ -209,12 +274,18 @@ export function aus(text) {
     for (const k of ids)
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
+  z.werkzeug = werkzeugAus(roh.werkzeug);
+  z.gremlin = gremlinAus(roh.gremlin);
+  if (roh.zeitVorher && typeof roh.zeitVorher === "object")
+    for (const k of ids) if (minuten(roh.zeitVorher[k]) !== null) z.zeitVorher[k] = roh.zeitVorher[k];
+  // Ein Stand von vor den Schichten hatte alles: er bleibt auf der tiefsten.
+  z.tiefe = [1, 2, 3].includes(roh.tiefe) ? roh.tiefe : 3;
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
   if (roh.gemeinsam && /^p[a-z0-9]{1,16}$/.test(roh.gemeinsam.id) && typeof roh.gemeinsam.name === "string")
     z.gemeinsam = { id: roh.gemeinsam.id, name: roh.gemeinsam.name.slice(0, 24) };
   if (FARBWELTEN[roh.farbe]) z.farbe = roh.farbe;
   if (Array.isArray(roh.ereignisse))
-    z.ereignisse = roh.ereignisse.filter((e) => e && ids.includes(e.verzicht) && ["habe", "drang", "ohne"].includes(e.art))
+    z.ereignisse = roh.ereignisse.filter((e) => e && ids.includes(e.verzicht) && ["habe", "drang", "ohne", "getan"].includes(e.art))
       .map((e) => ({ ...e, antworten: e.antworten && typeof e.antworten === "object" ? e.antworten : {} }));
   if (roh.frei && typeof roh.frei === "object")
     for (const eb of EBENEN) if (roh.frei[eb.id]) z.frei[eb.id] = roh.frei[eb.id];
@@ -232,6 +303,14 @@ export function aus(text) {
         if (s.length) t.selbst = s;
       }
       if (typeof e.getragen === "string" && e.getragen.trim()) t.getragen = e.getragen.trim().slice(0, 280);
+      if (e.zeit && typeof e.zeit === "object") {
+        const zt = {};
+        for (const [k, m] of Object.entries(e.zeit)) if (ids.includes(k) && minuten(m) !== null) zt[k] = m;
+        if (Object.keys(zt).length) t.zeit = zt;
+      }
+      if (e.daemon && typeof e.daemon === "object" && Number.isInteger(e.daemon.sek) && e.daemon.sek > 0 && e.daemon.sek <= 3600)
+        t.daemon = { was: typeof e.daemon.was === "string" ? e.daemon.was.trim().slice(0, 140) : "", sek: e.daemon.sek };
+      if (Array.isArray(e.fuer)) { const f = [...new Set(e.fuer.filter((x) => ZEIT_FUER.some((y) => y.id === x)))]; if (f.length) t.fuer = f; }
       if (Object.keys(t).length) z.tagebuch[tag] = t;
     }
 
@@ -269,10 +348,13 @@ export function schalteAlles(z) {
 
 export function commitmentSatz(z) {
   const V = verzichte(z);
-  const n = gewaehlt(z).map((k) => V[k].satz);
-  if (!n.length) return "";
-  const liste = n.length > 1 ? n.slice(0, -1).join(", ") + " und " + n.at(-1) : n[0];
-  return `Im Oktober lasse ich ${liste} sein.`;
+  const reihe = (n) => (n.length > 1 ? n.slice(0, -1).join(", ") + " und " + n.at(-1) : n[0]);
+  const lassen = gewaehlt(z).filter((k) => !V[k].aufbau).map((k) => V[k].satz);
+  const bauen = gewaehlt(z).filter((k) => V[k].aufbau).map((k) => V[k].satz);
+  if (lassen.length && bauen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein und baue ${reihe(bauen)} auf.`;
+  if (bauen.length) return `Im Oktober baue ich ${reihe(bauen)} auf.`;
+  if (lassen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein.`;
+  return "";
 }
 
 export const vonTag = (z, tag, v) => z.ereignisse.filter((e) => e.tag === tag && (!v || e.verzicht === v));
@@ -572,7 +654,7 @@ export const SCHICHTEN = [
 
 /** Einen Teil des Tagebuchs setzen; leer (oder 0) heißt weg.
     werte: {schlaf: 1–5, …}; stimmung geht auch direkt (erste Fassung). */
-export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen } = {}) {
+export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon } = {}) {
   const t = { ...(z.tagebuch[tag] || {}) };
   const alle = stimmung !== undefined ? { ...werte, stimmung } : werte;
   for (const [id, n] of Object.entries(alle)) {
@@ -587,11 +669,79 @@ export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen } =
     const g = String(getragen || "").replace(/\s+/g, " ").trim().slice(0, 280);
     if (g) t.getragen = g; else delete t.getragen;
   }
+  if (daemon !== undefined) {
+    if (daemon && Number.isInteger(daemon.sek) && daemon.sek > 0)
+      t.daemon = { was: String(daemon.was || "").replace(/\s+/g, " ").trim().slice(0, 140), sek: Math.min(3600, daemon.sek) };
+    else delete t.daemon;
+  }
+  if (zeit !== undefined) {
+    const zt = { ...(t.zeit || {}) };
+    for (const [k, m] of Object.entries(zeit)) { if (minuten(m) !== null) zt[k] = m; else delete zt[k]; }
+    if (Object.keys(zt).length) t.zeit = zt; else delete t.zeit;
+  }
+  if (fuer !== undefined) {
+    const f = [...new Set(fuer)].filter((x) => ZEIT_FUER.some((y) => y.id === x));
+    if (f.length) t.fuer = f; else delete t.fuer;
+  }
   if (Object.keys(t).length) z.tagebuch[tag] = t; else delete z.tagebuch[tag];
 }
 
 /** Wie viele Systeme an einem Tag eingeschätzt sind. */
 export const eingeschaetzt = (z, tag) => SYSTEME.filter((x) => z.tagebuch[tag]?.[x.id]).length;
+
+/* ---- Lebenszeit ---------------------------------------------------------------
+
+   Was Kaffee, Kippe, Video an Zeit gekostet haben — und was davon jetzt frei
+   ist. Einmal je Tracker: wie viel am Tag vorher (zeitVorher, Minuten).
+   Dann je Tag, wenn man will: wie viel heute (tagebuch.zeit). Frei geworden
+   ist die Differenz, nie weniger als null. Gezählt werden nur Tage, an
+   denen etwas angegeben ist — ein leerer Tag ist nichts bekannt, nicht
+   „alles gespart". Und wofür die freie Zeit ging: Routinen, oder einfach
+   zweckfrei. */
+export const ZEIT_STUFEN = [0, 15, 30, 60, 90, 120, 180, 240];
+export const ZEIT_FUER = [
+  { id: "routine", name: "Routinen" }, { id: "zweckfrei", name: "zweckfrei" }, { id: "menschen", name: "Menschen" },
+  { id: "draussen", name: "draußen" }, { id: "ruhe", name: "Ruhe" },
+];
+function minuten(m) { return Number.isInteger(m) && m >= 0 && m <= 720 ? m : null; }
+
+export function setzeZeitVorher(z, id, m) {
+  if (minuten(m) === null) delete z.zeitVorher[id]; else z.zeitVorher[id] = m;
+}
+
+/** Was an einem Tag frei geworden ist, in Minuten — oder null, wenn nichts angegeben ist. */
+export function freiAm(z, tag) {
+  const zt = z.tagebuch[tag]?.zeit;
+  if (!zt) return null;
+  let frei = 0, bekannt = false;
+  for (const [id, heute] of Object.entries(zt)) {
+    if (!(id in z.zeitVorher)) continue;
+    bekannt = true;
+    frei += Math.max(0, z.zeitVorher[id] - heute);
+  }
+  return bekannt ? frei : null;
+}
+
+/** Über Tage: {tage, frei, fuer: {id: Tage}} */
+export function lebenszeit(z, tage) {
+  let frei = 0, n = 0;
+  const fuer = {};
+  for (const t of tage) {
+    const f = freiAm(z, t);
+    if (f === null) continue;
+    n++;
+    frei += f;
+    for (const x of z.tagebuch[t]?.fuer || []) fuer[x] = (fuer[x] || 0) + 1;
+  }
+  return { tage: n, frei, fuer };
+}
+
+/** „1 Std. 20 Min." */
+export function dauer(m) {
+  if (!m) return "0 Min.";
+  const h = Math.floor(m / 60), r = m % 60;
+  return h ? (r ? `${h} Std. ${r} Min.` : `${h} Std.`) : `${r} Min.`;
+}
 
 /* ---- Zusammenhänge ---------------------------------------------------------
 
@@ -649,10 +799,160 @@ export function tagebuchZeilen(z, heute) {
     const es = vonTag(z, t);
     zeilen.push({ tag: t, kopf: tagesKopf(t), heute: t === heute, dabei: dabei(z, t),
       stimmung: e.stimmung || 0, koerper: gruppenWert(z, t, "koerper"), antrieb: gruppenWert(z, t, "antrieb"),
-      selbst: (e.selbst || []).map((i) => SELBST[i]), getragen: e.getragen || "",
+      selbst: (e.selbst || []).map((i) => SELBST[i]), getragen: e.getragen || "", daemon: e.daemon || null,
       drang: es.filter((x) => x.art === "drang").length, habe: es.filter((x) => x.art === "habe").length });
   }
   return zeilen;
+}
+
+/* ---- Werkzeuge (Schicht 2) --------------------------------------------------
+
+   Kurze Werkzeuge aus dem NLP für den Moment, in dem der Drang kommt, und
+   die Wenn-dann-Pläne (aus lifetracker; eigentlich Psychologie, nicht NLP).
+   Hier steht nur, was sich die App merkt; die Anleitungen stehen in
+   werkzeuge.js. Alles bleibt auf dem Gerät.
+
+     anker  {moment, geste}   der Zustand, der an eine Geste gebunden ist
+     swish  {ausloeser, ziel} die beiden Bilder, in Worten
+     plaene [{wenn, dann}]     höchstens zwölf */
+const KURZTEXT = (t, n = 140) => String(t || "").replace(/\s+/g, " ").trim().slice(0, n);
+export const PLAENE_MAX = 12;
+
+function werkzeugAus(roh) {
+  const w = { anker: null, swish: null, plaene: [] };
+  if (!roh || typeof roh !== "object") return w;
+  const txt = (x, n) => (typeof x === "string" ? KURZTEXT(x, n) : "");
+  if (roh.anker && txt(roh.anker.moment)) w.anker = { moment: txt(roh.anker.moment), geste: txt(roh.anker.geste, 60) || "Daumen und Zeigefinger" };
+  if (roh.swish && txt(roh.swish.ausloeser) && txt(roh.swish.ziel)) w.swish = { ausloeser: txt(roh.swish.ausloeser), ziel: txt(roh.swish.ziel) };
+  if (Array.isArray(roh.plaene))
+    w.plaene = roh.plaene.filter((p) => p && txt(p.wenn) && txt(p.dann)).slice(0, PLAENE_MAX)
+      .map((p) => ({ wenn: txt(p.wenn), dann: txt(p.dann) }));
+  return w;
+}
+
+export function setzeAnker(z, moment, geste) {
+  z.werkzeug.anker = KURZTEXT(moment) ? { moment: KURZTEXT(moment), geste: KURZTEXT(geste, 60) || "Daumen und Zeigefinger" } : null;
+}
+export function setzeSwish(z, ausloeser, ziel) {
+  z.werkzeug.swish = KURZTEXT(ausloeser) && KURZTEXT(ziel) ? { ausloeser: KURZTEXT(ausloeser), ziel: KURZTEXT(ziel) } : null;
+}
+/** Ein Wenn-dann-Plan mehr; gibt false zurück, wenn etwas fehlt oder die Liste voll ist. */
+export function planHinzu(z, wenn, dann) {
+  const p = { wenn: KURZTEXT(wenn).replace(/^wenn\s+/i, ""), dann: KURZTEXT(dann).replace(/^dann\s+/i, "") };
+  if (!p.wenn || !p.dann || z.werkzeug.plaene.length >= PLAENE_MAX) return false;
+  z.werkzeug.plaene.push(p);
+  return true;
+}
+export function planWeg(z, i) { z.werkzeug.plaene.splice(i, 1); }
+
+/* ---- Dämonen zum Frühstück (Schicht 3) -----------------------------------------
+
+   Eine Morgenpraxis nach Ilan Stephani, „Iss deine Dämonen zum Frühstück":
+   statt zu warten, bis dich ein Trigger im Lauf des Tages erwischt, holst
+   du ihn dir morgens freiwillig auf den Teller — sieben Minuten, vier
+   Phasen. Die App führt durch die Zeit; was du dir als Dämon des Tages
+   notierst, bleibt im Gerät (tagebuch.daemon = {was, sek}). */
+export const DAEMON_PHASEN = [
+  { id: "schuetteln", name: "Schütteln", sek: 120, text: "Schüttel deinen Körper, kräftig, von den Füßen her. Atme tief. Fahr die Energie hoch." },
+  { id: "einladen", name: "Einladen", sek: 60, text: "Stell dir vor, wer oder was dich heute triggern könnte. Lass ihn herein, ganz nah." },
+  { id: "entladen", name: "Entladen", sek: 150, text: "Lass den Körper ausdrücken, was kommt: Wut, Frust, Zittern, schnelle Bewegungen, Töne. Alles darf raus." },
+  { id: "ruhe", name: "Ruhe", sek: 90, text: "Fahr langsam herunter. Werde still. Spür nach, was jetzt da ist." },
+];
+export const DAEMON_SEK = DAEMON_PHASEN.reduce((a, p) => a + p.sek, 0);
+
+/** Wo die Praxis nach `sek` Sekunden steht: {phase, i, rest, fertig}. */
+export function daemonStand(sek) {
+  let t = Math.max(0, sek);
+  for (let i = 0; i < DAEMON_PHASEN.length; i++) {
+    if (t < DAEMON_PHASEN[i].sek) return { phase: DAEMON_PHASEN[i], i, rest: DAEMON_PHASEN[i].sek - t, fertig: false };
+    t -= DAEMON_PHASEN[i].sek;
+  }
+  return { phase: DAEMON_PHASEN.at(-1), i: DAEMON_PHASEN.length - 1, rest: 0, fertig: true };
+}
+
+/* ---- Der Gremlin: die Beziehung ------------------------------------------------
+
+   Nach Clinton Callahan, SPARK 099 (Possibility Management, CC BY-SA 4.0):
+   „Wenn du deinen Gremlin nicht bewusst fütterst, frisst er dich." Der
+   Gremlin ist weder gut noch böse; er lässt sich nicht ändern und nicht
+   verbannen. Was sich ändert, ist die Beziehung — in fünf Schritten. Die
+   Figur zeigt, wo die Beziehung steht: am Anfang ein wilder Gremlin, am
+   Ende eine frei lebende Katze, die mit dir arbeitet (die Augen bleiben
+   die eines Gremlins).
+
+   Die Stufe wird aus dem Verhalten der letzten Wochen gerechnet, nicht
+   gesammelt: schläft die Beziehung ein, verwildert er wieder. Er taucht
+   erst auf, wenn man an drei Tagen dabei war.
+
+     gremlin.tag           Fütterungstag, 0 = Sonntag … 6 = Samstag, oder null
+     gremlin.futter        was er bekommen darf — du wählst, nicht er
+     gremlin.fuetterungen  [{tag, was}]; was = "" heißt: war nicht hungrig
+     gremlin.werkzeugTage  Tage, an denen ein Werkzeug benutzt wurde */
+export const GREMLIN_STUFEN = [
+  { n: 0, name: "Noch nicht da", text: "Er zeigt sich nach ein paar Tagen." },
+  { n: 1, name: "Erkennen", text: "Jede:r hat einen Gremlin: den Teil, der von niedrigem Drama lebt. Er ist weder gut noch böse." },
+  { n: 2, name: "Erleben", text: "Du merkst, wann er am Steuer sitzt: an Drang, Ausreden, diesem einen Lachen." },
+  { n: 3, name: "Hunger spüren", text: "Du spürst ihn kommen, bevor er übernimmt — und hast ein Werkzeug zur Hand." },
+  { n: 4, name: "Füttern nach Plan", text: "Er bekommt sein Futter an seinem Tag, das du wählst. Dazwischen: Sitz." },
+  { n: 5, name: "Im Dienst", text: "Er arbeitet für dich: frech, wach, unbestechlich. Danke kurz, dann Sitz." },
+];
+export const GREMLIN_FUTTER_VORSCHLAEGE = ["Eine Folge Serie, ohne schlechtes Gewissen", "Etwas Süßes", "Laut Musik, laut mitsingen",
+  "Eine Stunde rumgammeln", "Über schlechtes Fernsehen lästern", "Im Auto schimpfen, allein"];
+export const WOCHENTAGE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const GREMLIN_FUTTER_MAX = 8;
+
+function gremlinAus(roh) {
+  const g = { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] };
+  if (!roh || typeof roh !== "object") return g;
+  if (Number.isInteger(roh.tag) && roh.tag >= 0 && roh.tag <= 6) g.tag = roh.tag;
+  if (Array.isArray(roh.futter)) g.futter = roh.futter.filter((x) => typeof x === "string" && x.trim()).map((x) => KURZTEXT(x, 80)).slice(0, GREMLIN_FUTTER_MAX);
+  const TAG = /^\d{4}-\d{2}-\d{2}$/;
+  if (Array.isArray(roh.fuetterungen))
+    g.fuetterungen = roh.fuetterungen.filter((f) => f && TAG.test(f.tag) && typeof f.was === "string").map((f) => ({ tag: f.tag, was: KURZTEXT(f.was, 80) }));
+  if (Array.isArray(roh.werkzeugTage)) g.werkzeugTage = [...new Set(roh.werkzeugTage.filter((t) => typeof t === "string" && TAG.test(t)))].sort();
+  return g;
+}
+
+export function setzeFuetterungstag(z, tag) { z.gremlin.tag = Number.isInteger(tag) && tag >= 0 && tag <= 6 ? tag : null; }
+export function futterHinzu(z, was) {
+  const w = KURZTEXT(was, 80);
+  if (!w || z.gremlin.futter.length >= GREMLIN_FUTTER_MAX || z.gremlin.futter.includes(w)) return false;
+  z.gremlin.futter.push(w);
+  return true;
+}
+export function futterWeg(z, i) { z.gremlin.futter.splice(i, 1); }
+export const istFuetterungstag = (z, tag) => z.gremlin.tag !== null && alsDatum(tag).getDay() === z.gremlin.tag;
+/** Füttern (was = "" heißt: nicht hungrig). Nur an seinem Tag, einmal. */
+export function fuettern(z, tag, was) {
+  if (!istFuetterungstag(z, tag) || z.gremlin.fuetterungen.some((f) => f.tag === tag)) return false;
+  z.gremlin.fuetterungen.push({ tag, was: KURZTEXT(was, 80) });
+  return true;
+}
+export function werkzeugBenutzt(z, tag) {
+  if (!z.gremlin.werkzeugTage.includes(tag)) z.gremlin.werkzeugTage = [...z.gremlin.werkzeugTage, tag].sort();
+}
+
+/** Die Stufe der Beziehung, 0 bis 5, und warum. Jede Stufe setzt die
+    vorige voraus. */
+export function gremlinStufe(z, heute) {
+  const vor = (n) => verschiebe(heute, -n);
+  const im = (t, n) => t > vor(n) && t <= heute;
+  const allesDabei = eintragsTage(z).filter((t) => t <= heute && dabei(z, t));
+  const dabei14 = allesDabei.filter((t) => im(t, 14)).length;
+  const drangTage14 = new Set(z.ereignisse.filter((e) => e.art === "drang" && im(e.tag, 14)).map((e) => e.tag)).size;
+  const werkzeug14 = z.gremlin.werkzeugTage.filter((t) => im(t, 14)).length;
+  const fuetterungen = (n) => z.gremlin.fuetterungen.filter((f) => im(f.tag, n)).length;
+  const bedingungen = [
+    allesDabei.length >= 3,
+    drangTage14 >= 2,
+    werkzeug14 >= 2,
+    z.gremlin.tag !== null && fuetterungen(14) >= 1,
+    fuetterungen(21) >= 2 && dabei14 >= 8,
+  ];
+  let n = 0;
+  while (n < bedingungen.length && bedingungen[n]) n++;
+  return { ...GREMLIN_STUFEN[n], fuetterungstag: istFuetterungstag(z, heute),
+    heuteGefuettert: z.gremlin.fuetterungen.some((f) => f.tag === heute) };
 }
 
 /* ---- Der Leitgedanke --------------------------------------------------------

@@ -22,9 +22,11 @@ export function monat(api) {
   const m = api.monat();
   const zaehlt = api.hatEintrag();
   const schichten = api.schichten();
-  const S = schichten.find((x) => x.id === schicht) || schichten[0];
+  // Die Ebenen des Monats gehören zur Schicht „Nervensystem".
+  const S = (api.ab(3) && schichten.find((x) => x.id === schicht)) || schichten[0];
   const s = el("section", "monat");
   s.setAttribute("aria-label", "Dein Oktober");
+  s.dataset.katze = "wand";   // Gelände für den Gremlin (begleiter/welt.js)
   s.dataset.schicht = S.id;
   s.style.setProperty("--schicht", S.farbe);
 
@@ -44,7 +46,7 @@ export function monat(api) {
     if (c.art !== "rand") t.title = `${c.nr}. ${c.art === "okt" ? "Oktober" : "September"}: ${STAND_WORT[c.stand]}`;
     gitter.append(t);
   }
-  s.append(ebenenWahl(api, schichten, S));
+  if (api.ab(3)) s.append(ebenenWahl(api, schichten, S));
   gitter.setAttribute("role", "img");
   gitter.setAttribute("aria-label", m.phase === "vor"
     ? `Oktober, noch nicht begonnen. Vorlauf: ${m.vorlauf} ${m.vorlauf === 1 ? "Tag" : "Tage"} dabei.`
@@ -155,6 +157,17 @@ function satzZeile(api) {
    Symptomen — und, wenn gestern leer geblieben ist, das Nachtragen. */
 function weiteres(api) {
   const r = el("div", "monat-weiteres");
+  if (!api.ab(3)) {
+    const g0 = api.gesternOffen();
+    if (g0) { const n0 = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g0)); n0.dataset.focus = "nachtragen"; r.append(n0); }
+    return r;
+  }
+  if (api.morgenpraxisOffen()) {
+    const d = knopf("", "daemon-hinweis", () => api.werkzeug("daemon"));
+    d.dataset.focus = "daemon";
+    d.append(el("span", null, "Morgenpraxis: Dämonen zum Frühstück"), el("span", "leise klein", "7 Min."));
+    r.append(d);
+  }
   const n = api.eingeschaetzt(), alle = api.systemeAnzahl;
   const b = knopf("", "checkin-knopf", () => api.tagEinordnen());
   b.dataset.focus = "einordnen";
