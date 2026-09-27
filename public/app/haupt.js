@@ -19,7 +19,7 @@ import {
   setzeAnker, setzeSwish, planHinzu, planWeg,
   ZEIT_STUFEN, ZEIT_FUER, setzeZeitVorher, freiAm, lebenszeit, dauer,
   DAEMON_PHASEN, daemonStand,
-  REISE, offen, reiseWeiter, reiseStand, einrichten,
+  REISE, offen, reiseWeiter, reiseStand, einrichten, fokus, gewaehltMitFokus,
   GREMLIN_STUFEN, GREMLIN_FUTTER_VORSCHLAEGE, WOCHENTAGE, gremlinStufe, setzeFuetterungstag, futterHinzu, futterWeg, fuettern, werkzeugBenutzt,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
@@ -39,10 +39,12 @@ const ANSICHT = { knopf: knopfAnsicht, blatt: blattAnsicht, faden: fadenAnsicht 
 
 let z = laden();
 let wahlOffen = !gewaehlt(z).length;
-/* Die Einrichtung: wer neu ist, wählt zuerst genau einen Kern. `kernWahl`
+/* Die Einrichtung: wer neu ist, wählt zuerst, worauf er achtet. `auswahl`
    ist, was gerade angetippt ist, bevor es mit „Los geht's" gilt. */
 let einrichtungOffen = !gewaehlt(z).length && !offen(z, "tracker");
-let kernWahl = null;
+let auswahl = [];          // [{schluessel, wahl}] in der Reihenfolge des Antippens
+let fokusSchluessel = null;
+let bestaetigen = false;
 
 const $ = (s) => document.querySelector(s);
 const heute = () => heuteTag();
@@ -58,12 +60,11 @@ function aendern(f) {
   const stand = () => ({ lauf: lauf(z, heute()), serie: serie(z, heute()) });
   const vor = gewaehlt(z).length ? stand() : null;
   f();
-  const neu = gewaehlt(z).length ? reiseWeiter(z) : [];
+  if (gewaehlt(z).length) reiseWeiter(z);
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
   planeAbgleich();
   gremlinNachStufe();
-  if (neu.length) setTimeout(() => reiseZeigen(neu), 1600);
   if (!vor || !gewaehlt(z).length || wahlOffen) return null;
   const m = moment(vor, stand());
   if (m.heuteNeu) {
@@ -79,8 +80,6 @@ function aendern(f) {
 /* Ein kurzes Tippen zurück, wo das Gerät es kann (Android; iOS schweigt). */
 const spueren = (muster) => { try { navigator.vibrate?.(muster); } catch {} };
 
-/** Eine Meldung, an die der Satz zur Stufe angehängt wird, wenn es einen gibt. */
-const mitMoment = (text, m) => (m?.satz ? (text ? `${text} ${m.satz}` : m.satz) : text);
 
 /* ---- Was die Ansichten benutzen ---------------------------------------- */
 
@@ -105,24 +104,28 @@ const api = {
   leitgedankeBearbeiten,
   istFrei: () => istFrei(z, heute()),
   hatEintrag: () => hatEintrag(z, heute()),
-  /* „Heute bin ich dabei": der Knopf unter dem Monat. Ein zweites Tippen
-     schaltet nicht still zurück — vertippt ist selten, und ein Tag, der
-     einfach wieder verschwindet, fühlt sich schlecht an. Zurück geht es über
-     „Rückgängig" in der Meldung. Steht heute schon eine Notiz, zählt der
-     Tag ohnehin; dann gibt es nichts zu tun, nur das zu sagen. */
+  /* „Heute bin ich dabei": der Knopf auf dem Startschirm. Die Antwort steht
+     an seiner Stelle — er wird zu „✓ Heute dabei", darunter ein leises
+     „zurücknehmen". Keine Meldung, die eingeblendet wird. */
   da() {
     const t = heute();
-    const zurueck = ["Rückgängig", () => { aendern(() => schalteDa(z, t)); melde("Zurückgenommen."); }];
-    if (hatEintrag(z, t)) {
-      spueren(8);
-      if (istDa(z, t) && !vonTag(z, t).length) melde("Heute zählt schon.", [zurueck]);
-      else melde("Heute zählt schon — durch deine Notiz.");
-      return;
-    }
-    const m = aendern(() => schalteDa(z, t));
+    if (hatEintrag(z, t)) { spueren(8); return; }
+    aendern(() => schalteDa(z, t));
     gremlin.freut(1, document.querySelector(".da-knopf"));
-    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [["Wie geht’s dir?", () => tagEinordnen()], zurueck]);
   },
+  daZurueck() { aendern(() => { if (istDa(z, heute())) schalteDa(z, heute()); }); },
+  /* Was an einer Notiz noch geht — an ihrem Platz in der Kachel. */
+  notizWeg(id) { aendern(() => entferne(z, id)); },
+  notizDetails(id) { const e = z.ereignisse.find((x) => x.id === id); if (e) fragen(e.verzicht, e.art, e.art === "habe" ? verzichte(z)[e.verzicht].habe : verzichte(z)[e.verzicht].drang, id); },
+  notizWerkzeug(id) { W.menue(id); },
+  stimmungSetzen(n) {
+    aendern(() => schreibeTag(z, heute(), { werte: { stimmung: z.tagebuch[heute()]?.stimmung === n ? 0 : n } }));
+    spueren(8);
+  },
+  fokus: () => fokus(z),
+  gewaehltMitFokus: () => gewaehltMitFokus(z),
+  reiseNeu: () => (z.reiseNeu !== null ? REISE[z.reiseNeu] : null),
+  reiseGesehen() { aendern(() => { z.reiseNeu = null; }); },
   aktiv: (id) => aktiv(z, id),
   offen: (was) => offen(z, was),
   reise: () => reiseStand(z),
@@ -148,7 +151,7 @@ const api = {
     return { stufe: s, stufen: GREMLIN_STUFEN, tag: z.gremlin.tag, futter: z.gremlin.futter, wochentage: WOCHENTAGE,
       vorschlaege: GREMLIN_FUTTER_VORSCHLAEGE, fuetterungstag: s.fuetterungstag, heuteGefuettert: !!f, heuteWas: f?.was || "" };
   },
-  gremlinTag(t) { aendern(() => setzeFuetterungstag(z, t)); if (t !== null) melde(`Sein Tag ist der ${WOCHENTAGE[t]}. Bis dahin: Sitz.`); },
+  gremlinTag(t) { aendern(() => setzeFuetterungstag(z, t)); },
   gremlinFutterHinzu(was) { aendern(() => futterHinzu(z, was)); },
   gremlinFutterWeg(i) { aendern(() => futterWeg(z, i)); },
   gremlinFuettern(was) {
@@ -156,7 +159,6 @@ const api = {
     aendern(() => { ok = fuettern(z, heute(), was); });
     if (!ok) return;
     gremlin.sagt("fuetterung");
-    melde(was ? `Gefüttert: ${was}. Bewusst, an seinem Tag.` : "Nicht hungrig. Dann nächste Woche — nicht vorher.");
   },
   zeitHeuteSetzen(v, m) {
     const vorher = freiAm(z, heute());
@@ -166,7 +168,6 @@ const api = {
       spueren(jetzt > (vorher || 0) ? 14 : 8);
       document.querySelector(".lz-zahl")?.classList.add("hoch");
     }
-    melde(mitMoment(jetzt ? `Heute frei geworden: ${dauer(jetzt)}${mo?.heuteNeu ? " Der Tag zählt." : ""}` : "Notiert.", mo));
   },
   zeitFuerSchalten(id) {
     const f = new Set(z.tagebuch[heute()]?.fuer || []);
@@ -179,9 +180,7 @@ const api = {
     let an = false;
     const m = aendern(() => { an = schalteSchritt(z, heute(), jetztZeit(), v, i); });
     document.querySelector(`[data-focus="schritt-${v}-${i}"]`)?.classList.add("tipp");
-    const fertig = schritteGetan(z, heute(), v).size === V.schritte.length;
     if (an) { spueren(m?.heuteNeu ? 14 : 8); gremlin.freut(vonTag(z, heute()).length, document.querySelector(`[data-focus="schritt-${v}-${i}"]`)); }
-    melde(mitMoment(an ? (fertig ? `${V.name}: alle Schritte getan.` : `${V.schritte[i]} — getan.`) + (m?.heuteNeu ? " Der Tag zählt." : "") : "Zurückgenommen.", m));
   },
   schichten: () => SCHICHTEN,
   schichtWert: (id, tag) => SCHICHTEN.find((x) => x.id === id).wert(z, tag),
@@ -196,13 +195,12 @@ const api = {
   monatZeigen: () => monatZeigen(),
   eintragenMenue: () => eintragenMenue(),
   tagAntippen(tag) {
-    if (tag > heute()) { melde(`${tagesKopf(tag)} kommt noch.`); return; }
+    if (tag > heute()) return;
     tagEinordnen(tag, { ausKalender: true });
   },
   getragen: () => z.tagebuch[heute()]?.getragen || "",
   getragenSetzen(text) {
     const m = aendern(() => schreibeTag(z, heute(), { getragen: text }));
-    melde(mitMoment(z.tagebuch[heute()]?.getragen ? `Im Tagebuch.${m?.heuteNeu ? " Der Tag zählt." : ""}` : "Satz entfernt.", m));
   },
   tagebuchZeilen: () => tagebuchZeilen(z, heute()),
   stimmungWort: (n) => STIMMUNG[n - 1],
@@ -220,11 +218,9 @@ const api = {
   mitgehen,
   binIch(id, name) {
     aendern(() => { z.gemeinsam = { id, name }; });
-    melde(`Willkommen zurück, ${name}. Dieses Gerät geht jetzt mit.`);
   },
   alleinBleiben() {
     aendern(() => schalteBaustein(z, "gemeinsam", false));
-    melde("Du gehst allein. In den Einstellungen (⋯) kannst du jederzeit mitgehen.");
   },
   async linkTeilen() {
     const url = location.origin + "/";
@@ -319,7 +315,6 @@ async function mitgehen(name) {
   try {
     const p = await senden("/api/einrichtung", { name, commitment: gewaehlt(z) });
     aendern(() => { z.gemeinsam = { id: p.id, name: p.name }; });
-    melde(`Du gehst mit, ${p.name}. Schön, dass du da bist.`);
     await abgleichen();
   } catch (e) {
     melde(GRUPPEN_FEHLER[e.schluessel] || "Das hat nicht geklappt. Versuch es gleich noch einmal.");
@@ -371,7 +366,7 @@ function gremlinNachStufe() {
   if (letzteStufe !== null && s.n !== letzteStufe && aktiv(z, "gremlin")) {
     const text = s.n === 1 ? "Da ist jemand. Dein Gremlin zeigt sich — unten am Rand."
       : s.n > letzteStufe ? `Dein Gremlin: ${s.name}. ${s.text}` : `Dein Gremlin verwildert ein wenig: ${s.name}.`;
-    setTimeout(() => { gremlin.pruefen(); melde(text); }, 2600);
+    setTimeout(() => gremlin.pruefen(), 2600);
   }
   letzteStufe = s.n;
 }
@@ -388,7 +383,6 @@ const W = werkzeuge({
   daemonFertig(was, sek) {
     const m = aendern(() => { schreibeTag(z, heute(), { daemon: { was, sek } }); werkzeugBenutzt(z, heute()); });
     gremlin.sagt("daemon");
-    melde(mitMoment(`Dämon gefrühstückt.${m?.heuteNeu ? " Der Tag zählt." : ""}`, m));
   },
 });
 
@@ -418,10 +412,9 @@ function el(tag, klasse, text) {
   return e;
 }
 
-/* Schnell loggen: ein Tippen notiert sofort, ohne Fragen. Die Meldung
-   danach bietet zweierlei an — die Fragen, wenn man will, und das
-   Zurücknehmen, falls man sich vertippt hat. Beides ist freiwillig; tut man
-   nichts, bleibt der Eintrag, wie er ist. */
+/* Schnell loggen: ein Tippen notiert sofort, ohne Fragen. Die Antwort steht
+   in der Kachel selbst: die Zahl springt, darunter die letzte Notiz mit
+   „Details" und „rückgängig" — an einem festen Platz, nicht eingeblendet. */
 function eintragen(v, art) {
   const V = verzichte(z)[v];
   if (V.aufbau) {
@@ -432,30 +425,17 @@ function eintragen(v, art) {
     if (getan.length) {
       aendern(() => { for (const e of getan) entferne(z, e.id); });
       spueren(8);
-      melde(`${V.name}: zurückgenommen.`);
       return;
     }
   }
-  let neu = [], id = null;
-  const m = aendern(() => {
-    neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art });
-    id = z.ereignisse.at(-1).id;
-  });
+  const m = aendern(() => notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art }));
   document.querySelector(`[data-focus="${art === "getan" ? "habe" : art}-${v}"]`)?.classList.add("tipp");
   if (!m?.heuteNeu) spueren(8);
   if (art === "drang") gremlin.sagt(gremlinStufe(z, heute()).n >= 4 && !gremlinStufe(z, heute()).fuetterungstag ? "sitz" : "drang");
   else if (art === "habe") gremlin.sagt("geschehen");
   else gremlin.freut(vonTag(z, heute()).length, document.querySelector(`[data-focus="habe-${v}"]`));
-  const text = `${art === "getan" ? `Getan: ${V.name}.` : `Notiert: ${art === "habe" ? V.habe : V.drang}.`}${m?.heuteNeu ? " Der Tag zählt." : ""}`;
-  const zurueck = ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }];
-  const details = ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)];
-  melde(mitMoment(ebenenText(neu, text), m), art === "getan" ? []
-    : art === "drang" && ab(z, 2) ? [["Werkzeug", () => W.menue(id)], details, zurueck]
-    : [details, zurueck]);
 }
 
-const ebenenText = (neu, text) =>
-  aktiv(z, "ebenen") && neu.length ? `${text} Eine Ebene hat sich geöffnet: ${neu.map((e) => e.titel).join(", ")}.` : text;
 
 /* Begleitung, wenn man sie will: erst Raum, dann zurück zu den Fragen.
    Was schon ausgefüllt war, bleibt stehen. */
@@ -520,7 +500,6 @@ function fragen(v, art, titel, id) {
     let neu = [];
     bogen.close();
     aendern(() => { neu = ergaenze(z, id, { antworten, begleitetSek }); });
-    melde(ebenenText(neu, "Details sind dabei."));
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));
@@ -560,7 +539,6 @@ function tagEinordnen(tag, { ausKalender = false } = {}) {
   /* Speichern, still. Wird der Tag dadurch gezählt, sagt es die Meldung. */
   const sichereTag = (was) => {
     const m = aendern(() => schreibeTag(z, t, was));
-    if (m?.heuteNeu) melde(mitMoment("Der Tag zählt.", m));
   };
 
   /* Aus dem Kalender: was an dem Tag notiert ist. */
@@ -576,7 +554,6 @@ function tagEinordnen(tag, { ausKalender = false } = {}) {
     const da = Object.assign(document.createElement("input"), { type: "checkbox", checked: istDa(z, t) });
     da.addEventListener("change", () => {
       const m = aendern(() => { if (da.checked !== istDa(z, t)) schalteDa(z, t); });
-      if (m?.heuteNeu) melde(mitMoment("Der Tag zählt.", m));
     });
     const tx = el("span", "baustein-text");
     tx.append(el("span", null, istHeute ? "Heute bin ich dabei" : "An dem Tag war ich dabei"),
@@ -749,7 +726,6 @@ function leitgedankeBearbeiten() {
     let neu = false;
     aendern(() => { neu = setzeLeitgedanke(z, i.value, heute()); });
     bogen.close();
-    if (neu) melde("Dein Leitgedanke gilt ab heute.");
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("so soll er lauten", "gross", speichern), knopf("bleibt, wie er ist", "text leise", () => bogen.close()));
@@ -768,7 +744,7 @@ function einstellungen() {
   k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)),
     offen(z, "tracker")
       ? knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); })
-      : knopf("Anders anfangen: den Kern neu wählen", "text", () => { bogen.close(); kernWahl = null; einrichtungOffen = true; zeichne(); }));
+      : knopf("Anders anfangen: neu wählen", "text", () => { bogen.close(); auswahl = []; fokusSchluessel = null; bestaetigen = false; einrichtungOffen = true; zeichne(); }));
 
   const r = reiseKarte();
   if (r) k.append(r);
@@ -911,7 +887,7 @@ function wahlSeite() {
     e.preventDefault();
     let id = null;
     aendern(() => { id = fuegeEigenenHinzu(z, i.value); });
-    if (id) { melde(`${verzichte(z)[id].name} ist dabei.`); $(".wahl-neu input")?.focus(); }
+    if (id) $(".wahl-neu input")?.focus();
   });
   s.append(neu);
 
@@ -981,7 +957,7 @@ function aufbauWahl() {
   const plus = knopf("+", "rund", () => f.requestSubmit());
   plus.setAttribute("aria-label", "Hinzufügen");
   f.append(i, plus);
-  f.addEventListener("submit", (e) => { e.preventDefault(); let id = null; aendern(() => { id = fuegeEigenenHinzu(z, i.value, { art: "aufbauen" }); }); if (id) melde(`${verzichte(z)[id].name} ist dabei.`); });
+  f.addEventListener("submit", (e) => { e.preventDefault(); let id = null; aendern(() => { id = fuegeEigenenHinzu(z, i.value, { art: "aufbauen" }); }); });
   k.append(r, f);
   return k;
 }
@@ -1039,7 +1015,6 @@ function neuerTracker() {
     bogen.close();
     api.springeZu = id;
     zeichne();
-    melde(`${verzichte(z)[id].name} ist dabei.`);
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("hinzufügen", "gross", hinzu), knopf("abbrechen", "text leise", () => bogen.close()));
@@ -1081,7 +1056,6 @@ function eigenerTracker(id) {
     const weg = knopf("entfernen", "text leise", () => {
       aendern(() => entferneEigenen(z, id));
       bogen.close();
-      melde(`${V[id].name} ist entfernt.`);
     });
     unten.append(weg);
   }
@@ -1133,97 +1107,104 @@ function monatZeigen() {
 
 /* ---- Die Einrichtung ----------------------------------------------------------
 
-   Wer neu ist, wählt genau eine Sache: etwas, das er im Oktober sein lässt,
-   oder etwas, das er aufbaut. Mehr braucht der erste Tag nicht; alles
-   andere öffnet sich unterwegs (REISE in logik.js). Zwei Schritte: wählen,
-   dann sehen, wie es losgeht. Erst „Los geht's" schreibt den Kern. */
+   Wer neu ist, wählt, worauf er im Oktober achtet: etwas, das er sein
+   lässt, oder etwas, das er aufbaut — eins oder mehreres. Eins davon ist
+   der Fokus, deutlich markiert: das zuerst Gewählte, bis man einen anderen
+   zum Fokus macht. Dann ein Satz und „Los geht's". Alles andere öffnet
+   sich unterwegs (REISE in logik.js). */
 
 const KERN_LASSEN = FEST.map((k) => ({ fest: k }));
 const KERN_AUFBAU = AUFBAU_VORSCHLAEGE.map((v) => ({ name: v.name, art: "aufbauen", schritte: v.schritte }));
+const wahlName = (w) => (w.fest ? verzichte(z)[w.fest].name : w.name);
+const wahlSchluessel = (w) => (w.fest ? w.fest : `${w.art}:${w.name.trim().toLowerCase()}`);
 
-/* Auf dem iPhone speichern Safari und der Home-Bildschirm getrennt: was im
-   Browser notiert ist, fehlt in der App. Deshalb der Hinweis, bevor es losgeht. */
+/* Auf dem iPhone speichern Safari und der Home-Bildschirm getrennt. */
 const imIosBrowser = () => /iP(hone|ad|od)/.test(navigator.userAgent) && !navigator.standalone && !matchMedia("(display-mode: standalone)").matches;
+
+function waehle(w) {
+  const k = wahlSchluessel(w);
+  if (auswahl.some((a) => a.schluessel === k)) {
+    auswahl = auswahl.filter((a) => a.schluessel !== k);
+    if (fokusSchluessel === k) fokusSchluessel = auswahl[0]?.schluessel || null;
+  } else {
+    auswahl.push({ schluessel: k, wahl: w });
+    fokusSchluessel ||= k;
+  }
+  zeichne();
+}
 
 function einrichtungSeite() {
   const s = el("section", "einrichtung");
   s.append(el("p", "rubrik", `Sober October · ${tagesZeile(heute())}`));
-  if (!kernWahl) {
-    s.append(el("h1", "serif", "Worauf willst du im Oktober achten?"),
-      el("p", "leise", "Such dir eine Sache aus. Mehr kommt mit der Zeit dazu."));
-    const gruppe = (titel, wahlen, art) => {
-      const g = el("div", "kern-gruppe");
-      g.append(el("h2", "rubrik", titel));
-      for (const w of wahlen) {
-        const name = w.fest ? verzichte(z)[w.fest].name : w.name;
-        const b = knopf(name, "kern-knopf", () => { kernWahl = w; zeichne(); scrollTo(0, 0); });
-        if (w.fest) b.dataset.v = w.fest; else b.dataset.v = "aufbau";
-        b.dataset.focus = `kern-${name}`;
-        g.append(b);
-      }
-      const f = el("form", "wahl-neu");
-      const i = Object.assign(document.createElement("input"), { name: "kern", autocomplete: "off", maxLength: 60,
-        placeholder: art === "aufbauen" ? "Etwas anderes, z. B. Lesen am Abend" : "Etwas anderes, z. B. Alkohol" });
-      i.setAttribute("aria-label", art === "aufbauen" ? "Etwas anderes aufbauen" : "Etwas anderes sein lassen");
-      i.enterKeyHint = "next";
-      const weiter = knopf("→", "rund", () => f.requestSubmit());
-      weiter.setAttribute("aria-label", "Weiter");
-      f.append(i, weiter);
-      f.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (!i.value.trim()) { i.focus(); return; }
-        kernWahl = { name: i.value, art };
-        zeichne();
+
+  if (bestaetigen && auswahl.length) {
+    const probe = structuredClone(z);
+    einrichten(probe, auswahl.map((a) => a.wahl), auswahl.findIndex((a) => a.schluessel === fokusSchluessel));
+    s.append(el("h1", "serif einrichtung-satz", commitmentSatz(probe)));
+    if (imIosBrowser()) s.append(el("p", "leise klein einrichtung-tipp", "Tipp: erst über Teilen → „Zum Home-Bildschirm“ hinzufügen, dann dort starten."));
+    const unten = el("div", "einrichtung-unten");
+    unten.append(
+      knopf("Los geht’s", "gross", () => {
+        const wahlen = auswahl.map((a) => a.wahl), f = auswahl.findIndex((a) => a.schluessel === fokusSchluessel);
+        auswahl = []; fokusSchluessel = null; bestaetigen = false;
+        einrichtungOffen = false; wahlOffen = false;
+        aendern(() => einrichten(z, wahlen, f));
         scrollTo(0, 0);
-      });
-      g.append(f);
-      return g;
-    };
-    s.append(gruppe("Sein lassen", KERN_LASSEN, "lassen"), gruppe("Aufbauen", KERN_AUFBAU, "aufbauen"));
-    if (gewaehlt(z).length) s.append(knopf("bleibt, wie es ist", "text leise", () => { einrichtungOffen = false; zeichne(); }));
+      }),
+      knopf("zurück", "text leise", () => { bestaetigen = false; zeichne(); }),
+    );
+    s.append(unten);
     return s;
   }
 
-  const probe = structuredClone(z);
-  einrichten(probe, kernWahl);
-  const aufbau = !kernWahl.fest && kernWahl.art === "aufbauen";
-  s.append(el("h1", "serif", commitmentSatz(probe)),
-    el("p", "einrichtung-so", aufbau
-      ? "So geht es los: Jeden Tag, an dem du es tust, ein Tippen auf „getan“. Und an jedem Tag ein Tippen auf „Heute bin ich dabei“."
-      : "So geht es los: Jeden Tag ein Tippen auf „Heute bin ich dabei“. Passiert es doch, notierst du es — auch das zählt den Tag. Kein Urteil."));
+  s.append(el("h1", "serif", "Worauf willst du im Oktober achten?"),
+    el("p", "leise", "Eins reicht. Wählst du mehr, ist eins davon dein Fokus."));
+  const gruppe = (titel, wahlen, art) => {
+    const g = el("div", "kern-gruppe");
+    g.append(el("h2", "rubrik", titel));
+    const alle = [...wahlen, ...auswahl.map((a) => a.wahl).filter((w) => !w.fest && w.art === art && !wahlen.some((x) => wahlSchluessel(x) === wahlSchluessel(w)))];
+    for (const w of alle) {
+      const k = wahlSchluessel(w), an = auswahl.some((a) => a.schluessel === k), istFokus = fokusSchluessel === k;
+      const zeile = el("div", "kern-zeile");
+      zeile.dataset.v = w.fest || "aufbau";
+      zeile.dataset.an = an;
+      if (istFokus) zeile.dataset.fokus = "";
+      const b = knopf("", "kern-knopf", () => waehle(w));
+      b.setAttribute("aria-pressed", an);
+      b.dataset.focus = `kern-${k}`;
+      b.append(el("span", "kern-haken", an ? "✓" : ""), el("span", "kern-name", wahlName(w)));
+      zeile.append(b);
+      if (istFokus) zeile.append(el("span", "kern-fokus", "Fokus"));
+      else if (an) {
+        const f = knopf("als Fokus", "text klein kern-zum-fokus", () => { fokusSchluessel = k; zeichne(); });
+        f.setAttribute("aria-label", `${wahlName(w)} zum Fokus machen`);
+        zeile.append(f);
+      }
+      g.append(zeile);
+    }
+    const f = el("form", "wahl-neu");
+    const i = Object.assign(document.createElement("input"), { name: "kern", autocomplete: "off", maxLength: 60,
+      placeholder: art === "aufbauen" ? "Etwas anderes, z. B. Lesen am Abend" : "Etwas anderes, z. B. Alkohol" });
+    i.setAttribute("aria-label", art === "aufbauen" ? "Etwas anderes aufbauen" : "Etwas anderes sein lassen");
+    const plus = knopf("+", "rund", () => f.requestSubmit());
+    plus.setAttribute("aria-label", "Hinzufügen");
+    f.append(i, plus);
+    f.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!i.value.trim()) { i.focus(); return; }
+      waehle({ name: i.value.trim(), art });
+    });
+    g.append(f);
+    return g;
+  };
+  s.append(gruppe("Sein lassen", KERN_LASSEN, "lassen"), gruppe("Aufbauen", KERN_AUFBAU, "aufbauen"));
 
-  const reise = el("ol", "reise-liste");
-  const start = el("li");
-  start.dataset.stand = "jetzt";
-  start.append(el("span", "reise-titel", "Der Monat und dein Kern"), el("span", "reise-tag", "jetzt"));
-  reise.append(start);
-  for (const r of REISE) {
-    const li = el("li");
-    li.append(el("span", "reise-titel", r.titel), el("span", "reise-tag", r.wann));
-    reise.append(li);
-  }
-  s.append(el("h2", "rubrik", "Was sich durch Benutzen öffnet"), reise);
-
-  if (imIosBrowser()) {
-    const tipp = el("div", "einrichtung-tipp");
-    tipp.append(el("strong", null, "Tipp fürs iPhone"),
-      el("span", null, "Leg die App zuerst auf den Home-Bildschirm (Teilen → „Zum Home-Bildschirm“) und fang dort an. Safari und Home-Bildschirm speichern getrennt."));
-    s.append(tipp);
-  }
-
-  const unten = el("div", "einrichtung-unten");
-  unten.append(
-    knopf("Los geht’s", "gross", () => {
-      const w = kernWahl;
-      kernWahl = null;
-      einrichtungOffen = false;
-      wahlOffen = false;
-      aendern(() => einrichten(z, w));
-      scrollTo(0, 0);
-    }),
-    knopf("anders wählen", "text leise", () => { kernWahl = null; zeichne(); }),
-  );
-  s.append(unten, el("p", "leise klein", "Was du notierst, bleibt auf diesem Gerät."));
+  const weiter = el("div", "einrichtung-weiter");
+  const w = knopf(auswahl.length ? "Weiter" : "Wähl etwas aus", "gross", () => { bestaetigen = true; zeichne(); scrollTo(0, 0); });
+  w.disabled = !auswahl.length;
+  weiter.append(w);
+  if (gewaehlt(z).length) weiter.append(knopf("bleibt, wie es ist", "text leise", () => { einrichtungOffen = false; zeichne(); }));
+  s.append(weiter);
   return s;
 }
 
@@ -1245,17 +1226,6 @@ function reiseKarte() {
   return k;
 }
 
-/* Eine Station ist erreicht: einmal sagen, was jetzt da ist. */
-function reiseZeigen(neu) {
-  if (bogen.open) { bogen.addEventListener("close", () => setTimeout(() => reiseZeigen(neu), 300), { once: true }); return; }
-  const k = el("div", "bogen-inhalt reise-neu");
-  const st = reiseStand(z);
-  k.append(el("p", "rubrik", "Deine Reise"));
-  for (const r of neu) k.append(el("h2", null, r.titel), el("p", "serif", r.text));
-  if (st.naechste) k.append(el("p", "leise klein", st.noch));
-  k.append(knopf("Schön", "gross", () => bogen.close()));
-  zeigeBogen(k);
-}
 
 /* ---- Zeichnen -------------------------------------------------------------- */
 

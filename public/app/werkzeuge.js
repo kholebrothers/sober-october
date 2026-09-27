@@ -100,7 +100,7 @@ export function werkzeuge(k) {
       el("p", "serif", "Langsam ausatmen. Länger aus als ein."),
       el("p", "serif", `Du warst schon einmal hier: ${a.moment}.`),
       el("p", "leise", "Bleib, solange es gut tut. Der Drang steigt, und er fällt auch wieder."),
-      unten(knopf("gut so", "gross", () => { k.schliessen(); k.melde("Gut so."); k.gemacht?.(); }),
+      unten(knopf("gut so", "gross", () => { k.schliessen(); k.gemacht?.(); }),
         knopf("neu setzen", "text leise", () => ankerSetzen())));
     k.zeige(f);
   }
@@ -150,7 +150,7 @@ export function werkzeuge(k) {
         }, 800);
       }, dauer);
     });
-    f.append(b, text, unten(los, knopf("fertig", "text leise", () => { k.schliessen(); k.melde("Swish gemacht."); if (n) k.gemacht?.(); })));
+    f.append(b, text, unten(los, knopf("fertig", "text leise", () => { k.schliessen(); if (n) k.gemacht?.(); })));
     k.zeige(f);
   }
 

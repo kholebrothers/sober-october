@@ -27,11 +27,14 @@ export function monat(api) {
   s.dataset.schicht = "dabei";
 
   /* Der Startschirm ist für das Commitment da: der Satz, die Zahl, die
-     Woche und der Knopf. Den ganzen Monat gibt es auf Antippen. */
-  s.append(el("p", "monat-commitment serif", api.commitmentSatz()), kopf(m), etappe(api), woche(api, m));
+     Woche — und eine Sache zu tun. Erst „Heute bin ich dabei"; ist der Tag
+     gezählt, steht an derselben Stelle „✓ Heute dabei" und darunter die
+     Frage, wie es dir geht. Den ganzen Monat gibt es auf Antippen. */
+  s.append(el("p", "monat-commitment serif", api.commitmentSatz()), kopf(m), woche(api, m));
 
   if (m.phase !== "nach") {
-    s.append(daKnopf(api, zaehlt));
+    if (!zaehlt) s.append(daKnopf(api, zaehlt));
+    else s.append(daStand(api), gesichter(api));
     if (api.offen("satz")) s.append(satzZeile(api));
     s.append(weiteres(api));
   }
@@ -52,7 +55,9 @@ function tage(api, zellen, S) {
   const gitter = el("div", "monat-gitter");
   for (const w of WOCHENTAGE) gitter.append(el("span", "monat-wt", w));
   for (const c of zellen) {
-    const t = c.art === "rand" ? el("span", "monat-tag", "") : knopf(String(c.nr), "monat-tag", () => api.tagAntippen(c.tag));
+    const t = c.art === "rand" ? el("span", "monat-tag", "")
+      : c.stand === "kommt" ? el("span", "monat-tag", String(c.nr))
+      : knopf(String(c.nr), "monat-tag", () => api.tagAntippen(c.tag));
     t.dataset.stand = c.stand;
     t.dataset.art = c.art;
     if (c.heute) t.dataset.heute = "";
@@ -94,7 +99,7 @@ export function monatBlatt(api, neu) {
   const s = el("section", "monat monat-blatt");
   s.dataset.schicht = S.id;
   s.style.setProperty("--schicht", S.farbe);
-  s.append(el("p", "rubrik", "Dein Oktober"), kopf(m));
+  s.append(el("p", "rubrik", "Dein Oktober"), kopf(m), etappe(api));
   if (api.ab(3)) s.append(ebenenWahl(api, schichten, S, neu));
   const g = tage(api, m.zellen, S);
   g.setAttribute("aria-label", m.phase === "vor"
@@ -202,14 +207,6 @@ function weiteres(api) {
     d.append(el("span", null, "Morgenpraxis: Dämonen zum Frühstück"), el("span", "leise klein", "7 Min."));
     r.append(d);
   }
-  /* Der Check-in, immer da: das Gesicht von heute, wenn es eins gibt. */
-  const st = api.stimmungHeute();
-  const b = knopf("", "checkin-knopf", () => api.tagEinordnen());
-  b.dataset.focus = "einordnen";
-  if (st) b.dataset.teil = "";
-  b.append(el("span", null, "Wie geht’s dir?"), el("span", "checkin-stand", st ? api.gesicht(st) : "😶"));
-  b.setAttribute("aria-label", st ? `Check-in: Stimmung ${api.stimmungWort(st)}. Öffnen` : "Check-in öffnen");
-  r.append(b);
   const g = api.gesternOffen();
   if (g) {
     const n = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g));
@@ -224,7 +221,52 @@ function weiteres(api) {
 /* Was als Nächstes kommt, leise unter dem Knopf — und was man dafür tun
    kann. Am Ziel der Reise steht hier nichts mehr. */
 function reiseHinweis(api) {
+  /* Eben geöffnet: hier, an diesem festen Platz, bis man es gesehen hat. */
+  const neu = api.reiseNeu();
+  if (neu) {
+    const b = knopf("", "reise-neu-hinweis", () => api.reiseGesehen());
+    b.append(el("span", "reise-neu-titel", `Neu: ${neu.titel}`), el("span", "leise klein", neu.text), el("span", "reise-ok", "gesehen"));
+    b.setAttribute("aria-label", `Neu: ${neu.titel}. ${neu.text} Antippen, wenn gesehen.`);
+    return b;
+  }
   const r = api.reise();
   if (!r.naechste) return null;
   return el("p", "reise-hinweis leise klein", r.noch);
+}
+
+/* Ist der Tag gezählt, steht das an der Stelle des Knopfs — ruhig, mit
+   einem leisen Weg zurück, solange nur „dabei" ihn zählt. */
+function daStand(api) {
+  const d = el("div", "da-stand");
+  const nurNotiz = !api.istDa();
+  d.append(el("span", "da-stand-text", nurNotiz ? "✓ Heute zählt — durch deine Notiz" : "✓ Heute dabei"));
+  if (!nurNotiz) {
+    const z = knopf("zurücknehmen", "text klein leise", () => api.daZurueck());
+    z.dataset.focus = "da-zurueck";
+    d.append(z);
+  }
+  return d;
+}
+
+/* Wie geht’s dir? Fünf Gesichter, ein Tippen — gleich hier. Mehr (ein
+   Satz, Schlaf, Bewegung …) im Check-in. */
+function gesichter(api) {
+  const w = el("div", "heute-gesichter");
+  w.append(el("p", "heute-frage serif", "Wie geht’s dir?"));
+  const r = el("div", "gesichter");
+  r.setAttribute("role", "radiogroup");
+  r.setAttribute("aria-label", "Stimmung heute");
+  const jetzt = api.stimmungHeute();
+  for (let n = 1; n <= 5; n++) {
+    const b = knopf(api.gesicht(n), "gesicht", () => api.stimmungSetzen(n));
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", jetzt === n);
+    b.setAttribute("aria-label", `Stimmung: ${api.stimmungWort(n)}`);
+    b.dataset.focus = `gesicht-${n}`;
+    r.append(b);
+  }
+  const mehr = knopf("mehr festhalten ›", "text klein woche-monat", () => api.tagEinordnen());
+  mehr.dataset.focus = "checkin-mehr";
+  w.append(r, mehr);
+  return w;
 }

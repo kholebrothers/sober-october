@@ -281,7 +281,7 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
 /* Der Knopf des Tages: groß, rund, einladend. Ist der Tag gezählt, ist er
    voll und trägt ein Häkchen. */
 .da-knopf { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; column-gap:10px; width:100%; min-height:60px; padding:12px 18px;
-  border:1.5px dashed var(--moss); border-radius:99px; background:transparent; color:var(--ink); font:500 18px var(--sans);
+  border:0; border-radius:99px; background:var(--moss); color:var(--surface); font:600 18px var(--sans);
   transition:background-color .3s ease, color .3s ease, transform .12s ease; }
 .da-knopf:active { transform:scale(.97); }
 .da-haken { display:none; font-weight:700; }
@@ -694,7 +694,7 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
 .reise-liste li[data-stand="jetzt"] .reise-titel, .reise-liste li[data-stand="offen"] .reise-titel,
 .reise-liste li[data-stand="naechste"] .reise-titel { color:var(--ink); }
 .reise-liste li[data-stand="offen"] .reise-tag, .reise-liste li[data-stand="jetzt"] .reise-tag { color:var(--moss); font-weight:600; }
-.einrichtung-tipp { display:grid; gap:4px; padding:12px 14px; margin:0 0 20px; border-radius:var(--radius-control);
+.einrichtung-tipp-alt { display:grid; gap:4px; padding:12px 14px; margin:0 0 20px; border-radius:var(--radius-control);
   background:color-mix(in oklab, var(--blau) 7%, var(--surface)); font-size:14px; line-height:1.45; }
 .einrichtung-unten { display:grid; gap:8px; }
 .einrichtung-unten .gross { width:100%; min-height:52px; font-size:17px; }
@@ -732,3 +732,58 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
 .checkin-felder { display:grid; gap:14px; }
 .checkin-felder:empty { display:none; }
 .checkin-knopf .checkin-stand { font-size:22px; }
+
+/* ---- Einrichtung: Auswahl mit Fokus ------------------------------------ */
+.kern-zeile { display:flex; align-items:center; gap:8px; padding-right:12px; border:1px solid var(--linie); border-left:4px solid var(--v);
+  border-radius:var(--radius-control); background:var(--surface); }
+.kern-zeile .kern-knopf { flex:1; min-width:0; border:0; background:none; gap:12px; }
+.kern-zeile[data-an="true"] { border-color:color-mix(in oklab, var(--v) 60%, var(--linie)); border-left-color:var(--v); background:color-mix(in oklab, var(--v) 6%, var(--surface)); }
+.kern-zeile[data-fokus] { border-width:2px; border-left-width:6px; border-color:var(--v); background:color-mix(in oklab, var(--v) 12%, var(--surface)); }
+.kern-haken { width:22px; height:22px; flex:none; display:grid; place-items:center; border-radius:6px; border:1.5px solid var(--linie-stark);
+  font:700 14px var(--sans); color:var(--surface); }
+.kern-zeile[data-an="true"] .kern-haken { background:var(--v); border-color:var(--v); }
+.kern-fokus { flex:none; padding:3px 10px; border-radius:99px; background:var(--v); color:var(--surface); font:600 12px var(--sans); letter-spacing:.04em; text-transform:uppercase; }
+.kern-zum-fokus { flex:none; color:var(--leise) !important; }
+.einrichtung-weiter { position:sticky; bottom:0; display:grid; gap:4px; padding:12px 0 max(12px, env(safe-area-inset-bottom));
+  background:linear-gradient(transparent, var(--paper) 30%); }
+.einrichtung-weiter .gross { width:100%; min-height:52px; font-size:17px; }
+.einrichtung-satz { font-size:32px; line-height:1.2; margin:28vh 0 16px !important; }
+.einrichtung-tipp { margin:0 0 24px; }
+
+/* ---- Startschirm: eine Sache zu tun ------------------------------------ */
+.da-stand { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:var(--touch);
+  padding:0 4px 0 16px; border-radius:99px; background:color-mix(in oklab, var(--moss) 12%, var(--surface)); }
+.da-stand-text { font:600 16px var(--sans); color:var(--moss); }
+.heute-gesichter { display:grid; gap:8px; }
+.heute-frage { margin:0; font-size:17px; }
+.heute-gesichter .gesichter { margin:0; }
+.heute-gesichter .woche-monat { justify-self:end; }
+.reise-neu-hinweis { display:grid; gap:2px; text-align:left; padding:12px 14px; border:1px solid color-mix(in oklab, var(--moss) 45%, var(--linie));
+  border-radius:var(--radius-control); background:color-mix(in oklab, var(--moss) 7%, var(--surface)); }
+.reise-neu-titel { font:600 15px var(--sans); color:var(--moss); }
+.reise-ok { justify-self:end; font-size:13px; color:var(--leise); text-decoration:underline; text-underline-offset:3px; }
+
+/* ---- Tracker-Karten: Knöpfe, die wie Knöpfe aussehen -------------------- */
+.tracker-liste { display:grid; gap:12px; margin-top:24px; }
+.tracker { display:grid; gap:10px; padding:14px 16px; border:1px solid var(--linie); border-left:4px solid var(--v); border-radius:var(--radius-card); background:var(--surface); }
+.tracker[data-aufbau] { --v:var(--moss); }
+.tracker[data-fokus] { border-width:1.5px; border-left-width:6px; border-color:color-mix(in oklab, var(--v) 55%, var(--linie)); border-left-color:var(--v); }
+.tracker-kopf { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.tracker-name { font:500 19px var(--serif); }
+.tracker-fokus { padding:2px 9px; border-radius:99px; background:var(--v); color:var(--surface); font:600 11px var(--sans); letter-spacing:.05em; text-transform:uppercase; align-self:center; }
+.tracker-heute { margin-left:auto; font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.tracker-knoepfe { display:flex; flex-wrap:wrap; gap:8px; }
+.tracker-plus { display:inline-flex; align-items:center; gap:8px; min-height:var(--touch); padding:8px 16px 8px 10px; border:1.5px solid var(--v);
+  border-radius:99px; background:color-mix(in oklab, var(--v) 10%, var(--surface)); font:500 15px var(--sans); color:var(--ink); }
+.tracker-plus.leise { border-style:dashed; background:transparent; color:var(--leise); }
+.tracker-plus-zeichen { width:24px; height:24px; display:grid; place-items:center; border-radius:50%; background:var(--v); color:var(--surface); font:600 17px/1 var(--sans); }
+.tracker-plus.leise .tracker-plus-zeichen { background:transparent; color:var(--v); border:1.5px solid var(--v); }
+.tracker-plus:active, .tracker-haken:active { transform:scale(.97); }
+.tracker-haken { display:inline-flex; align-items:center; gap:12px; min-height:var(--touch); padding:8px 16px 8px 10px; border:1.5px solid var(--v);
+  border-radius:99px; background:transparent; font:500 15px var(--sans); color:var(--ink); }
+.tracker-kasten { width:24px; height:24px; display:grid; place-items:center; border-radius:6px; border:1.5px solid var(--v); color:var(--surface); font:700 15px var(--sans); }
+.tracker-haken[aria-pressed="true"] { background:color-mix(in oklab, var(--v) 12%, var(--surface)); }
+.tracker-haken[aria-pressed="true"] .tracker-kasten { background:var(--v); }
+.tracker-letzte { display:flex; flex-wrap:wrap; align-items:center; column-gap:14px; margin:0; font-size:13px; }
+.tracker-letzte .text { min-height:36px; }
+.tracker .routine { margin:0; }

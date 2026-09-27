@@ -270,7 +270,7 @@ const mal = (n, eins, mehr) => (n === 1 ? `einen ${eins}` : `${n} ${mehr}`);
 
 export const REISE = [
   { titel: "Ein Satz zum Tag", wann: "3 Einträge", sonst: 3,
-    text: "Unter dem Knopf steht jetzt eine Zeile: Was hat dich heute getragen? Daraus wird dein Tagebuch.",
+    text: "Eine Zeile für den Tag: Was hat dich heute getragen? Daraus wird dein Tagebuch.",
     erfuellt: (z) => nutzung(z) >= 3,
     noch: (z) => { const n = 3 - nutzung(z); return `noch ${n === 1 ? "ein Eintrag" : `${n} Einträge`}`; },
     oeffnet: ["satz", "tagebuch"] },
@@ -308,6 +308,7 @@ const erreicht = (z, s) => s.erfuellt(z) || nutzung(z) >= s.sonst;
 export function reiseWeiter(z) {
   const neu = [];
   while (z.reise < REISE.length && erreicht(z, REISE[z.reise])) {
+    z.reiseNeu = z.reise;
     const s = REISE[z.reise++];
     if (s.tiefe && z.tiefe < s.tiefe) z.tiefe = s.tiefe;
     neu.push(s);
@@ -322,19 +323,30 @@ export function reiseStand(z) {
   return { naechste, noch: naechste ? `Als Nächstes: ${naechste.titel} · ${naechste.noch(z)}` : "" };
 }
 
-/** Der Kern: die eine Sache, mit der die Reise beginnt. Ersetzt, was
-    gewählt war; Notizen und eigene Tracker bleiben stehen.
-    `wahl` ist {fest: "kaffee"} oder {name, art: "lassen"|"aufbauen", schritte}. */
-export function einrichten(z, wahl) {
+/** Der Anfang: eine oder mehrere Sachen, eine davon der Fokus. Ersetzt,
+    was gewählt war; Notizen und eigene Tracker bleiben stehen. Eine Wahl
+    ist {fest: "kaffee"} oder {name, art: "lassen"|"aufbauen", schritte}.
+    Gibt die id des Fokus zurück. */
+export function einrichten(z, wahlen, fokus = 0) {
   z.commitment = {};
-  if (wahl.fest && FEST.includes(wahl.fest)) { z.commitment[wahl.fest] = { drang: true }; return wahl.fest; }
-  return fuegeEigenenHinzu(z, wahl.name, { art: wahl.art, schritte: wahl.schritte });
+  const ids = (Array.isArray(wahlen) ? wahlen : [wahlen]).map((w) => {
+    if (w.fest && FEST.includes(w.fest)) { z.commitment[w.fest] = { drang: true }; return w.fest; }
+    return fuegeEigenenHinzu(z, w.name, { art: w.art, schritte: w.schritte });
+  });
+  z.fokus = ids[fokus] ?? ids.find(Boolean) ?? null;
+  return z.fokus;
 }
+
+/** Der Fokus, wenn er noch gewählt ist — sonst der erste gewählte. */
+export const fokus = (z) => (z.fokus && z.commitment[z.fokus] ? z.fokus : gewaehlt(z)[0] || null);
+
+/** Das Gewählte, der Fokus zuerst. */
+export const gewaehltMitFokus = (z) => { const f = fokus(z); return f ? [f, ...gewaehlt(z).filter((k) => k !== f)] : gewaehlt(z); };
 
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0, checkin: [],
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0, reiseNeu: null, fokus: null, checkin: [],
     werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {},
     gremlin: { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] } };
 }
@@ -371,6 +383,8 @@ export function aus(text) {
   const warDa = gewaehlt(z).length || (Array.isArray(roh.ereignisse) && roh.ereignisse.length) || (Array.isArray(roh.daTage) && roh.daTage.length);
   z.reise = Number.isInteger(roh.reise) && roh.reise >= 0 && roh.reise <= REISE.length ? roh.reise : warDa ? REISE.length : 0;
   if (!warDa && !Number.isInteger(roh.reise)) z.tiefe = 1;
+  if (Number.isInteger(roh.reiseNeu) && roh.reiseNeu >= 0 && roh.reiseNeu < z.reise) z.reiseNeu = roh.reiseNeu;
+  if (typeof roh.fokus === "string" && ids.includes(roh.fokus)) z.fokus = roh.fokus;
   // Welche Eingaben im Check-in von selbst offen sind — nur bekannte.
   if (Array.isArray(roh.checkin)) z.checkin = [...new Set(roh.checkin.filter((x) => x === "satz" || x === "selbst" || SYSTEME.some((y) => y.id === x)))];
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
@@ -442,8 +456,8 @@ export function schalteAlles(z) {
 export function commitmentSatz(z) {
   const V = verzichte(z);
   const reihe = (n) => (n.length > 1 ? n.slice(0, -1).join(", ") + " und " + n.at(-1) : n[0]);
-  const lassen = gewaehlt(z).filter((k) => !V[k].aufbau).map((k) => V[k].satz);
-  const bauen = gewaehlt(z).filter((k) => V[k].aufbau).map((k) => V[k].satz);
+  const lassen = gewaehltMitFokus(z).filter((k) => !V[k].aufbau).map((k) => V[k].satz);
+  const bauen = gewaehltMitFokus(z).filter((k) => V[k].aufbau).map((k) => V[k].satz);
   if (lassen.length && bauen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein und baue ${reihe(bauen)} auf.`;
   if (bauen.length) return `Im Oktober baue ich ${reihe(bauen)} auf.`;
   if (lassen.length) return `Im Oktober lasse ich ${reihe(lassen)} sein.`;
