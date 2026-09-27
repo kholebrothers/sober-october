@@ -14,10 +14,12 @@ gingen nur die Schlüssel (`eigen`, `eigen-…`).
 **Die Reise.** Wer neu ist, wählt in der Einrichtung genau einen Kern: etwas, das er sein lässt
 (Kaffee, Kippe, Video oder Eigenes), oder etwas, das er aufbaut (Morgenroutine, Bewegung …). Am
 ersten Tag gibt es nur den Monat, „Heute bin ich dabei“ und diese eine Kachel. Alles Weitere öffnet
-sich mit den Tagen dabei, auf der Fibonacci-Leiter der Etappe (`REISE` in `logik.js`): nach 2 Tagen
-der Satz zum Tag und das Tagebuch, nach 3 „würde gern“, Leitgedanke und Gemeinsam, nach 5 weitere
-Tracker, Lebenszeit und Ansichten, nach 8 Schicht 2 (Formen), nach 13 Schicht 3 (Nervensystem).
-Was offen ist, bleibt offen. Wer schon vor der Reise etwas gewählt hatte, hat sie hinter sich.
+sich **durch Benutzen, nicht durch Warten** (`REISE` in `logik.js`): drei Einträge öffnen den Satz zum
+Tag und das Tagebuch; zwei Sätze öffnen „würde gern“, Leitgedanke und Gemeinsam; zwei Würde-gern-Momente
+oder ein eigener Leitgedanke öffnen weitere Tracker, Lebenszeit und Ansichten; ein zweiter benutzter
+Tracker (oder die Lebenszeit) öffnet Schicht 2; ein Werkzeug, zweimal benutzt, öffnet Schicht 3. Wer
+etwas davon nie braucht, kommt mit viel Notieren genauso weiter. Unter dem Knopf steht, was als
+Nächstes zu tun ist. Was offen ist, bleibt offen. Wer schon vor der Reise etwas gewählt hatte, hat sie hinter sich.
 
 **Im Zentrum steht der Monat.** Oben in jeder Ansicht: der Oktober als Kalender und darunter
 ein Knopf, **„Heute bin ich dabei“**. Ein Tippen, und das Feld des Tages füllt sich, die Zahl der

@@ -193,11 +193,10 @@ function weiteres(api) {
   return r;
 }
 
-/* Was als Nächstes kommt, leise unter dem Knopf: ein Grund, morgen
-   wiederzukommen. Am Ziel der Reise steht hier nichts mehr. */
+/* Was als Nächstes kommt, leise unter dem Knopf — und was man dafür tun
+   kann. Am Ziel der Reise steht hier nichts mehr. */
 function reiseHinweis(api) {
   const r = api.reise();
   if (!r.naechste) return null;
-  return el("p", "reise-hinweis leise klein",
-    `${r.fehlen === 1 ? "Noch ein Tag" : `Noch ${r.fehlen} Tage`} dabei, dann öffnet sich: ${r.naechste.titel}`);
+  return el("p", "reise-hinweis leise klein", r.noch);
 }

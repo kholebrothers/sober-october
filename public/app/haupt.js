@@ -1084,14 +1084,14 @@ function einrichtungSeite() {
   const reise = el("ol", "reise-liste");
   const start = el("li");
   start.dataset.stand = "jetzt";
-  start.append(el("span", "reise-tag", "Heute"), el("span", "reise-titel", "Der Monat und dein Kern"));
+  start.append(el("span", "reise-titel", "Der Monat und dein Kern"), el("span", "reise-tag", "jetzt"));
   reise.append(start);
   for (const r of REISE) {
     const li = el("li");
-    li.append(el("span", "reise-tag", `${r.ab} Tage`), el("span", "reise-titel", r.titel));
+    li.append(el("span", "reise-titel", r.titel), el("span", "reise-tag", r.wann));
     reise.append(li);
   }
-  s.append(el("h2", "rubrik", "Was sich unterwegs öffnet"), reise);
+  s.append(el("h2", "rubrik", "Was sich durch Benutzen öffnet"), reise);
 
   if (imIosBrowser()) {
     const tipp = el("div", "einrichtung-tipp");
@@ -1122,15 +1122,15 @@ function reiseKarte() {
   if (!st.naechste) return null;
   const k = el("div", "frage reise-karte");
   k.append(el("p", "serif", "Deine Reise"),
-    el("p", "leise klein", `${st.tage} ${st.tage === 1 ? "Tag" : "Tage"} dabei. Mit jedem Tag öffnet sich mehr.`));
+    el("p", "leise klein", "Was du benutzt, öffnet das Nächste."));
   const l = el("ol", "reise-liste");
   REISE.forEach((r, i) => {
     const li = el("li");
     li.dataset.stand = i < z.reise ? "offen" : i === z.reise ? "naechste" : "zu";
-    li.append(el("span", "reise-tag", i < z.reise ? "✓" : `${r.ab} Tage`), el("span", "reise-titel", r.titel));
+    li.append(el("span", "reise-titel", r.titel), el("span", "reise-tag", i < z.reise ? "✓ offen" : r.wann));
     l.append(li);
   });
-  k.append(l);
+  k.append(l, el("p", "leise klein", st.noch));
   return k;
 }
 
@@ -1139,9 +1139,9 @@ function reiseZeigen(neu) {
   if (bogen.open) { bogen.addEventListener("close", () => setTimeout(() => reiseZeigen(neu), 300), { once: true }); return; }
   const k = el("div", "bogen-inhalt reise-neu");
   const st = reiseStand(z);
-  k.append(el("p", "rubrik", `Deine Reise · ${st.tage} Tage dabei`));
+  k.append(el("p", "rubrik", "Deine Reise"));
   for (const r of neu) k.append(el("h2", null, r.titel), el("p", "serif", r.text));
-  if (st.naechste) k.append(el("p", "leise klein", `Als Nächstes, nach ${st.naechste.ab} Tagen: ${st.naechste.titel}.`));
+  if (st.naechste) k.append(el("p", "leise klein", st.noch));
   k.append(knopf("Schön", "gross", () => bogen.close()));
   zeigeBogen(k);
 }
