@@ -872,3 +872,48 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
 .erfassung-da { color:var(--moss); font-weight:700; }
 /* Die Dev-Uhr (nur Vorschau) sitzt über der Leiste, nicht auf ihr. */
 html body:has(.leiste) #dev-uhr { bottom:calc(78px + env(safe-area-inset-bottom)); }
+
+/* ---- Der Tag: Tracker oben, ein Satz, Mehr in festen Zeilen -------------- */
+.heute-kopf { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.da-pille { display:inline-flex; align-items:center; gap:8px; min-height:var(--touch); padding:4px 14px 4px 6px; border:1.5px solid var(--moss);
+  border-radius:99px; background:transparent; font:600 14px var(--sans); color:var(--moss); }
+.da-pille-kreis { width:26px; height:26px; display:grid; place-items:center; border-radius:50%; border:1.5px solid var(--moss); font-size:14px; }
+.da-pille[aria-pressed="true"] { background:var(--moss); color:var(--surface); }
+.da-pille[aria-pressed="true"] .da-pille-kreis { background:var(--surface); color:var(--moss); border-color:var(--surface); }
+.da-pille:disabled { opacity:1; cursor:default; }
+.heute .tracker-liste { margin-top:0; }
+.tracker { gap:8px; }
+.tracker-name { margin:0; font:500 18px var(--serif); }
+.tracker-knoepfe { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; }
+.tracker-knopf { display:flex; align-items:center; gap:10px; min-height:52px; padding:8px 14px 8px 10px; border:1.5px solid var(--v);
+  border-radius:14px; background:color-mix(in oklab, var(--v) 10%, var(--surface)); font:500 15px var(--sans); color:var(--ink); text-align:left; }
+.tracker-knopf:active { transform:scale(.97); }
+.tracker-zeichen { width:28px; height:28px; flex:none; display:grid; place-items:center; border-radius:50%; background:var(--v); color:var(--surface); font:600 18px/1 var(--sans); }
+.tracker-wort { flex:1; min-width:0; overflow-wrap:anywhere; }
+.tracker-zahl { font:600 18px var(--sans); font-variant-numeric:tabular-nums; }
+.tracker-drang { border-style:dashed; background:transparent; }
+.tracker-drang .tracker-zeichen { background:transparent; color:var(--v); border:1.5px solid var(--v); }
+.tracker-getan .tracker-zeichen { border-radius:8px; background:transparent; border:1.5px solid var(--v); color:var(--surface); }
+.tracker-getan[aria-pressed="true"] .tracker-zeichen { background:var(--v); }
+.tracker-letzte { min-height:36px; }
+.satz-feld textarea { display:block; width:100%; min-height:64px; resize:none; font:16px/1.45 var(--serif); padding:12px 14px; border:1px solid var(--linie-stark);
+  border-left:3px solid var(--magenta); border-radius:var(--radius-control); background:var(--surface); color:var(--ink); }
+.satz-feld textarea::placeholder { color:var(--leise); font-style:italic; }
+.erfassung-titel { margin:4px 0 0 !important; }
+.erfassung-liste { border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); overflow:hidden; }
+.erfassung-zeile { border-bottom:1px solid var(--linie); }
+.erfassung-zeile:last-child { border-bottom:0; }
+.erfassung-kopf { display:grid; grid-template-columns:28px auto 1fr 20px; align-items:center; gap:10px; width:100%; min-height:52px; padding:8px 16px;
+  border:0; background:none; text-align:left; font:500 16px var(--sans); color:var(--ink); }
+.erfassung-wert { justify-self:end; color:var(--leise); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.erfassung-pfeil { color:var(--leise); text-align:center; }
+.erfassung-zeile .erfassung-feld { border:0; border-radius:0; padding:4px 16px 16px; background:none; }
+.heute-weiteres { display:grid; gap:8px; justify-items:center; }
+.heute-weiteres .reise-neu-hinweis { justify-self:stretch; }
+/* Die letzte Notiz bleibt eine Zeile — sonst schöbe sie alles darunter. */
+.tracker-letzte { flex-wrap:nowrap; white-space:nowrap; overflow:hidden; column-gap:10px; }
+.tracker-letzte > .leise { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.tracker-letzte .text { flex:none; min-height:36px; padding:0 !important; }
+.tracker-knopf { gap:8px; padding:8px 12px 8px 8px; }
+.tracker-wort { overflow-wrap:normal; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tracker-wort { white-space:normal; overflow:visible; text-overflow:clip; line-height:1.2; hyphens:none; word-break:normal; }

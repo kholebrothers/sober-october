@@ -11,7 +11,7 @@
  * VORRAT hochzählen, wenn sich die Liste ändert — dann wird alles Alte beim
  * nächsten Start weggeräumt. test/pwa.test.js prüft, dass SCHALE vollständig ist.
  */
-const VORRAT = "sober-october-14";
+const VORRAT = "sober-october-15";
 
 const SCHALE = [
   "/",
@@ -49,6 +49,7 @@ const SCHALE = [
   "/app/bausteine/gremlin.js",
   "/app/bausteine/werkzeuge.js",
   "/app/bausteine/unten.js",
+  "/app/bausteine/heute.js",
   "/app/bausteine/heatmap.js",
   "/kern/datum.js",
   "/kern/sonne.js",

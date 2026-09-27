@@ -31,7 +31,7 @@ import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { leiste, monatSeite, tagebuchSeite, mehrSeite, funktionSeite } from "./seiten.js";
-import { erfassung } from "./erfassung.js";
+import { erfassung, satzFeld } from "./erfassung.js";
 import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
@@ -196,6 +196,7 @@ const api = {
   reiseBis(was) { aendern(() => reiseBis(z, was)); },
   trackerWaehlen() { wahlOffen = true; zeichne(); scrollTo(0, 0); },
   erfassungHeute: () => erfassung(erfassungFuer(heute(), () => zeichne())),
+  satzHeute: () => satzFeld(erfassungFuer(heute(), () => zeichne())),
   tagAntippen(tag) {
     if (tag > heute()) return;
     if (bogen.open) bogen.close();
@@ -261,7 +262,7 @@ function gruppeFuerAnzeige() {
    Namen, einen Tracker), behält sein Feld. */
 function zeichneLeise() {
   const f = document.activeElement;
-  if (f && f.matches("#buehne input")) return;
+  if (f && f.matches("#buehne input, #buehne textarea")) return;
   zeichne();
 }
 
@@ -545,7 +546,8 @@ function tagEinordnen(tag) {
   tx.append(el("span", null, "An dem Tag war ich dabei"),
     el("span", "leise klein", notizen.length ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
   l.append(da, tx);
-  k.append(l, erfassung(erfassungFuer(t, () => tagEinordnen(t))));
+  const kt = erfassungFuer(t, () => tagEinordnen(t));
+  k.append(l, satzFeld(kt), erfassung(kt));
   k.append(knopf("Fertig", "gross", () => bogen.close()));
   zeigeBogen(k);
   bogen.scrollTop = y;
@@ -561,16 +563,27 @@ function erfassungFuer(t, neu) {
     eintrag: () => z.tagebuch[t] || {},
     lassen: gewaehlt(z).filter((v) => !V[v].aufbau).map((v) => ({ id: v, name: V[v].name })),
     schreibe(was) { aendern(() => schreibeTag(z, t, was)); spueren(8); neu(); },
+    /* Ohne neu zu zeichnen — für das Textfeld, siehe erfassung.js. Was sich
+       dadurch sonst ändert (der Tag zählt), zeigt das nächste Zeichnen. */
+    schreibeLeise(was) {
+      schreibeTag(z, t, was);
+      if (gewaehlt(z).length) reiseWeiter(z);
+      if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
+      planeAbgleich();
+      setTimeout(zeichneLeise, 400);
+    },
     neu,
   };
 }
 
-/* Zum heutigen Tag auf dem Startschirm; ist er noch leer, beginnt er. */
+/* Heute im Kalender angetippt: zum Tag auf dem Startschirm. Ist man schon
+   dort, bleibt die Seite, wo sie ist — nichts springt. */
 function zumHeute() {
   if (bogen.open) bogen.close();
+  if (seite === "heute") return;
   seite = "heute"; detail = null;
-  if (!hatEintrag(z, heute())) api.da(); else zeichne();
-  setTimeout(() => document.querySelector(".heute")?.scrollIntoView({ block: "start", behavior: "smooth" }), 50);
+  zeichne();
+  scrollTo(0, 0);
 }
 
 /* ---- Der Leitgedanke ------------------------------------------------------ */

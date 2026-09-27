@@ -3,7 +3,8 @@
    ist ein Baustein im Monat, siehe monat.js. */
 
 import { el, knopf } from "../ansichten/teile.js";
-import { monat, heute } from "./monat.js";
+import { monat } from "./monat.js";
+import { heute } from "./heute.js";
 
 export function oben(api) {
   const h = el("div", "oben");

@@ -21,7 +21,7 @@ export const GESICHTER = ["😣", "🙁", "😐", "🙂", "😄"];
 const ART = {
   stimmung: { icon: "🙂", name: "Stimmung" },
   schlaf: { icon: "🌙", name: "Schlaf" },
-  konsum: { icon: "☕", name: "Konsum" },
+  konsum: { icon: "☕", name: "Menge am Tag" },
   satz: { icon: "✏️", name: "Ein Satz" },
   koerper: { icon: "🏃", name: "Körper" },
   antrieb: { icon: "⚡", name: "Antrieb" },
@@ -38,45 +38,70 @@ function hatWert(art, e) {
   return AMPEL_SYSTEME[art].some((id) => e[id]);
 }
 
-/* Welche Art gerade aufgeklappt ist — immer höchstens eine, je Tag. Eine
-   Ansichtssache, kein Datum: sie steht neben dem Zustand, nicht darin. */
-let auf = { tag: null, art: null };
+/* Welche Zeilen aufgeklappt sind, je Tag. Eine Ansichtssache, kein Datum. */
+let auf = { tag: null, arten: new Set() };
+
+/* Was in einer Zeile rechts steht: kurz, was schon festgehalten ist. */
+function kurz(art, e, k) {
+  if (art === "stimmung") return e.stimmung ? GESICHTER[e.stimmung - 1] : "";
+  if (art === "schlaf") return e.schlafDauer !== undefined ? SCHLAF_DAUER[e.schlafDauer] : SCHLAF_TEILE.some((x) => e[x.id]) ? "✓" : "";
+  if (art === "konsum") return e.menge ? k.lassen.filter((v) => e.menge[v.id] !== undefined).map((v) => `${v.name} ${mengen(v.id).stufen[e.menge[v.id]]}`).join(" · ") : "";
+  if (art === "selbst") return e.selbst?.length ? `${e.selbst.length} ✓` : "";
+  const n = AMPEL_SYSTEME[art].filter((id) => e[id]).length;
+  return n ? `${n} von 3` : "";
+}
 
 /**
- * Eine Reihe Vorschläge; ein Tippen klappt genau einen auf, ein zweites
- * klappt ihn wieder zu. Was schon festgehalten ist, zeigt sich im
- * Vorschlag selbst (das Gesicht, ein Häkchen) — so bleibt die Seite ruhig.
+ * Mehr festhalten — eine feste Liste von Zeilen. Jede zeigt rechts, was
+ * schon drinsteht, und klappt genau an ihrer Stelle auf und zu; mehrere
+ * dürfen offen sein. So bewegt sich nichts, was darüber steht.
  * @param k {tag, eintrag(), lassen: [{id, name}], schreibe(was), neu(), heute}
  */
 export function erfassung(k) {
   const e = k.eintrag();
-  const arten = ERFASSUNG.filter((a) => a !== "konsum" || k.lassen.length);
-  if (auf.tag !== k.tag) auf = { tag: k.tag, art: null };
+  const arten = ERFASSUNG.filter((a) => a !== "satz" && (a !== "konsum" || k.lassen.length));
+  if (auf.tag !== k.tag) auf = { tag: k.tag, arten: new Set() };
   const w = el("div", "erfassung");
-  const r = el("div", "erfassung-vorschlaege");
+  w.append(el("p", "rubrik erfassung-titel", "Mehr festhalten · wenn du magst"));
+  const liste = el("div", "erfassung-liste");
   for (const art of arten) {
-    const offen = auf.art === art, da = hatWert(art, e);
-    const b = knopf("", "erfassung-vorschlag", () => { auf = { tag: k.tag, art: offen ? null : art }; k.neu(); });
-    b.dataset.focus = `hinzu-${art}`;
+    const offen = auf.arten.has(art);
+    const zeile = el("div", "erfassung-zeile");
+    zeile.dataset.art = art;
+    const b = knopf("", "erfassung-kopf", () => { if (offen) auf.arten.delete(art); else auf.arten.add(art); k.neu(); });
+    b.dataset.focus = `zeile-${art}`;
     b.setAttribute("aria-expanded", offen);
-    if (da) b.dataset.da = "";
-    b.append(el("span", "erfassung-icon", art === "stimmung" && e.stimmung ? GESICHTER[e.stimmung - 1] : ART[art].icon),
-      el("span", null, ART[art].name));
-    if (da && art !== "stimmung") b.append(el("span", "erfassung-da", "✓"));
-    r.append(b);
+    const wert = kurz(art, e, k);
+    b.append(el("span", "erfassung-icon", ART[art].icon), el("span", "erfassung-name", ART[art].name),
+      el("span", "erfassung-wert", wert), el("span", "erfassung-pfeil", offen ? "⌃" : "⌄"));
+    zeile.append(b);
+    if (offen) {
+      const f = el("div", "erfassung-feld");
+      f.append(...INHALT[art](k, e));
+      zeile.append(f);
+    }
+    liste.append(zeile);
   }
-  w.append(r);
-  if (auf.art && arten.includes(auf.art)) w.append(feld(auf.art, k, e));
+  w.append(liste);
   return w;
 }
 
-/* Das aufgeklappte Feld. */
-function feld(art, k, e) {
-  const f = el("section", "erfassung-feld");
-  f.dataset.art = art;
-  f.setAttribute("aria-label", ART[art].name);
-  f.append(...INHALT[art](k, e));
-  return f;
+/** Der Satz zum Tag — immer da, direkt zum Schreiben. */
+export function satzFeld(k) {
+  const e = k.eintrag();
+  const l = el("label", "satz-feld");
+  const i = el("textarea");
+  Object.assign(i, { name: "getragen", value: e.getragen || "", maxLength: 280, rows: 2,
+    placeholder: k.heute ? "Wie war’s heute? Ein paar Worte …" : "Wie war’s an dem Tag? Ein paar Worte …" });
+  i.setAttribute("aria-label", "Ein Satz zum Tag");
+  i.dataset.focus = "satz";
+  i.enterKeyHint = "done";
+  /* Leise speichern: das Feld verlässt man meist, indem man etwas anderes
+     antippt — neu zu zeichnen hieße, diesen Tipp zu verschlucken. */
+  i.addEventListener("change", () => (k.schreibeLeise || k.schreibe)({ getragen: i.value }));
+  i.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); i.blur(); } });
+  l.append(i);
+  return l;
 }
 
 /* Eine Reihe gleichwertiger Wahlen; ein zweites Tippen auf dieselbe nimmt sie weg. */

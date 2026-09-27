@@ -24,15 +24,11 @@ export function render(api) {
     if (es.some((e) => e.art === "drang")) kreis.dataset.drang = "";
     const mitte = el("div");
     mitte.append(el("strong", "v-name", V.name));
-    const aktionen = el("div", "blatt-aktionen");
-    aktionen.append(knopf(V.habe, "text", () => api.eintragen(v, "habe")));
-    if (z.commitment[v].drang && api.offen("drang")) aktionen.append(knopf("würde gern", "text", () => api.eintragen(v, "drang")));
     const liste = el("ul", "blatt-liste");
     for (const e of es.filter((e) => e.art !== "ohne")) liste.append(el("li", null, `${e.zeit} · ${wasText(api, e)}`));
-    mitte.append(aktionen, liste);
+    mitte.append(liste);
     zeile.append(kreis, mitte);
     s.append(zeile);
   }
-  if (api.offen("tracker")) s.append(plusTracker(api, "+ weiterer Tracker"));
   return s;
 }

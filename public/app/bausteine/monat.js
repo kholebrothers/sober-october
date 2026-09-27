@@ -199,29 +199,3 @@ function reiseHinweis(api) {
 
 
 
-/* Der Tag. Er beginnt leer: ein Knopf, „Tag beginnen" (oder „+" oben, oder
-   heute in der Woche antippen). Ist er begonnen, steht hier, was sich
-   festhalten lässt — direkt in der Seite. */
-export function heute(api) {
-  const m = api.monat();
-  if (m.phase === "nach") return null;
-  const s = el("section", "heute");
-  s.setAttribute("aria-label", "Heute");
-  if (!api.hatEintrag()) {
-    const b = knopf("", "tag-beginnen", () => api.da());
-    b.dataset.focus = "da";
-    b.append(el("span", "tag-beginnen-plus", "+"), el("span", "tag-beginnen-text", "Tag beginnen"),
-      el("span", "leise klein", "Heute bin ich dabei"));
-    s.append(b, weiteres(api));
-    return s;
-  }
-  const kopf = el("div", "heute-kopf");
-  kopf.append(el("h2", "heute-titel", "Heute"), el("span", "heute-dabei", api.istDa() ? "✓ dabei" : "✓ zählt durch deine Notiz"));
-  if (api.istDa()) {
-    const z = knopf("zurücknehmen", "text klein leise", () => api.daZurueck());
-    z.dataset.focus = "da-zurueck";
-    kopf.append(z);
-  }
-  s.append(kopf, api.erfassungHeute(), weiteres(api));
-  return s;
-}
