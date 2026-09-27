@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { neuerZustand, aus, schalteDa, notiere, fuegeEigenenHinzu } from "../public/app/logik.js";
-import { abgleich, gruppe, binDabei, namenListe, FARBEN } from "../public/app/gemeinsam.js";
+import { abgleich, gruppe, binDabei, namenListe } from "../public/app/gemeinsam.js";
 
 const HEUTE = "2026-10-14";
 const ich = () => {
@@ -40,17 +40,18 @@ test("ohne Gruppe und ohne Stand gibt es nichts abzugleichen", () => {
   assert.deepEqual(abgleich(z, stand(), HEUTE), { tage: [], commitment: null });
 });
 
-test("die Gruppe: jede Person in ihrer Farbe, die eigene Zeile aus diesem Gerät", () => {
+test("die Gruppe: keine Farbe je Person, die eigene Zeile aus diesem Gerät", () => {
   const z = ich();
   fuegeEigenenHinzu(z, "Zucker");
   schalteDa(z, HEUTE);
   const tage = ["2026-10-13", HEUTE, "2026-10-15"];
   const s = stand({ "2026-10-13": { pben: { dabei: true } } }, { pben: { commitment: { wert: ["kippe", "eigen"], ab: "2026-10-01" } } });
   const g = gruppe(z, s, HEUTE, tage);
-  assert.deepEqual(g.leute.map((p) => [p.name, p.du, p.farbe, p.tage, p.anzahl]), [
-    ["Anna", true, FARBEN[0], [false, true, false], 1],
-    ["Ben", false, FARBEN[1], [true, false, false], 1],
+  assert.deepEqual(g.leute.map((p) => [p.name, p.du, p.tage, p.anzahl]), [
+    ["Anna", true, [false, true, false], 1],
+    ["Ben", false, [true, false, false], 1],
   ]);
+  assert.ok(g.leute.every((p) => !("farbe" in p)));
   assert.equal(g.leute[1].commitment, "Kippe · Eigenes", "der Name eines eigenen Trackers bleibt privat");
   assert.deepEqual(g.heute.map((p) => p.name), ["Anna"]);
 });

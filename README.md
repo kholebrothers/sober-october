@@ -17,6 +17,12 @@ Tage dabei springt, das Telefon tippt kurz zurück; an den Stufen 5, 8, 13, 21 u
 Monat auf. Kurz vor dem Oktober zählen die Tage davor als Vorlauf. Ein vergangener Tag ohne Eintrag
 ist ein leises graues Feld: nichts bekannt, kein Urteil.
 
+Unter dem Knopf steht **„Wie war der Tag?“**: ein Tagebuch mit Stimmung (fünf Stufen), den
+Selbst-Markierungen aus lifetracker (höchstens zwei) und dem Satz „Was hat dich heute getragen?“. Es
+bleibt auf dem Gerät. **Farbe heißt Ebene:** Der Monat lässt sich durch jede Ebene lesen — Dabei
+(Grün), Stimmung (Gelb), Selbst (Lila), Getragen (Blau), Drang (Cyan), Geschehen (Orange); siehe
+[docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
+
 Darunter die Tracker, je eine Kachel für „habe“ und darunter „würde gern“. **Notieren ist ein
 Tippen:** es notiert sofort und zählt den Tag genauso; die Meldung danach bietet „Details“ (die
 Fragen, freiwillig) und „Rückgängig“ (vertippt). Die Kacheln bleiben ruhig — Farbe nur als Streifen,
@@ -25,7 +31,7 @@ Einen Knopf „heute ohne“ gibt es nicht. Alles Weitere ist ein **Baustein**, 
 
 | Baustein | Wo | Was |
 |---|---|---|
-| Gemeinsam *(an)* | unter dem Monat | mit anderen durch den Oktober: wer heute dabei ist, jede Reise als Farbe |
+| Gemeinsam *(an)* | unter dem Monat | mit anderen durch den Oktober: wer heute dabei ist, jede Reise als Reihe |
 | Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
 | Lauf | im Monat | Tage am Stück, der längste Lauf und ein Satz zum Tag |
 | Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
@@ -51,7 +57,7 @@ löschen.
 
 **Gemeinsam** (Baustein, von selbst an): Die Reise geht jede:r für sich, aber nicht allein. Wer
 mitgeht, gibt einen Vornamen an; ein Link, kein Login, wie bei kur-core. Die Gruppe sieht dann, wer
-heute dabei ist, und jede Reise als eine Reihe in ihrer eigenen Flexoki-Farbe. Auf den Server
+heute dabei ist, und jede Reise als eine Reihe. Auf den Server
 (`server/`, eine D1) kommt dafür genau das, was `fuerKern()` hergibt: **der Name, was man sein lässt
 (nur als Schlüssel — eigene Tracker bleiben namenlos) und die Tage „dabei“**. Der Server nimmt auch
 nichts anderes an (`server/api.js`). Wer die Gruppe verlässt, dessen Name und Tage werden gelöscht.

@@ -396,9 +396,9 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
   :root.bereit body { transition:none; }
 }
 
-/* Gemeinsam: wer mitgeht, jede Reise eine Reihe in ihrer Flexoki-Farbe
-   (--p, aus gemeinsam.js). Keine Rangliste, keine Krone: die Reihenfolge
-   ist die des Dazukommens, die Zahl steht klein am Ende. */
+/* Gemeinsam: wer mitgeht, jede Reise eine Reihe. Keine Farbe je Person —
+   Farbe steht für eine Ebene; hier ist es nur eine, dabei, in Moos. Keine
+   Rangliste: die Reihenfolge ist die des Dazukommens. */
 .gemeinsam { display:grid; gap:12px; padding:18px 20px; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); }
 .gemeinsam-kopf { display:flex; justify-content:space-between; align-items:center; margin:-8px 0 -8px; }
 .gemeinsam-satz { margin:0; font-size:17px; line-height:1.35; }
@@ -407,13 +407,48 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .gemeinsam .wahlreihe .chip-knopf { min-height:var(--touch); padding:8px 14px; }
 .gemeinsam > p.klein { margin:0; }
 .reisen { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
-.reise { display:grid; grid-template-columns:minmax(0, 1fr) auto; column-gap:12px; row-gap:6px; align-items:center; }
+.reise { --p:var(--moss); display:grid; grid-template-columns:minmax(0, 1fr) auto; column-gap:12px; row-gap:6px; align-items:center; }
 .reise-name { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:8px; min-width:0; }
 .reise-name strong { font-weight:600; }
-.reise-punkt { width:10px; height:10px; border-radius:50%; background:var(--p); flex:none; align-self:center; }
-.reise-zahl { grid-row:1 / span 2; grid-column:2; font:600 20px var(--sans); font-variant-numeric:tabular-nums; color:var(--p); }
+.reise-zahl { grid-row:1 / span 2; grid-column:2; font:600 20px var(--sans); font-variant-numeric:tabular-nums; color:var(--leise); }
 .reise-faden { grid-column:1; display:grid; grid-template-columns:repeat(var(--n), minmax(0, 1fr)); gap:2px; }
 .reise-faden i { height:8px; border-radius:2px; background:var(--hm-leer); }
 .reise-faden i[data-an] { background:var(--p); }
 .reise-faden i[data-heute] { outline:1.5px solid var(--ink); outline-offset:1px; }
 .reise[data-du] .reise-faden i { height:10px; }
+
+/* Die Ebenen des Monats: jede ein Schalter mit dem Punkt ihrer Farbe. Die
+   gewählte färbt den Kalender (--schicht); je voller die Farbe, desto mehr
+   steht an dem Tag (--w, aus SCHICHTEN.wert). Dabei bleibt Moos. */
+.ebenen-wahl { display:grid; gap:4px; margin-top:-4px; }
+.ebenen-reihe { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
+@media (max-width:360px) { .ebenen-reihe { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+.ebene-chip { display:flex; align-items:center; justify-content:center; gap:6px; min-width:0; min-height:40px; padding:6px 8px; border:1px solid var(--linie); border-radius:99px;
+  background:transparent; color:var(--leise); font-size:12.5px; white-space:nowrap; overflow-wrap:normal; }
+.ebene-chip::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--c); }
+.ebene-chip[aria-checked="true"] { border-color:var(--c); color:var(--ink); background:color-mix(in oklab, var(--c) 14%, transparent); }
+.ebenen-text { margin:0; font-size:12.5px; min-height:2.6em; }
+.monat:not([data-schicht="dabei"]) .monat-tag[data-stand="dabei"],
+.monat:not([data-schicht="dabei"]) .monat-tag[data-stand="leer"],
+.monat:not([data-schicht="dabei"]) .monat-tag[data-stand="offen"] { background:var(--hm-leer); color:var(--leise); font-weight:400; border-color:transparent; }
+.monat:not([data-schicht="dabei"]) .monat-tag[data-w] { background:color-mix(in oklab, var(--schicht) var(--w), var(--hm-leer)); color:var(--ink); }
+.monat:not([data-schicht="dabei"]) .monat-tag[data-voll] { color:var(--surface); font-weight:600; }
+.monat:not([data-schicht="dabei"]) .monat-zahl { color:var(--moss); }
+.tag-einordnen { justify-self:center; margin-top:-6px; font-size:14px; }
+
+/* Wie war der Tag? Jede Frage trägt links den Streifen ihrer Ebene. */
+.ebene-frage { padding-left:12px; border-left:3px solid var(--c); }
+.stimmung-stufen { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:6px; }
+.stufe { position:relative; display:grid; justify-items:center; gap:4px; cursor:pointer; text-align:center; }
+.stufe input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+.stufe-kreis { width:40px; height:40px; border-radius:50%; border:1.5px solid color-mix(in oklab, var(--gelb) 60%, var(--linie));
+  background:color-mix(in oklab, var(--gelb) calc(var(--w) * .35), transparent); }
+.stufe input:checked + .stufe-kreis { background:color-mix(in oklab, var(--gelb) var(--w), var(--hm-leer)); border-color:var(--gelb); box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--gelb); }
+.stufe input:focus-visible + .stufe-kreis { outline:2px solid var(--teal); outline-offset:3px; }
+.stufe-wort { font-size:11.5px; line-height:1.2; color:var(--leise); }
+.stufe input:checked ~ .stufe-wort { color:var(--ink); }
+.chip input:disabled + span { opacity:.45; }
+/* Rasterkinder dürfen schmaler werden als ihr Inhalt — sonst schiebt eine
+   Reihe Schalter die ganze Seite über den Rand. */
+.ansicht-knopf > *, .oben > *, .monat > *, .ebenen-wahl > *, .gemeinsam > * { min-width:0; }
+.ebene-chip { overflow:hidden; text-overflow:ellipsis; }

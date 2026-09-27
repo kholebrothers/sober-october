@@ -60,22 +60,31 @@ Deshalb:
 - Der Baustein „Lauf und Kette“ heißt jetzt „Lauf“ und ergänzt den Monat um „Tage am Stück“, den
   längsten Lauf und den Satz zum Tag. Die Kette selbst ist im Kalender aufgegangen.
 
-## Gemeinsam und mehr Farben
+## Farbe heißt Ebene
 
-Die Reise ist eine Selbsterfahrung, und doch gehen sie mehrere zugleich. Unter dem Monat steht deshalb
-die Karte „Gemeinsam“:
+Eine Farbe steht in dieser App für eine **Ebene** dessen, was festgehalten ist, nicht für eine Person
+und nicht für ein Urteil. Der Monat lässt sich durch jede Ebene lesen; die gewählte färbt den
+Kalender, und je voller die Farbe, desto mehr steht an dem Tag:
 
-- Wer noch nicht mitgeht, sieht eine Einladung, wer schon unterwegs ist, und in einem Satz, was
-  geteilt wird und was nicht. „Lieber allein“ blendet die Karte aus.
-- Wer mitgeht, sieht „Heute dabei: Ben, Cem und du.“ und darunter jede Reise als eine Reihe kleiner
-  Felder über dieselben Tage wie der eigene Monat.
-- **Keine Rangliste.** Die Reihenfolge ist die des Dazukommens, die Zahl steht klein am Ende. Wer
-  heute noch nicht dabei ist, wird nicht genannt, nur wer dabei ist.
-- **Jede Person hat ihre Flexoki-Farbe** (Cyan, Orange, Blau, Magenta, Gelb, Lila, dann Mischungen).
-  Rot bleibt ausgeschlossen, Moos bleibt „dabei“ im eigenen Monat.
+| Ebene | Flexoki | Woher | Voll heißt |
+| --- | --- | --- | --- |
+| Dabei | Grün | „Heute bin ich dabei“ oder irgendein Eintrag | da gewesen |
+| Stimmung | Gelb | Tagebuch, fünf Stufen von „schwer“ bis „leicht“ | ein leichter Tag (schwer ist blass, nicht leer) |
+| Selbst | Lila | Tagebuch, die Selbst-Markierungen aus lifetracker, höchstens zwei | zwei Markierungen |
+| Getragen | Blau | Tagebuch, „Was hat dich heute getragen?“ (aus lifetracker) | ein Satz steht da |
+| Drang | Cyan | „würde gern“ | drei oder mehr Momente |
+| Geschehen | Orange | „habe“ | drei oder mehr Ereignisse |
 
-Mehr Farbe auch sonst: Die Kacheln tragen ihre Trackerfarbe als Punkt, Streifen und Hauch; eine Stufe
-der Leiter leuchtet in allen Flexoki-Farben auf.
+Rot gibt es nicht. Das Tagebuch („Wie war der Tag?“ unter dem Knopf, auch aus der Meldung nach
+„dabei“) bleibt auf dem Gerät; es zählt den Tag wie eine Notiz, an die Gruppe geht nur „dabei“.
+
+In der Gruppe („Gemeinsam“) haben Personen deshalb **keine eigene Farbe**: jede Reise ist eine Reihe
+in Moos, denn geteilt wird nur die Ebene „dabei“. Keine Rangliste, die Reihenfolge ist die des
+Dazukommens, genannt wird nur, wer heute dabei ist.
+
+Offen: Die Tracker tragen noch ihre eigenen Farben (Kaffee Gelb, Kippe Blau, Video Lila, eigene
+Magenta). Sie überschneiden sich mit Stimmung, Getragen und Selbst. Sollen Farben streng nur Ebenen
+heißen, würden die Tracker neutral und die Kacheln orange (Geschehen) bzw. cyan (Drang).
 
 ## Bewusst offen
 

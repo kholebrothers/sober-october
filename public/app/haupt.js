@@ -13,7 +13,7 @@ import {
   notiere, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   istDa, schalteDa, hatEintrag, ergaenze, entferne,
-  tagesKopf, monat, besterLauf,
+  tagesKopf, monat, besterLauf, SCHICHTEN, STIMMUNG, SELBST, SELBST_MAX, schreibeTag,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -103,9 +103,13 @@ const api = {
       return;
     }
     const m = aendern(() => schalteDa(z, t));
-    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [zurueck]);
+    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [["Wie war der Tag?", () => tagEinordnen()], zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
+  schichten: () => SCHICHTEN,
+  schichtWert: (id, tag) => SCHICHTEN.find((x) => x.id === id).wert(z, tag),
+  heuteEingeordnet: () => !!z.tagebuch[heute()],
+  tagEinordnen: () => tagEinordnen(),
   gruppe: () => gruppeFuerAnzeige(),
   mitgehen,
   binIch(id, name) {
@@ -361,6 +365,77 @@ function oeffneEbene(id) {
   k.append(el("p", "rubrik", e.rubrik), el("h2", null, e.titel), ebenenInhalt(id, z, heute()),
     knopf("schließen", "text", () => bogen.close()));
   zeigeBogen(k);
+}
+
+/* ---- Wie war der Tag? --------------------------------------------------------
+
+   Das Tagebuch des Tages, drei Ebenen, jede in ihrer Farbe: die Stimmung
+   (fünf Stufen), die Selbst-Markierungen aus lifetracker (höchstens zwei)
+   und ein Satz, was getragen hat. Alles freiwillig, alles bleibt auf dem
+   Gerät. Es gilt, was beim Speichern dasteht. */
+function tagEinordnen() {
+  const t = heute();
+  const vorher = z.tagebuch[t] || {};
+  const f = el("form", "bogen-inhalt einordnen");
+  f.append(el("p", "rubrik", `${tagesKopf(t)} · dein Tagebuch`), el("h2", null, "Wie war der Tag?"),
+    el("p", "leise", "Alles freiwillig und nur auf diesem Gerät. Eine Ebene reicht, keine auch."));
+
+  const stimmung = el("fieldset", "frage ebene-frage");
+  stimmung.style.setProperty("--c", "var(--gelb)");
+  stimmung.append(el("legend", "serif", "Stimmung"));
+  const stufen = el("div", "stimmung-stufen");
+  STIMMUNG.forEach((wort, i) => {
+    const l = el("label", "stufe");
+    const inp = Object.assign(document.createElement("input"), { type: "radio", name: "stimmung", value: String(i + 1), checked: vorher.stimmung === i + 1 });
+    l.style.setProperty("--w", `${Math.round(25 + ((i + 1) / STIMMUNG.length) * 75)}%`);
+    l.append(inp, el("span", "stufe-kreis"), el("span", "stufe-wort", wort));
+    stufen.append(l);
+  });
+  stimmung.append(stufen);
+
+  const selbst = el("fieldset", "frage ebene-frage");
+  selbst.style.setProperty("--c", "var(--lila)");
+  selbst.append(el("legend", "serif", "Was hat sich heute gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
+  const chips = el("span", "chips");
+  SELBST.forEach((wort, i) => {
+    const c = el("label", "chip");
+    c.style.setProperty("--c", "var(--lila)");
+    const inp = Object.assign(document.createElement("input"), { type: "checkbox", name: "selbst", value: String(i), checked: (vorher.selbst || []).includes(i) });
+    c.append(inp, el("span", null, wort));
+    chips.append(c);
+  });
+  /* Höchstens zwei: ist das Maß voll, sind die übrigen still gesperrt. */
+  const sperren = () => {
+    const n = chips.querySelectorAll("input:checked").length;
+    for (const i of chips.querySelectorAll("input")) i.disabled = !i.checked && n >= SELBST_MAX;
+  };
+  chips.addEventListener("change", sperren);
+  sperren();
+  selbst.append(chips);
+
+  const getragen = el("label", "frage ebene-frage");
+  getragen.style.setProperty("--c", "var(--blau)");
+  const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher.getragen || "", autocomplete: "off", maxLength: 280,
+    placeholder: "Der Kaffee mit Ben, der Spaziergang …" });
+  getragen.append(el("span", "serif", "Was hat dich heute getragen?"), g);
+
+  f.append(stimmung, selbst, getragen);
+  const speichern = () => {
+    const d = new FormData(f);
+    let m = null;
+    bogen.close();
+    m = aendern(() => schreibeTag(z, t, {
+      stimmung: Number(d.get("stimmung")) || 0,
+      selbst: d.getAll("selbst").map(Number),
+      getragen: d.get("getragen") || "",
+    }));
+    melde(mitMoment(z.tagebuch[t] ? `Eingeordnet.${m?.heuteNeu ? " Der Tag zählt." : ""}` : "Nichts eingeordnet.", m));
+  };
+  const unten = el("div", "wahlreihe");
+  unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));
+  f.append(unten);
+  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
+  zeigeBogen(f);
 }
 
 /* ---- Der Leitgedanke ------------------------------------------------------ */

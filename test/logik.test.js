@@ -9,6 +9,7 @@ import {
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
   BAUSTEINE, aktiv, schalteBaustein,
   istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN, monat,
+  SCHICHTEN, STIMMUNG, SELBST, schreibeTag,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -498,4 +499,38 @@ test("der Monat kurz vor dem Oktober: die Tage davor sind Vorlauf", () => {
   assert.equal(m.vorlauf, 1);
   assert.equal(m.dabei, 0);
   assert.equal(monat(z, "2026-08-01").zellen.filter((c) => c.art === "vorlauf").length, 0, "Wochen vorher noch kein Vorlauf");
+});
+
+test("das Tagebuch: Stimmung, Selbst, getragen — und der Tag zählt", () => {
+  const z = mit("kaffee");
+  const t = "2026-10-14";
+  schreibeTag(z, t, { stimmung: 4, selbst: [6, 6, 1, 3], getragen: "  der Spaziergang  " });
+  assert.deepEqual(z.tagebuch[t], { stimmung: 4, selbst: [6, 1], getragen: "der Spaziergang" }, "höchstens zwei Selbst");
+  assert.equal(hatEintrag(z, t), true, "einordnen zählt den Tag wie eine Notiz");
+  assert.deepEqual(fuerKern(z, t).eintraege, [{ date: t, habit: "dabei", value: true }]);
+  assert.ok(!JSON.stringify(fuerKern(z, t)).includes("Spaziergang"), "was im Tagebuch steht, bleibt im Gerät");
+  schreibeTag(z, t, { getragen: "" });
+  assert.equal(z.tagebuch[t].getragen, undefined);
+  schreibeTag(z, t, { stimmung: 0, selbst: [] });
+  assert.equal(z.tagebuch[t], undefined, "leer heißt weg");
+});
+
+test("das Tagebuch übersteht Speichern; Unsinn wird verworfen", () => {
+  const z = mit("kaffee");
+  schreibeTag(z, "2026-10-02", { stimmung: 1, selbst: [0] });
+  assert.deepEqual(aus(JSON.stringify(z)).tagebuch, z.tagebuch);
+  const roh = { ...z, tagebuch: { "gestern": { stimmung: 3 }, "2026-10-03": { stimmung: 9, selbst: [99, "x"], getragen: 5 } } };
+  assert.deepEqual(aus(JSON.stringify(roh)).tagebuch, {});
+});
+
+test("die Ebenen: jede eine Farbe, jede ein Wert von 0 bis 1", () => {
+  const z = mit("kaffee");
+  const t = "2026-10-14";
+  schreibeTag(z, t, { stimmung: STIMMUNG.length, selbst: [2] });
+  notiere(z, { tag: t, zeit: "10:00", verzicht: "kaffee", art: "drang" });
+  const w = Object.fromEntries(SCHICHTEN.map((s) => [s.id, s.wert(z, t)]));
+  assert.deepEqual(w, { dabei: 1, stimmung: 1, selbst: 0.5, getragen: 0, drang: 1 / 3, geschehen: 0 });
+  assert.equal(new Set(SCHICHTEN.map((s) => s.farbe)).size, SCHICHTEN.length, "keine Farbe doppelt");
+  assert.ok(!SCHICHTEN.some((s) => /rot|red/.test(s.farbe)), "kein Rot");
+  assert.equal(SELBST.length, 11);
 });

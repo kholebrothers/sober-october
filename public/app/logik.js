@@ -182,7 +182,7 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {} };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -217,6 +217,19 @@ export function aus(text) {
   const tagListe = (l) => (Array.isArray(l) ? [...new Set(l.filter((t) => typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t)))].sort() : []);
   z.freieTage = tagListe(roh.freieTage);
   z.daTage = tagListe(roh.daTage);
+
+  if (roh.tagebuch && typeof roh.tagebuch === "object")
+    for (const [tag, e] of Object.entries(roh.tagebuch)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(tag) || !e || typeof e !== "object") continue;
+      const t = {};
+      if (Number.isInteger(e.stimmung) && e.stimmung >= 1 && e.stimmung <= STIMMUNG.length) t.stimmung = e.stimmung;
+      if (Array.isArray(e.selbst)) {
+        const s = [...new Set(e.selbst.filter((i) => Number.isInteger(i) && i >= 0 && i < SELBST.length))].slice(0, SELBST_MAX);
+        if (s.length) t.selbst = s;
+      }
+      if (typeof e.getragen === "string" && e.getragen.trim()) t.getragen = e.getragen.trim().slice(0, 280);
+      if (Object.keys(t).length) z.tagebuch[tag] = t;
+    }
 
   if (Array.isArray(roh.leitgedanken))
     z.leitgedanken = roh.leitgedanken
@@ -372,7 +385,11 @@ export function schalteDa(z, tag) {
 }
 
 /** Etwas steht an dem Tag: eine Notiz oder „ich bin da" — nicht „frei". */
-export const hatEintrag = (z, tag) => istDa(z, tag) || z.ereignisse.some((e) => e.tag === tag);
+export const hatEintrag = (z, tag) => istDa(z, tag) || z.ereignisse.some((e) => e.tag === tag) || !!z.tagebuch[tag];
+
+/** Alle Tage mit irgendeinem Eintrag (oder frei genommen), sortiert. */
+const eintragsTage = (z) =>
+  [...new Set([...z.ereignisse.map((e) => e.tag), ...z.freieTage, ...z.daTage, ...Object.keys(z.tagebuch)])].sort();
 
 export const dabei = (z, tag) => istFrei(z, tag) || hatEintrag(z, tag);
 
@@ -415,7 +432,7 @@ export function lauf(z, heute) {
 
 /** Der längste Lauf (ohne Lücke), so weit die Notizen zurückreichen. */
 export function besterLauf(z, heute) {
-  const tage = [...new Set([...z.ereignisse.map((e) => e.tag), ...z.freieTage, ...z.daTage])].filter((t) => t <= heute).sort();
+  const tage = eintragsTage(z).filter((t) => t <= heute);
   let best = 0, run = 0, vor = null;
   for (const t of tage) {
     run = vor && verschiebe(vor, 1) === t ? run + 1 : 1;
@@ -482,6 +499,56 @@ export function monat(z, heute) {
   }
   const zaehle = (art) => zellen.filter((c) => c.art === art && c.stand === "dabei").length;
   return { phase: o.phase, tag: o.tag, noch: o.noch, dabei: zaehle("okt"), vorlauf: zaehle("vorlauf"), zellen };
+}
+
+/* ---- Das Tagebuch: Ebenen eines Tages --------------------------------------
+
+   Ein Tag hat mehr als „dabei oder nicht". Wer will, ordnet ihn ein — aus
+   lifetracker übernommen: die Selbst-Markierungen (höchstens zwei) und der
+   Satz „Was hat dich heute getragen?"; neu die Stimmung auf fünf Stufen.
+   Das alles bleibt auf dem Gerät (fuerKern() gibt nur den Tag weiter), und
+   jedes davon zählt den Tag wie eine Notiz.
+
+   Jede Ebene hat eine Flexoki-Farbe; der Monat lässt sich durch jede davon
+   lesen. Farbe beschreibt also, *was* festgehalten ist — nicht wer, und
+   nicht, ob es gut war. Rot gibt es weiterhin nicht. (Im Code heißen sie
+   SCHICHTEN, weil EBENEN schon die Wissensebenen sind.) */
+export const STIMMUNG = ["schwer", "eher schwer", "mittel", "eher leicht", "leicht"];
+export const SELBST = ["Selbstvertrauen", "Selbstwirksamkeit", "Selbstwertgefühl", "Selbstwahrnehmung",
+  "Selbstregulation", "Selbstberuhigung", "Selbstfürsorge", "Selbstakzeptanz", "Selbstmitgefühl",
+  "Selbstbehauptung", "Selbstbestimmung"];
+export const SELBST_MAX = 2;
+
+/* wert(z, tag) → 0 (nichts) bis 1 (voll). Die Stufen der Stimmung sind
+   Helligkeit, keine Wertung: schwer ist ein blasses Gelb, leicht ein volles. */
+export const SCHICHTEN = [
+  { id: "dabei", name: "Dabei", farbe: "var(--moss)", text: "Tage, an denen du da warst.",
+    wert: (z, t) => (dabei(z, t) ? 1 : 0) },
+  { id: "stimmung", name: "Stimmung", farbe: "var(--gelb)", text: "Je heller, desto schwerer war der Tag; je voller, desto leichter.",
+    wert: (z, t) => (z.tagebuch[t]?.stimmung || 0) / STIMMUNG.length },
+  { id: "selbst", name: "Selbst", farbe: "var(--lila)", text: "Tage, die du einem Selbst zugeordnet hast — voll bei zweien.",
+    wert: (z, t) => (z.tagebuch[t]?.selbst?.length || 0) / SELBST_MAX },
+  { id: "getragen", name: "Getragen", farbe: "var(--blau)", text: "Tage mit einem Satz dazu, was dich getragen hat.",
+    wert: (z, t) => (z.tagebuch[t]?.getragen ? 1 : 0) },
+  { id: "drang", name: "Drang", farbe: "var(--teal)", text: "Würde-gern-Momente, die du notiert hast. Voller: mehr davon.",
+    wert: (z, t) => Math.min(1, vonTag(z, t).filter((e) => e.art === "drang").length / 3) },
+  { id: "geschehen", name: "Geschehen", farbe: "var(--clay)", text: "Was geschehen ist, notiert. Ein Ereignis, kein Urteil.",
+    wert: (z, t) => Math.min(1, vonTag(z, t).filter((e) => e.art === "habe").length / 3) },
+];
+
+/** Einen Teil des Tagebuchs setzen; leer heißt weg. */
+export function schreibeTag(z, tag, { stimmung, selbst, getragen } = {}) {
+  const t = { ...(z.tagebuch[tag] || {}) };
+  if (stimmung !== undefined) { if (stimmung >= 1 && stimmung <= STIMMUNG.length) t.stimmung = stimmung; else delete t.stimmung; }
+  if (selbst !== undefined) {
+    const s = [...new Set(selbst)].filter((i) => i >= 0 && i < SELBST.length).slice(0, SELBST_MAX);
+    if (s.length) t.selbst = s; else delete t.selbst;
+  }
+  if (getragen !== undefined) {
+    const g = String(getragen || "").replace(/\s+/g, " ").trim().slice(0, 280);
+    if (g) t.getragen = g; else delete t.getragen;
+  }
+  if (Object.keys(t).length) z.tagebuch[tag] = t; else delete z.tagebuch[tag];
 }
 
 /* ---- Der Leitgedanke --------------------------------------------------------
@@ -613,7 +680,7 @@ export function wasTraegt(z, n = 3) {
  * persönlich sein wie eine Antwort.
  */
 export function fuerKern(z, heute) {
-  const tage = [...new Set([...z.ereignisse.map((e) => e.tag), ...z.freieTage, ...z.daTage])].sort();
+  const tage = eintragsTage(z);
   return {
     einstellungen: gewaehlt(z).length ? [{ schluessel: "commitment", wert: gewaehlt(z).join(","), ab: heute }] : [],
     eintraege: tage.map((date) => ({ date, habit: "dabei", value: true })),

@@ -2,9 +2,9 @@
 
    Wer noch nicht mitgeht, sieht eine Einladung: wer schon unterwegs ist,
    was geteilt wird und was nicht, ein Feld für den Namen. Wer mitgeht,
-   sieht, wer heute dabei ist, und jede Reise als eine Reihe in ihrer
-   Farbe. Keine Rangliste: die Reihenfolge ist die, in der man
-   dazugekommen ist. Ist der Server nicht erreichbar, steht hier nichts. */
+   sieht, wer heute dabei ist, und jede Reise als eine Reihe in Moos —
+   Farbe steht in dieser App für eine Ebene, nicht für eine Person. Keine
+   Rangliste: die Reihenfolge ist die, in der man dazugekommen ist. Ist der Server nicht erreichbar, steht hier nichts. */
 
 import { el, knopf } from "../ansichten/teile.js";
 
@@ -37,11 +37,7 @@ function einladung(api, g) {
   const unten = el("div", "wahlreihe");
   if (andere.length) {
     const wer = knopf("Schon dabei, auf einem anderen Gerät?", "text klein", () => {
-      wer.replaceWith(...g.leute.map((p) => {
-        const b = knopf(p.name, "chip-knopf", () => api.binIch(p.id, p.name));
-        b.style.setProperty("--v", p.farbe);
-        return b;
-      }));
+      wer.replaceWith(...g.leute.map((p) => knopf(p.name, "chip-knopf", () => api.binIch(p.id, p.name))));
     });
     unten.append(wer);
   }
@@ -62,10 +58,9 @@ function gruppe(api, g) {
   const liste = el("ul", "reisen");
   for (const p of g.leute) {
     const li = el("li", "reise");
-    li.style.setProperty("--p", p.farbe);
     if (p.du) li.dataset.du = "";
     const name = el("div", "reise-name");
-    name.append(el("span", "reise-punkt"), el("strong", null, p.du ? `${p.name} · du` : p.name));
+    name.append(el("strong", null, p.du ? `${p.name} · du` : p.name));
     if (p.commitment) name.append(el("span", "leise klein", p.commitment));
     const faden = el("div", "reise-faden");
     faden.style.setProperty("--n", String(p.tage.length));

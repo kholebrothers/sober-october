@@ -13,11 +13,8 @@
 import { fuerKern, gewaehlt, verzichte, FEST } from "./logik.js";
 import { verschiebe } from "../kern/datum.js";
 
-/* Jede Person bekommt eine Flexoki-Farbe, in der Reihenfolge, in der sie
-   dazugekommen ist. Rot gibt es nicht (app.css), Moos ist „dabei". */
-export const FARBEN = ["var(--teal)", "var(--clay)", "var(--blau)", "var(--magenta)", "var(--gelb)", "var(--lila)",
-  "color-mix(in oklab, var(--teal) 55%, var(--blau))", "color-mix(in oklab, var(--clay) 55%, var(--gelb))",
-  "color-mix(in oklab, var(--magenta) 55%, var(--lila))", "color-mix(in oklab, var(--blau) 50%, var(--lila))"];
+/* Personen haben keine Farbe. Farbe beschreibt in dieser App eine Ebene
+   (logik.js, SCHICHTEN) — in der Gruppe ist das nur eine: dabei, in Moos. */
 
 const FENSTER = 89;   // der Server hält 90 Tage
 
@@ -68,16 +65,16 @@ function commitmentText(z, stand, id) {
  * Die eigene Zeile nimmt die Tage dieses Geräts — sie ist nie hinter dem
  * Server zurück, auch wenn der Abgleich noch unterwegs ist.
  * @param tage  die Tage, über die gezeigt wird (aus monat().zellen)
- * @returns {heute: [{name, farbe, du}], leute: [{id, name, farbe, du, commitment, tage: [bool], anzahl}]}
+ * @returns {heute: [{name, du}], leute: [{id, name, du, commitment, tage: [bool], anzahl}]}
  */
 export function gruppe(z, stand, heute, tage) {
   const ich = z.gemeinsam && z.gemeinsam.id;
   const lokal = new Set(fuerKern(z, heute).eintraege.map((e) => e.date));
-  const leute = stand.people.map((p, i) => {
+  const leute = stand.people.map((p) => {
     const du = p.id === ich;
     const dabei = du ? lokal : dabeiLaut(stand, p.id);
     const reihe = tage.map((t) => t <= heute && dabei.has(t));
-    return { id: p.id, name: p.name, farbe: FARBEN[i % FARBEN.length], du, commitment: commitmentText(z, stand, p.id),
+    return { id: p.id, name: p.name, du, commitment: commitmentText(z, stand, p.id),
       tage: reihe, anzahl: reihe.filter(Boolean).length, heute: dabei.has(heute) };
   });
   return { heute: leute.filter((p) => p.heute), leute };
