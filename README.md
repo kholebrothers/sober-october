@@ -119,7 +119,7 @@ geschaltet wird, mit dem Branchnamen als Alias. Zu einem offenen PR schreibt er 
 Kommentar. Schlagen die Tests fehl, wird nichts hochgeladen.
 
 **Einmal einrichten:** Im Cloudflare-Dashboard (Konto z3e) unter *My Profile → API Tokens* einen
-Token anlegen mit *Account · Workers Scripts · Edit*, *Account · D1 · Edit*, *Account · Account Settings · Read* und
+Token anlegen mit *Account · Workers Scripts · Edit*, *Account · Account Settings · Read* und
 *User · User Details · Read* (dieselben Rechte wie bei Andreas Webseite), beschränkt auf das Konto
 z3e. Danach:
 
@@ -127,6 +127,7 @@ z3e. Danach:
 
 Solange das Secret fehlt, scheitert der Schritt „Live“ bzw. „Vorschau“. Die Tests laufen trotzdem.
 
-**D1:** `wrangler.jsonc` nennt die Datenbank `sober-october` ohne `database_id`. Beim ersten Ausliefern
-legt wrangler sie an (dafür *D1 · Edit*) und behält sie danach über die Bindung des Workers. Die
-Tabellen legt der Worker beim ersten Aufruf selbst an — es gibt keinen Migrationsschritt.
+**Gemeinsam braucht eine D1, die App nicht.** Vorerst ist keine gebunden: der Worker antwortet
+`keine-datenbank`, und die Karte „Gemeinsam“ bleibt unsichtbar. Einschalten: dem Token *D1 · Edit*
+geben und die Bindung einfügen, die in `wrangler.jsonc` im Kommentar steht. Wrangler legt die D1 beim
+nächsten Ausliefern an, die Tabellen legt der Worker selbst an — kein Migrationsschritt.

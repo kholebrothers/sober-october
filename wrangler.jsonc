@@ -1,16 +1,18 @@
 // Sober October auf Cloudflare Workers: die Dateien aus public/, dazu ein kleiner Worker nur für
-// /api/* — die Teilnahme der Gruppe (server/, nach dem Muster von kur-core) auf einer D1.
+// /api/* — die Teilnahme der Gruppe (server/, nach dem Muster von kur-core).
 //
 //   live:     https://sober-october.khole.workers.dev          (npm run deploy, main)
 //   vorschau: https://<alias>-sober-october.khole.workers.dev  (npm run vorschau -- <alias>, jeder andere Branch)
 //
-// Live und Vorschauen teilen sich die D1. Getrennt sind sie über den Raum: der Worker gibt der
-// Live-Adresse "live", allen anderen "vorschau" (server/worker.js). Eine Vorschau schreibt also nie
-// in die Gruppe von live.
+// Vorerst OHNE Datenbank: Der Worker antwortet dann {fehler: "keine-datenbank"}, und die Seite blendet
+// „Gemeinsam“ von selbst aus. Alles andere liegt ohnehin im Browser.
 //
-// Die D1 hat hier keine database_id: wrangler legt sie beim ersten Ausliefern an und behält sie danach
-// über die Bindung des Workers. Dafür braucht der Token zusätzlich "Account · D1 · Edit" (README).
-// Das Schema legt der Worker beim ersten Aufruf selbst an.
+// Die Gruppe einschalten: den Token um "Account · D1 · Edit" ergänzen und diese Bindung einfügen —
+// wrangler legt die D1 beim nächsten Ausliefern an, die Tabellen legt der Worker selbst an:
+//
+//   "d1_databases": [{ "binding": "DB", "database_name": "sober-october" }],
+//
+// Live und Vorschauen teilen sich dann die D1, getrennt über den Raum (server/worker.js).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sober-october",
@@ -26,12 +28,6 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "sober-october"
-    }
-  ],
   "rules": [
     { "type": "Text", "globs": ["**/*.sql"], "fallthrough": true }
   ]

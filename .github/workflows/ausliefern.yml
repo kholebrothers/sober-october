@@ -7,7 +7,7 @@
 # live nicht. Gibt es zum Branch einen offenen PR, steht die Adresse dort als Kommentar.
 # Scheitern die Tests, wird nichts hochgeladen.
 #
-# Braucht das Repo-Secret CLOUDFLARE_API_TOKEN (Konto z3e, Rechte: Workers Scripts:Edit, D1:Edit,
+# Braucht das Repo-Secret CLOUDFLARE_API_TOKEN (Konto z3e, Rechte: Workers Scripts:Edit, für die Gruppe später D1:Edit,
 # Account Settings:Read, User Details:Read). Einrichten: README, Abschnitt „Ausliefern".
 name: Ausliefern
 on:
