@@ -704,3 +704,15 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
 .reise-neu .gross { width:100%; margin-top:8px; }
 .tag-notizen { list-style:none; margin:0; padding:0; display:grid; gap:4px; font-size:14px; }
 .tag-notizen li { padding-left:10px; border-left:3px solid var(--v, var(--linie-stark)); }
+
+/* ---- Startschirm: das Commitment, die Woche, „+" ---------------------- */
+.monat-commitment { margin:0; font-size:17px; line-height:1.35; }
+.woche-streifen { display:grid; gap:6px; }
+.woche-monat { justify-self:end; color:var(--leise) !important; }
+.monat-blatt { border:0; padding:0; background:none; }
+.kopf-plus { font-size:22px; color:var(--ink) !important; }
+.eintragen-liste { display:grid; gap:8px; }
+.eintragen-punkt { display:grid; gap:2px; min-height:var(--touch); padding:10px 14px; text-align:left;
+  border:1px solid var(--linie); border-left:4px solid var(--c, var(--linie-stark)); border-radius:var(--radius-control); background:var(--surface); }
+.eintragen-titel { font:500 16px var(--serif); }
+.eintragen-menue > .text { display:block; margin:8px auto 0; }

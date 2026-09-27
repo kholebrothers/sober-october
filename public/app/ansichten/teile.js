@@ -31,6 +31,12 @@ export function kopf(api, rechts) {
   k.append(marke);
   const r = el("span", "kopf-rechts");
   if (rechts) r.append(rechts);
+  /* Eintragen geht immer, in jeder Ansicht und auf jeder Station der
+     Reise: alles, was die App kennt, auch was noch nicht auf dem
+     Startschirm steht. */
+  const plus = knopf("+", "rund klein kopf-plus", () => api.eintragenMenue());
+  plus.setAttribute("aria-label", "Eintragen");
+  r.append(plus);
   const e = knopf("⋯", "rund klein", () => api.einstellungen());
   e.setAttribute("aria-label", "Einstellungen");
   r.append(e);

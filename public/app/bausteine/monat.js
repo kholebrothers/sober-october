@@ -21,40 +21,14 @@ const STAND_WORT = { dabei: "dabei", leer: "nichts notiert", offen: "heute, noch
 export function monat(api) {
   const m = api.monat();
   const zaehlt = api.hatEintrag();
-  const schichten = api.schichten();
-  // Die Ebenen des Monats gehören zur Schicht „Nervensystem".
-  const S = (api.ab(3) && schichten.find((x) => x.id === schicht)) || schichten[0];
   const s = el("section", "monat");
-  s.setAttribute("aria-label", "Dein Oktober");
+  s.setAttribute("aria-label", "Dein Commitment");
   s.dataset.katze = "wand";   // Gelände für den Gremlin (begleiter/welt.js)
-  s.dataset.schicht = S.id;
-  s.style.setProperty("--schicht", S.farbe);
+  s.dataset.schicht = "dabei";
 
-  s.append(kopf(m), etappe(api));
-
-  const gitter = el("div", "monat-gitter");
-  for (const w of WOCHENTAGE) gitter.append(el("span", "monat-wt", w));
-  for (const c of m.zellen) {
-    const t = c.art === "rand" ? el("span", "monat-tag", "") : knopf(String(c.nr), "monat-tag", () => api.tagAntippen(c.tag));
-    t.dataset.stand = c.stand;
-    t.dataset.art = c.art;
-    if (c.heute) t.dataset.heute = "";
-    if (S.id !== "dabei" && c.art !== "rand" && c.stand !== "kommt") {
-      const w = api.schichtWert(S.id, c.tag);
-      if (w > 0) { t.dataset.w = ""; t.style.setProperty("--w", `${Math.round(25 + w * 75)}%`); if (w > 0.6) t.dataset.voll = ""; }
-    }
-    if (c.art !== "rand") {
-      t.setAttribute("aria-label", `${c.nr}. ${c.art === "okt" ? "Oktober" : "September"}: ${STAND_WORT[c.stand]}`);
-      t.dataset.focus = `tag-${c.tag}`;
-    }
-    gitter.append(t);
-  }
-  if (api.ab(3)) s.append(ebenenWahl(api, schichten, S));
-  gitter.setAttribute("role", "group");
-  gitter.setAttribute("aria-label", m.phase === "vor"
-    ? `Oktober, noch nicht begonnen. Vorlauf: ${m.vorlauf} ${m.vorlauf === 1 ? "Tag" : "Tage"} dabei.`
-    : `Oktober: ${m.dabei} von ${m.phase === "im" ? m.tag : 31} Tagen dabei.`);
-  s.append(gitter);
+  /* Der Startschirm ist für das Commitment da: der Satz, die Zahl, die
+     Woche und der Knopf. Den ganzen Monat gibt es auf Antippen. */
+  s.append(el("p", "monat-commitment serif", api.commitmentSatz()), kopf(m), etappe(api), woche(api, m));
 
   if (m.phase !== "nach") {
     s.append(daKnopf(api, zaehlt));
@@ -71,6 +45,64 @@ export function monat(api) {
     s.append(l);
   }
   return s;
+}
+
+/* Die Tage als Knöpfe im Raster, gefärbt durch die gewählte Ebene. */
+function tage(api, zellen, S) {
+  const gitter = el("div", "monat-gitter");
+  for (const w of WOCHENTAGE) gitter.append(el("span", "monat-wt", w));
+  for (const c of zellen) {
+    const t = c.art === "rand" ? el("span", "monat-tag", "") : knopf(String(c.nr), "monat-tag", () => api.tagAntippen(c.tag));
+    t.dataset.stand = c.stand;
+    t.dataset.art = c.art;
+    if (c.heute) t.dataset.heute = "";
+    if (S.id !== "dabei" && c.art !== "rand" && c.stand !== "kommt") {
+      const w = api.schichtWert(S.id, c.tag);
+      if (w > 0) { t.dataset.w = ""; t.style.setProperty("--w", `${Math.round(25 + w * 75)}%`); if (w > 0.6) t.dataset.voll = ""; }
+    }
+    if (c.art !== "rand") {
+      t.setAttribute("aria-label", `${c.nr}. ${c.art === "okt" ? "Oktober" : "September"}: ${STAND_WORT[c.stand]}`);
+      t.dataset.focus = `tag-${c.tag}`;
+    }
+    gitter.append(t);
+  }
+  gitter.setAttribute("role", "group");
+  return gitter;
+}
+
+/* Die Woche von heute — eine Reihe statt des ganzen Monats. Daneben der
+   Weg zum Monat. */
+function woche(api, m) {
+  const i = Math.max(0, m.zellen.findIndex((c) => c.heute));
+  const start = m.zellen.some((c) => c.heute) ? i - (i % 7) : Math.max(0, m.zellen.length - 7);
+  const w = el("div", "woche-streifen");
+  const g = tage(api, m.zellen.slice(start, start + 7), { id: "dabei" });
+  g.setAttribute("aria-label", "Diese Woche");
+  const mehr = knopf("Ganzer Monat ›", "text klein woche-monat", () => api.monatZeigen());
+  mehr.dataset.focus = "monat-zeigen";
+  w.append(g, mehr);
+  return w;
+}
+
+/* Der ganze Monat, als Blatt: jeder Tag antippbar, ab Schicht 3 durch jede
+   Ebene lesbar. `neu` zeichnet das Blatt nach einem Wechsel der Ebene neu. */
+export function monatBlatt(api, neu) {
+  const m = api.monat();
+  const schichten = api.schichten();
+  const S = (api.ab(3) && schichten.find((x) => x.id === schicht)) || schichten[0];
+  const k = el("div", "bogen-inhalt");
+  const s = el("section", "monat monat-blatt");
+  s.dataset.schicht = S.id;
+  s.style.setProperty("--schicht", S.farbe);
+  s.append(el("p", "rubrik", "Dein Oktober"), kopf(m));
+  if (api.ab(3)) s.append(ebenenWahl(api, schichten, S, neu));
+  const g = tage(api, m.zellen, S);
+  g.setAttribute("aria-label", m.phase === "vor"
+    ? `Oktober, noch nicht begonnen. Vorlauf: ${m.vorlauf} ${m.vorlauf === 1 ? "Tag" : "Tage"} dabei.`
+    : `Oktober: ${m.dabei} von ${m.phase === "im" ? m.tag : 31} Tagen dabei.`);
+  s.append(g, el("p", "leise klein", "Tipp einen Tag an, um zu sehen, was da steht, oder um etwas nachzutragen."));
+  k.append(s);
+  return k;
 }
 
 /* Die große Zahl zählt, was wächst: im Oktober die Tage dabei, davor der
@@ -97,7 +129,7 @@ function daKnopf(api, zaehlt) {
 
 /* Die Ebenen als Reihe kleiner Schalter, jeder mit dem Punkt seiner Farbe.
    Darunter ein Satz, was die gewählte zeigt. */
-function ebenenWahl(api, schichten, S) {
+function ebenenWahl(api, schichten, S, neu) {
   const w = el("div", "ebenen-wahl");
   const reihe = el("div", "ebenen-reihe");
   reihe.setAttribute("role", "radiogroup");
@@ -106,7 +138,7 @@ function ebenenWahl(api, schichten, S) {
     const b = knopf(x.name, "ebene-chip", () => {
       schicht = x.id;
       try { localStorage.setItem(MERK, x.id); } catch {}
-      api.zeichne();
+      neu();
     });
     b.setAttribute("role", "radio");
     b.setAttribute("aria-checked", x.id === S.id);

@@ -30,6 +30,7 @@ import { werkzeuge } from "./werkzeuge.js";
 import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
+import { monatBlatt } from "./bausteine/monat.js";
 import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
@@ -192,6 +193,8 @@ const api = {
   tagEinordnen: (tag) => tagEinordnen(tag),
   /* Ein Tag im Kalender angetippt: was an dem Tag steht, und — für heute
      und vergangene Tage — ob man dabei war. Ein kommender Tag hat noch nichts. */
+  monatZeigen: () => monatZeigen(),
+  eintragenMenue: () => eintragenMenue(),
   tagAntippen(tag) {
     if (tag > heute()) { melde(`${tagesKopf(tag)} kommt noch.`); return; }
     tagEinordnen(tag, { ausKalender: true });
@@ -540,14 +543,14 @@ function oeffneEbene(id) {
    (fünf Stufen), die Selbst-Markierungen aus lifetracker (höchstens zwei)
    und ein Satz, was getragen hat. Alles freiwillig, alles bleibt auf dem
    Gerät. Es gilt, was beim Speichern dasteht. */
-function tagEinordnen(tag, { ausKalender = false } = {}) {
+function tagEinordnen(tag, { ausKalender = false, alles = false } = {}) {
   const t = tag || heute();
   const istHeute = t === heute();
   const vorher = z.tagebuch[t] || {};
   const f = el("form", "bogen-inhalt einordnen");
   /* Körper, Antrieb und Selbst gehören zur Schicht „Nervensystem"; davor
      ist der Bogen nur der Satz zum Tag (und das Nachtragen). */
-  const tief = ab(z, 3);
+  const tief = ab(z, 3) || alles;
   f.append(el("p", "rubrik", `${tagesKopf(t)} · ${tief ? "Tages-Check-in" : "Tagebuch"}`),
     el("h2", null, tief ? (istHeute ? "Wie geht es dir heute?" : "Wie ging es dir an dem Tag?") : "Wie war der Tag?"));
   if (tief) f.append(el("p", "leise", "Die Tracker sind die Oberfläche, hier geht es um das darunter. Je Reihe ein Tippen; was du auslässt, bleibt leer."));
@@ -633,7 +636,7 @@ function tagEinordnen(tag, { ausKalender = false } = {}) {
   getragen.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
 
   f.append(...(tief ? [...gruppen, selbst] : []));
-  if (offen(z, "satz") || vorher.getragen) f.append(getragen);
+  if (offen(z, "satz") || vorher.getragen || alles) f.append(getragen);
   const speichern = () => {
     const d = new FormData(f);
     let m = null;
@@ -1031,6 +1034,46 @@ function eigenerTracker(id) {
   f.append(unten);
   f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
   zeigeBogen(f);
+}
+
+/* ---- Eintragen ------------------------------------------------------------
+
+   Das „+" oben: alles, was sich festhalten lässt, an einer Stelle — egal,
+   wie weit die Reise ist. Die Reise entscheidet, was auf dem Startschirm
+   steht, nicht, was man eintragen darf. Was man hier benutzt, zählt für
+   die Reise wie überall sonst. */
+function eintragenMenue() {
+  const k = el("div", "bogen-inhalt eintragen-menue");
+  k.append(el("p", "rubrik", tagesZeile(heute())), el("h2", null, "Eintragen"));
+  const liste = el("div", "eintragen-liste");
+  const punkt = (titel, text, tun, farbe) => {
+    const b = knopf("", "eintragen-punkt", () => { bogen.close(); tun(); });
+    if (farbe) b.style.setProperty("--c", farbe);
+    b.append(el("span", "eintragen-titel", titel));
+    if (text) b.append(el("span", "leise klein", text));
+    liste.append(b);
+  };
+  const t = heute(), V = verzichte(z);
+  if (!hatEintrag(z, t)) punkt("Heute bin ich dabei", "Der Tag zählt.", () => api.da(), "var(--moss)");
+  for (const v of gewaehlt(z)) {
+    const farbe = V[v].farbe || `var(--${{ kaffee: "gelb", kippe: "blau", video: "lila" }[v] || "moss"})`;
+    if (V[v].aufbau) punkt(`${V[v].name} — getan`, null, () => eintragen(v, "getan"), farbe);
+    else {
+      punkt(V[v].habe, V[v].name, () => eintragen(v, "habe"), farbe);
+      punkt(V[v].drang, "Ein Moment, in dem du gern würdest", () => eintragen(v, "drang"), farbe);
+    }
+  }
+  punkt("Wie war der Tag?", "Ein Satz, Körper, Antrieb, was sich gezeigt hat", () => tagEinordnen(t, { alles: true }), "var(--magenta)");
+  punkt("Einen anderen Tag", "Im Monat nachtragen oder ansehen", () => monatZeigen(), "var(--leise)");
+  punkt("Weiterer Tracker", "Etwas sein lassen oder aufbauen", () => neuerTracker(), "var(--leise)");
+  punkt("Leitgedanke", "Ein Satz, der dich begleitet", () => leitgedankeBearbeiten(), "var(--leise)");
+  k.append(liste, knopf("schließen", "text leise", () => bogen.close()));
+  zeigeBogen(k);
+}
+
+/* Der ganze Monat als Blatt; ein Wechsel der Ebene zeichnet es neu. */
+function monatZeigen() {
+  zeigeBogen(monatBlatt(api, () => monatZeigen()));
 }
 
 /* ---- Die Einrichtung ----------------------------------------------------------

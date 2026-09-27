@@ -14,7 +14,6 @@ export function render(api) {
   s.append(kopf(api));
   const o = oben(api);
   if (o) s.append(o);
-  s.append(el("h1", "serif", api.commitmentSatz()));
 
   const verben = el("div", "verben");
   for (const v of api.gewaehlt()) {
