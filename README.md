@@ -19,10 +19,12 @@ ist ein leises graues Feld: nichts bekannt, kein Urteil.
 
 Über dem Kalender die **Etappe** (aus lifetracker): die Kette des laufenden Laufs, eingerastet auf
 der Fibonacci-Leiter 5, 8, 13, 21, 34 — „6 von 8 Tagen“. Unter dem Knopf eine Zeile **„Was hat dich
-heute getragen?“** und, einen Tipp weiter, Stimmung (fünf Stufen) und die Selbst-Markierungen aus
-lifetracker. Ist gestern leer geblieben, lässt er sich nachtragen. Unten steht **Dein Tagebuch**: jeder
+heute getragen?“** und der **Tages-Check-in**: die Systeme unter den Symptomen, je fünf Stufen —
+Körper (Schlaf, Verdauung, Bewegung, Ernährung) und Antrieb (Stimmung, Antrieb, Motivation, Lust),
+dazu die Selbst-Markierungen aus lifetracker. **Verlauf und Zusammenhänge** zeigt sie über den Monat
+neben Drang und Geschehen und sagt in Sätzen, was zusammenfällt. Ist gestern leer geblieben, lässt er sich nachtragen. Unten steht **Dein Tagebuch**: jeder
 Tag eine Zeile. Das alles bleibt auf dem Gerät. **Farbe heißt Ebene:** Der Monat lässt sich durch jede
-Ebene lesen — Dabei (Grün), Stimmung (Gelb), Selbst (Lila), Getragen (Blau), Drang (Cyan), Geschehen
+Ebene lesen — Dabei (Grün), Körper (Blau), Antrieb (Gelb), Selbst (Lila), Drang (Cyan), Geschehen
 (Orange); siehe [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 
 Darunter die Tracker, je eine Kachel für „habe“ und darunter „würde gern“. **Notieren ist ein
@@ -36,6 +38,7 @@ Einen Knopf „heute ohne“ gibt es nicht. Alles Weitere ist ein **Baustein**, 
 | Gemeinsam *(an)* | unter dem Monat | mit anderen durch den Oktober: wer heute dabei ist, jede Reise als Reihe |
 | Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
 | Lauf | im Monat | Tage am Stück, der längste Lauf und ein Satz zum Tag (die Etappe steht immer da) |
+| Verlauf und Zusammenhänge *(an)* | unten | Körper und Antrieb über den Monat neben Drang und Geschehen; was zusammenfällt |
 | Dein Tagebuch *(an)* | unten | jeder Tag eine Zeile: Satz, Stimmung, Selbst; fehlende Tage nachtragen |
 | Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
 | Wissen und Rückblick | unten | Ebenen, die sich durch Benutzen öffnen; der Rückblick in Wochen |

@@ -2,9 +2,10 @@
 
    Aus lifetracker („Deine Sätze"): eine Antwort allein ist eine Notiz,
    dreißig sind ein Verlauf. Jeder Tag eine Zeile, neu nach alt: links der
-   Tag, dann die Punkte seiner Ebenen (Dabei, Stimmung, Selbst, Drang,
-   Geschehen — jede in ihrer Farbe), rechts der Satz. Auch leere Tage stehen
-   da; antippen trägt nach oder ergänzt. Zuerst eine Woche, auf Wunsch alles. */
+   Tag, dann die Punkte seiner Ebenen (Dabei, Körper, Antrieb, Selbst,
+   Drang, Geschehen — jede in ihrer Farbe), rechts der Satz. Auch leere
+   Tage stehen da; antippen trägt nach oder ergänzt. Zuerst eine Woche, auf
+   Wunsch alles. */
 
 import { el, knopf } from "../ansichten/teile.js";
 
@@ -30,7 +31,8 @@ export function tagebuch(api) {
     punkte.setAttribute("aria-hidden", "true");
     const punkt = (klasse, stil) => { const p = el("i", klasse); if (stil) p.style.setProperty("--w", stil); punkte.append(p); };
     punkt(z.dabei ? "p-dabei an" : "p-dabei");
-    if (z.stimmung) punkt("p-stimmung", `${Math.round(25 + (z.stimmung / 5) * 75)}%`);
+    if (z.koerper) punkt("p-koerper", `${Math.round(25 + z.koerper * 75)}%`);
+    if (z.antrieb) punkt("p-antrieb", `${Math.round(25 + z.antrieb * 75)}%`);
     for (let i = 0; i < z.selbst.length; i++) punkt("p-selbst");
     if (z.drang) punkt("p-drang");
     if (z.habe) punkt("p-geschehen");
@@ -45,6 +47,8 @@ export function tagebuch(api) {
 
     const worte = [z.heute ? "Heute" : z.kopf, z.dabei ? "dabei" : "nichts eingetragen"];
     if (z.stimmung) worte.push(`Stimmung ${api.stimmungWort(z.stimmung)}`);
+    if (z.koerper) worte.push("Körper eingeschätzt");
+    if (z.antrieb) worte.push("Antrieb eingeschätzt");
     if (z.selbst.length) worte.push(z.selbst.join(", "));
     if (z.getragen) worte.push(`„${z.getragen}“`);
     b.setAttribute("aria-label", `${worte.join(". ")}. Öffnen zum Ergänzen.`);

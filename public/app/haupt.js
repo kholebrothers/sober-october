@@ -14,6 +14,7 @@ import {
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   istDa, schalteDa, hatEintrag, ergaenze, entferne,
   tagesKopf, monat, besterLauf, SCHICHTEN, STIMMUNG, SELBST, SELBST_MAX, schreibeTag, tagebuchZeilen,
+  SYSTEME, GRUPPEN, STUFEN, eingeschaetzt, verlauf, zusammenhaenge,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -108,7 +109,11 @@ const api = {
   aktiv: (id) => aktiv(z, id),
   schichten: () => SCHICHTEN,
   schichtWert: (id, tag) => SCHICHTEN.find((x) => x.id === id).wert(z, tag),
-  heuteEingeordnet: () => !!(z.tagebuch[heute()]?.stimmung || z.tagebuch[heute()]?.selbst),
+  eingeschaetzt: () => eingeschaetzt(z, heute()),
+  systemeAnzahl: SYSTEME.length,
+  verlauf: (tage) => verlauf(z, tage),
+  zusammenhaenge: (tage) => zusammenhaenge(z, tage),
+  monatsTage: () => monat(z, heute()).zellen.filter((c) => c.art !== "rand").map((c) => c.tag),
   tagEinordnen: (tag) => tagEinordnen(tag),
   getragen: () => z.tagebuch[heute()]?.getragen || "",
   getragenSetzen(text) {
@@ -393,8 +398,8 @@ function tagEinordnen(tag) {
   const istHeute = t === heute();
   const vorher = z.tagebuch[t] || {};
   const f = el("form", "bogen-inhalt einordnen");
-  f.append(el("p", "rubrik", `${tagesKopf(t)} · dein Tagebuch`), el("h2", null, istHeute ? "Wie war der Tag?" : "Wie war dieser Tag?"),
-    el("p", "leise", "Alles freiwillig und nur auf diesem Gerät. Eine Ebene reicht, keine auch."));
+  f.append(el("p", "rubrik", `${tagesKopf(t)} · Tages-Check-in`), el("h2", null, istHeute ? "Wie geht es dir heute?" : "Wie ging es dir an dem Tag?"),
+    el("p", "leise", "Kaffee, Kippe, Video sind die Oberfläche. Hier geht es um das darunter. Je Reihe ein Tippen; was du auslässt, bleibt leer. Nur auf diesem Gerät."));
   /* Ein vergangener Tag: nachtragen, dass man dabei war. */
   let da = null;
   if (!istHeute && !istDa(z, t)) {
@@ -406,18 +411,39 @@ function tagEinordnen(tag) {
     f.append(l);
   }
 
-  const stimmung = el("fieldset", "frage ebene-frage");
-  stimmung.style.setProperty("--c", "var(--gelb)");
-  stimmung.append(el("legend", "serif", "Stimmung"));
-  const stufen = el("div", "stimmung-stufen");
-  STIMMUNG.forEach((wort, i) => {
-    const l = el("label", "stufe");
-    const inp = Object.assign(document.createElement("input"), { type: "radio", name: "stimmung", value: String(i + 1), checked: vorher.stimmung === i + 1 });
-    l.style.setProperty("--w", `${Math.round(25 + ((i + 1) / STIMMUNG.length) * 75)}%`);
-    l.append(inp, el("span", "stufe-kreis"), el("span", "stufe-wort", wort));
-    stufen.append(l);
+  /* Körper und Antrieb: je System eine Reihe, fünf Stufen zwischen zwei
+     Polen. Ein Tippen wählt, ein zweites auf dieselbe Stufe nimmt sie weg. */
+  const gruppen = Object.entries(GRUPPEN).map(([gid, gr]) => {
+    const fs = el("fieldset", "frage ebene-frage systeme");
+    fs.style.setProperty("--c", gr.farbe);
+    fs.append(el("legend", "serif", gr.name));
+    for (const x of SYSTEME.filter((y) => y.gruppe === gid)) {
+      const reihe = el("div", "system");
+      reihe.setAttribute("role", "radiogroup");
+      reihe.setAttribute("aria-label", `${x.name}: von ${x.pole[0]} bis ${x.pole[1]}`);
+      reihe.append(el("span", "system-name", x.name));
+      const stufen = el("span", "system-stufen");
+      for (let n = 1; n <= STUFEN; n++) {
+        const l = el("label", "stufe");
+        const inp = Object.assign(document.createElement("input"), { type: "radio", name: x.id, value: String(n), checked: vorher[x.id] === n });
+        inp.setAttribute("aria-label", `${x.name} ${n} von ${STUFEN}${n === 1 ? `, ${x.pole[0]}` : n === STUFEN ? `, ${x.pole[1]}` : ""}`);
+        inp.dataset.war = inp.checked ? "1" : "";
+        inp.addEventListener("click", () => {
+          if (inp.dataset.war) { inp.checked = false; inp.dataset.war = ""; return; }
+          for (const o of stufen.querySelectorAll("input")) o.dataset.war = "";
+          inp.dataset.war = "1";
+        });
+        l.style.setProperty("--w", `${Math.round(25 + (n / STUFEN) * 75)}%`);
+        l.append(inp, el("span", "stufe-kreis"));
+        stufen.append(l);
+      }
+      const pole = el("span", "system-pole");
+      pole.append(el("span", null, x.pole[0]), el("span", null, x.pole[1]));
+      reihe.append(stufen, pole);
+      fs.append(reihe);
+    }
+    return fs;
   });
-  stimmung.append(stufen);
 
   const selbst = el("fieldset", "frage ebene-frage");
   selbst.style.setProperty("--c", "var(--lila)");
@@ -440,26 +466,26 @@ function tagEinordnen(tag) {
   selbst.append(chips);
 
   const getragen = el("label", "frage ebene-frage");
-  getragen.style.setProperty("--c", "var(--blau)");
+  getragen.style.setProperty("--c", "var(--magenta)");
   const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher.getragen || "", autocomplete: "off", maxLength: 280,
     placeholder: "Der Kaffee mit Ben, der Spaziergang …" });
   getragen.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
 
-  f.append(stimmung, selbst, getragen);
+  f.append(...gruppen, selbst, getragen);
   const speichern = () => {
     const d = new FormData(f);
     let m = null;
     bogen.close();
     m = aendern(() => {
       schreibeTag(z, t, {
-        stimmung: Number(d.get("stimmung")) || 0,
+        werte: Object.fromEntries(SYSTEME.map((x) => [x.id, Number(d.get(x.id)) || 0])),
         selbst: d.getAll("selbst").map(Number),
         getragen: d.get("getragen") || "",
       });
       if (da && da.checked && !istDa(z, t)) schalteDa(z, t);
     });
     const steht = hatEintrag(z, t);
-    melde(mitMoment(!steht ? "Nichts eingetragen." : istHeute ? `Eingeordnet.${m?.heuteNeu ? " Der Tag zählt." : ""}` : `${tagesKopf(t)} ist nachgetragen.`, m));
+    melde(mitMoment(!steht ? "Nichts eingetragen." : istHeute ? `Check-in gespeichert: ${eingeschaetzt(z, t)} von ${SYSTEME.length}.${m?.heuteNeu ? " Der Tag zählt." : ""}` : `${tagesKopf(t)} ist nachgetragen.`, m));
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));

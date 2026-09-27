@@ -467,7 +467,7 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 
 /* Der Satz zum Tag, gleich unter dem Knopf: eine Zeile, blau wie seine Ebene. */
 .satz-zeile input { width:100%; font:inherit; font-size:16px; min-height:var(--touch); padding:10px 14px; border:1px solid var(--linie);
-  border-left:3px solid var(--blau); border-radius:var(--radius-control); background:var(--paper); color:var(--ink); }
+  border-left:3px solid var(--magenta); border-radius:var(--radius-control); background:var(--paper); color:var(--ink); }
 .satz-zeile input::placeholder { color:var(--leise); font-family:var(--serif); font-style:italic; }
 .monat-weiteres { display:flex; flex-wrap:wrap; justify-content:center; column-gap:20px; margin-top:-8px; }
 
@@ -481,7 +481,8 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .tb-punkte i { width:8px; height:8px; border-radius:50%; }
 .tb-punkte .p-dabei { border:1.5px solid var(--linie-stark); }
 .tb-punkte .p-dabei.an { background:var(--moss); border-color:var(--moss); }
-.tb-punkte .p-stimmung { background:color-mix(in oklab, var(--gelb) var(--w), var(--hm-leer)); }
+.tb-punkte .p-koerper { background:color-mix(in oklab, var(--blau) var(--w), var(--hm-leer)); }
+.tb-punkte .p-antrieb { background:color-mix(in oklab, var(--gelb) var(--w), var(--hm-leer)); }
 .tb-punkte .p-selbst { background:var(--lila); }
 .tb-punkte .p-drang { background:var(--teal); }
 .tb-punkte .p-geschehen { background:var(--clay); }
@@ -489,3 +490,37 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .tb-satz { font-family:var(--serif); font-style:italic; }
 .tb-zeile[data-leer] .tb-text .leise { font-size:13px; }
 .tagebuch > .text { justify-self:start; }
+
+/* Der Tages-Check-in: der Knopf unter der Satzzeile, und im Bogen je System
+   eine Reihe aus fünf Kreisen in der Farbe seiner Gruppe (--c). */
+.monat-weiteres { flex-direction:column; align-items:stretch; row-gap:4px; margin-top:-4px; }
+.checkin-knopf { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:var(--touch); padding:10px 16px;
+  border:1px solid var(--linie-stark); border-radius:var(--radius-control); background:transparent; font-weight:500; text-align:left;
+  background-image:linear-gradient(90deg, var(--blau) 0 50%, var(--gelb) 50%); background-size:100% 3px; background-repeat:no-repeat; background-position:bottom; }
+.checkin-knopf > span { white-space:nowrap; }
+.checkin-knopf { column-gap:10px; }
+.checkin-stand { font-size:13px; font-weight:400; color:var(--leise); }
+.checkin-knopf[data-teil] .checkin-stand { color:var(--ink); }
+.monat-weiteres .tag-einordnen { align-self:center; margin:0; }
+.systeme { gap:10px; }
+.system { display:grid; grid-template-columns:minmax(72px, 88px) minmax(0, 1fr); column-gap:10px; row-gap:0; align-items:center; }
+.system-name { font-size:15px; }
+.system-stufen { display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; }
+.system .stufe-kreis { width:100%; max-width:34px; height:auto; aspect-ratio:1; border-color:color-mix(in oklab, var(--c) 55%, var(--linie));
+  background:color-mix(in oklab, var(--c) calc(var(--w) * .25), transparent); }
+.system .stufe input:checked + .stufe-kreis { background:color-mix(in oklab, var(--c) var(--w), var(--hm-leer)); border-color:var(--c); box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--c); }
+.system-pole { grid-column:2; display:flex; justify-content:space-between; font-size:11px; color:var(--leise); margin-top:1px; }
+
+/* Verlauf: je System eine Reihe über den Monat, Drang und Geschehen darunter. */
+.vl { display:grid; gap:3px; }
+.vl-zeile { display:grid; grid-template-columns:78px minmax(0, 1fr); column-gap:8px; align-items:center; }
+.vl-name { font-size:12px; color:var(--leise); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vl-zellen { display:grid; grid-template-columns:repeat(var(--n), minmax(0, 1fr)); gap:1.5px; }
+.vl-zellen i { height:10px; border-radius:2px; background:var(--hm-leer); }
+.vl-zellen i[style] { background:color-mix(in oklab, var(--f) var(--w), var(--hm-leer)); }
+.vl-zellen i[data-kommt] { background:none; box-shadow:inset 0 0 0 1px var(--linie); }
+.vl-abstand { height:6px; }
+.zusammenhaenge { list-style:none; margin:4px 0 0; padding:0; display:grid; gap:8px; }
+.zusammenhaenge li { padding-left:10px; border-left:3px solid var(--f); font-size:14px; line-height:1.4; }
+.verlauf > p.klein { margin:0; }
+@media (max-width:360px) { .checkin-stand { font-size:12px; } .system-name { font-size:14px; } }

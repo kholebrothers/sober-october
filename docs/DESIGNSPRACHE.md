@@ -69,13 +69,14 @@ Kalender, und je voller die Farbe, desto mehr steht an dem Tag:
 | Ebene | Flexoki | Woher | Voll heißt |
 | --- | --- | --- | --- |
 | Dabei | Grün | „Heute bin ich dabei“ oder irgendein Eintrag | da gewesen |
-| Stimmung | Gelb | Tagebuch, fünf Stufen von „schwer“ bis „leicht“ | ein leichter Tag (schwer ist blass, nicht leer) |
-| Selbst | Lila | Tagebuch, die Selbst-Markierungen aus lifetracker, höchstens zwei | zwei Markierungen |
-| Getragen | Blau | Tagebuch, „Was hat dich heute getragen?“ (aus lifetracker) | ein Satz steht da |
+| Körper | Blau | Tages-Check-in: Schlaf, Verdauung, Bewegung, Ernährung (Mittel) | eher am oberen Pol (erholsam, ruhig, viel, nährend) |
+| Antrieb | Gelb | Tages-Check-in: Stimmung, Antrieb, Motivation, Lust (Mittel) | eher am oberen Pol (leicht, viel) |
+| Selbst | Lila | die Selbst-Markierungen aus lifetracker, höchstens zwei | zwei Markierungen |
 | Drang | Cyan | „würde gern“ | drei oder mehr Momente |
 | Geschehen | Orange | „habe“ | drei oder mehr Ereignisse |
 
-Rot gibt es nicht. Das Tagebuch („Wie war der Tag?“ unter dem Knopf, auch aus der Meldung nach
+Der Satz „Was hat dich heute getragen?“ hat Magenta als Randfarbe, ist aber keine Ebene des Kalenders:
+er steht im Tagebuch. Rot gibt es nicht. Das Tagebuch („Wie war der Tag?“ unter dem Knopf, auch aus der Meldung nach
 „dabei“) bleibt auf dem Gerät; es zählt den Tag wie eine Notiz, an die Gruppe geht nur „dabei“.
 
 In der Gruppe („Gemeinsam“) haben Personen deshalb **keine eigene Farbe**: jede Reise ist eine Reihe
@@ -103,6 +104,24 @@ Aus lifetracker: Die Kette zeigt den laufenden Lauf, rastet aber auf der Leiter 
 Man sieht nie „12 von 31“, sondern die nächste erreichbare Stufe: „3 von 5 Tagen“, dann „6 von 8“.
 Ein einzelner leerer Tag bricht sie nicht. Ist eine Etappe voll, leuchtet der Monat auf und die
 Meldung sagt einen Satz. Für Neue heißt das einfach **Etappe**; „Fibonacci“ steht nur im Tooltip.
+
+## Die Systeme unter den Symptomen
+
+Kaffee, Kippe und Video sind Oberfläche: Symptom oder Lösungsversuch. Schränkt man sie ein, laufen die
+Systeme darunter weiter. Der **Tages-Check-in** (Knopf unter der Satzzeile) fragt sie ab, je System
+eine Reihe mit fünf Stufen zwischen zwei Polen, ein Tipp pro Reihe:
+
+- **Körper:** Schlaf (unruhig–erholsam), Verdauung (gestört–ruhig), Bewegung (kaum–viel),
+  Ernährung (unstet–nährend)
+- **Antrieb:** Stimmung (schwer–leicht), Antrieb, Motivation, Lust (je wenig–viel)
+
+Die Pole sind Beschreibungen, keine Noten. Über den Monat zeigt **Verlauf und Zusammenhänge** jedes
+System als Reihe und darunter Drang und Geschehen auf denselben Tagen. Sobald auf beiden Seiten
+mindestens drei Tage stehen, sagt ein Satz, was zusammenfällt: „Schlaf und Drang. Eher „unruhig“
+(5 Tage): 3 Würde-gern-Momente am Tag. Eher „erholsam“ (9 Tage): 0,6.“ Gezählt, nicht gedeutet.
+
+Offen: welche Linsen die Systeme später ordnen sollen (die Nachricht nannte Solms; der zweite Name
+war unklar). Heute ordnen sie sich schlicht in Körper und Antrieb.
 
 ## Bewusst offen
 

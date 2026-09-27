@@ -151,13 +151,16 @@ function satzZeile(api) {
   return f;
 }
 
-/* Darunter, leise: Stimmung und Selbst im Bogen — und, wenn gestern leer
-   geblieben ist, das Nachtragen. */
+/* Darunter der Tages-Check-in: Körper und Antrieb, die Systeme unter den
+   Symptomen — und, wenn gestern leer geblieben ist, das Nachtragen. */
 function weiteres(api) {
   const r = el("div", "monat-weiteres");
-  const e = api.heuteEingeordnet();
-  const b = knopf(e ? "Stimmung und Selbst · ändern" : "Stimmung und Selbst", "text tag-einordnen", () => api.tagEinordnen());
+  const n = api.eingeschaetzt(), alle = api.systemeAnzahl;
+  const b = knopf("", "checkin-knopf", () => api.tagEinordnen());
   b.dataset.focus = "einordnen";
+  if (n) b.dataset.teil = "";
+  b.append(el("span", null, "Tages-Check-in"), el("span", "checkin-stand", n ? `${n} von ${alle}` : "Körper · Antrieb"));
+  b.setAttribute("aria-label", `Tages-Check-in: ${n} von ${alle} Systemen eingeschätzt`);
   r.append(b);
   const g = api.gesternOffen();
   if (g) {

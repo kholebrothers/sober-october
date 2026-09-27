@@ -163,6 +163,8 @@ export const BAUSTEINE = [
     text: "Mit anderen durch den Oktober: wer heute dabei ist, und jede Reise als Farbe. Geteilt wird nur dein Name, was du sein lässt, und an welchen Tagen du dabei warst." },
   { id: "tagebuch", gruppe: "Unten", titel: "Dein Tagebuch", standard: true,
     text: "Jeder Tag eine Zeile: dein Satz, die Stimmung, was sich gezeigt hat. Fehlt ein Tag, lässt er sich nachtragen." },
+  { id: "verlauf", gruppe: "Unten", titel: "Verlauf und Zusammenhänge", standard: true,
+    text: "Körper und Antrieb über den Monat, neben Drang und Geschehen — und in Sätzen, was zusammenfällt." },
   { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
   { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
@@ -224,7 +226,7 @@ export function aus(text) {
     for (const [tag, e] of Object.entries(roh.tagebuch)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(tag) || !e || typeof e !== "object") continue;
       const t = {};
-      if (Number.isInteger(e.stimmung) && e.stimmung >= 1 && e.stimmung <= STIMMUNG.length) t.stimmung = e.stimmung;
+      for (const x of SYSTEME) if (Number.isInteger(e[x.id]) && e[x.id] >= 1 && e[x.id] <= STUFEN) t[x.id] = e[x.id];
       if (Array.isArray(e.selbst)) {
         const s = [...new Set(e.selbst.filter((i) => Number.isInteger(i) && i >= 0 && i < SELBST.length))].slice(0, SELBST_MAX);
         if (s.length) t.selbst = s;
@@ -505,9 +507,10 @@ export function monat(z, heute) {
 
 /* ---- Das Tagebuch: Ebenen eines Tages --------------------------------------
 
-   Ein Tag hat mehr als „dabei oder nicht". Wer will, ordnet ihn ein — aus
-   lifetracker übernommen: die Selbst-Markierungen (höchstens zwei) und der
-   Satz „Was hat dich heute getragen?"; neu die Stimmung auf fünf Stufen.
+   Ein Tag hat mehr als „dabei oder nicht". Im Tages-Check-in schätzt man die
+   Systeme darunter ein (Körper und Antrieb, siehe SYSTEME); aus lifetracker
+   kommen die Selbst-Markierungen (höchstens zwei) und der Satz „Was hat
+   dich heute getragen?".
    Das alles bleibt auf dem Gerät (fuerKern() gibt nur den Tag weiter), und
    jedes davon zählt den Tag wie eine Notiz.
 
@@ -515,33 +518,67 @@ export function monat(z, heute) {
    lesen. Farbe beschreibt also, *was* festgehalten ist — nicht wer, und
    nicht, ob es gut war. Rot gibt es weiterhin nicht. (Im Code heißen sie
    SCHICHTEN, weil EBENEN schon die Wissensebenen sind.) */
+/* Die Systeme unter den Symptomen. Kaffee, Kippe und Video sind Oberfläche —
+   Symptom oder Lösungsversuch. Darunter laufen Systeme weiter, die man
+   täglich kurz einschätzen kann, jedes auf fünf Stufen zwischen zwei Polen.
+   Zwei Gruppen: der Körper und der Antrieb. Keine Diagnose, eine
+   Selbstauskunft; über Tage wird daraus ein Bild. */
+export const STUFEN = 5;
+export const SYSTEME = [
+  { id: "schlaf", name: "Schlaf", gruppe: "koerper", pole: ["unruhig", "erholsam"] },
+  { id: "verdauung", name: "Verdauung", gruppe: "koerper", pole: ["gestört", "ruhig"] },
+  { id: "bewegung", name: "Bewegung", gruppe: "koerper", pole: ["kaum", "viel"] },
+  { id: "ernaehrung", name: "Ernährung", gruppe: "koerper", pole: ["unstet", "nährend"] },
+  { id: "stimmung", name: "Stimmung", gruppe: "antrieb", pole: ["schwer", "leicht"] },
+  { id: "antrieb", name: "Antrieb", gruppe: "antrieb", pole: ["wenig", "viel"] },
+  { id: "motivation", name: "Motivation", gruppe: "antrieb", pole: ["wenig", "viel"] },
+  { id: "lust", name: "Lust", gruppe: "antrieb", pole: ["wenig", "viel"] },
+];
+export const GRUPPEN = { koerper: { name: "Körper", farbe: "var(--blau)" }, antrieb: { name: "Antrieb", farbe: "var(--gelb)" } };
+/** Die Stimmung in Worten, von 1 bis 5 (aus der ersten Fassung). */
 export const STIMMUNG = ["schwer", "eher schwer", "mittel", "eher leicht", "leicht"];
 export const SELBST = ["Selbstvertrauen", "Selbstwirksamkeit", "Selbstwertgefühl", "Selbstwahrnehmung",
   "Selbstregulation", "Selbstberuhigung", "Selbstfürsorge", "Selbstakzeptanz", "Selbstmitgefühl",
   "Selbstbehauptung", "Selbstbestimmung"];
 export const SELBST_MAX = 2;
 
-/* wert(z, tag) → 0 (nichts) bis 1 (voll). Die Stufen der Stimmung sind
-   Helligkeit, keine Wertung: schwer ist ein blasses Gelb, leicht ein volles. */
+/** Der Mittelwert einer Gruppe an einem Tag, 0 (nichts angegeben) bis 1. */
+export function gruppenWert(z, tag, gruppe) {
+  const e = z.tagebuch[tag] || {};
+  const w = SYSTEME.filter((x) => x.gruppe === gruppe && e[x.id]).map((x) => e[x.id] / STUFEN);
+  return w.length ? w.reduce((a, b) => a + b, 0) / w.length : 0;
+}
+
+const drangAm = (z, t) => vonTag(z, t).filter((e) => e.art === "drang").length;
+const habeAm = (z, t) => vonTag(z, t).filter((e) => e.art === "habe").length;
+
+/* wert(z, tag) → 0 (nichts) bis 1 (voll). Körper und Antrieb sind der
+   Mittelwert ihrer Systeme: blass heißt „am unteren Pol", voll „am oberen" —
+   eine Stufe, keine Note. */
 export const SCHICHTEN = [
   { id: "dabei", name: "Dabei", farbe: "var(--moss)", text: "Tage, an denen du da warst.",
     wert: (z, t) => (dabei(z, t) ? 1 : 0) },
-  { id: "stimmung", name: "Stimmung", farbe: "var(--gelb)", text: "Je heller, desto schwerer war der Tag; je voller, desto leichter.",
-    wert: (z, t) => (z.tagebuch[t]?.stimmung || 0) / STIMMUNG.length },
+  { id: "koerper", name: "Körper", farbe: GRUPPEN.koerper.farbe, text: "Schlaf, Verdauung, Bewegung, Ernährung im Mittel. Blass: eher unruhig, voll: eher erholt.",
+    wert: (z, t) => gruppenWert(z, t, "koerper") },
+  { id: "antrieb", name: "Antrieb", farbe: GRUPPEN.antrieb.farbe, text: "Stimmung, Antrieb, Motivation, Lust im Mittel. Blass: eher wenig, voll: eher viel.",
+    wert: (z, t) => gruppenWert(z, t, "antrieb") },
   { id: "selbst", name: "Selbst", farbe: "var(--lila)", text: "Tage, die du einem Selbst zugeordnet hast — voll bei zweien.",
     wert: (z, t) => (z.tagebuch[t]?.selbst?.length || 0) / SELBST_MAX },
-  { id: "getragen", name: "Getragen", farbe: "var(--blau)", text: "Tage mit einem Satz dazu, was dich getragen hat.",
-    wert: (z, t) => (z.tagebuch[t]?.getragen ? 1 : 0) },
   { id: "drang", name: "Drang", farbe: "var(--teal)", text: "Würde-gern-Momente, die du notiert hast. Voller: mehr davon.",
-    wert: (z, t) => Math.min(1, vonTag(z, t).filter((e) => e.art === "drang").length / 3) },
+    wert: (z, t) => Math.min(1, drangAm(z, t) / 3) },
   { id: "geschehen", name: "Geschehen", farbe: "var(--clay)", text: "Was geschehen ist, notiert. Ein Ereignis, kein Urteil.",
-    wert: (z, t) => Math.min(1, vonTag(z, t).filter((e) => e.art === "habe").length / 3) },
+    wert: (z, t) => Math.min(1, habeAm(z, t) / 3) },
 ];
 
-/** Einen Teil des Tagebuchs setzen; leer heißt weg. */
-export function schreibeTag(z, tag, { stimmung, selbst, getragen } = {}) {
+/** Einen Teil des Tagebuchs setzen; leer (oder 0) heißt weg.
+    werte: {schlaf: 1–5, …}; stimmung geht auch direkt (erste Fassung). */
+export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen } = {}) {
   const t = { ...(z.tagebuch[tag] || {}) };
-  if (stimmung !== undefined) { if (stimmung >= 1 && stimmung <= STIMMUNG.length) t.stimmung = stimmung; else delete t.stimmung; }
+  const alle = stimmung !== undefined ? { ...werte, stimmung } : werte;
+  for (const [id, n] of Object.entries(alle)) {
+    if (!SYSTEME.some((x) => x.id === id)) continue;
+    if (Number.isInteger(n) && n >= 1 && n <= STUFEN) t[id] = n; else delete t[id];
+  }
   if (selbst !== undefined) {
     const s = [...new Set(selbst)].filter((i) => i >= 0 && i < SELBST.length).slice(0, SELBST_MAX);
     if (s.length) t.selbst = s; else delete t.selbst;
@@ -551,6 +588,46 @@ export function schreibeTag(z, tag, { stimmung, selbst, getragen } = {}) {
     if (g) t.getragen = g; else delete t.getragen;
   }
   if (Object.keys(t).length) z.tagebuch[tag] = t; else delete z.tagebuch[tag];
+}
+
+/** Wie viele Systeme an einem Tag eingeschätzt sind. */
+export const eingeschaetzt = (z, tag) => SYSTEME.filter((x) => z.tagebuch[tag]?.[x.id]).length;
+
+/* ---- Zusammenhänge ---------------------------------------------------------
+
+   Über Tage, nicht an einem: Wie sah es mit Drang und Geschehen aus an Tagen,
+   an denen ein System eher am unteren Pol stand (1–2), und an Tagen, an denen
+   es eher am oberen stand (4–5)? Gezeigt wird nur, was auf beiden Seiten
+   mindestens drei Tage hat und sich um mindestens einen halben Moment
+   unterscheidet. Ein Hinweis, kein Beweis; die App deutet nicht. */
+export const MIN_TAGE = 3;
+
+export function zusammenhaenge(z, tage, n = 3) {
+  const out = [];
+  for (const x of SYSTEME) {
+    const mit = tage.filter((t) => z.tagebuch[t]?.[x.id]);
+    const unten = mit.filter((t) => z.tagebuch[t][x.id] <= 2), oben = mit.filter((t) => z.tagebuch[t][x.id] >= 4);
+    if (unten.length < MIN_TAGE || oben.length < MIN_TAGE) continue;
+    for (const [ziel, zaehl] of [["drang", drangAm], ["geschehen", habeAm]]) {
+      const schnitt = (l) => l.reduce((a, t) => a + zaehl(z, t), 0) / l.length;
+      const a = schnitt(unten), b = schnitt(oben);
+      if (Math.abs(a - b) >= 0.5) out.push({ system: x, ziel, unten: { tage: unten.length, schnitt: a }, oben: { tage: oben.length, schnitt: b } });
+    }
+  }
+  return out.sort((p, q) => Math.abs(q.unten.schnitt - q.oben.schnitt) - Math.abs(p.unten.schnitt - p.oben.schnitt)).slice(0, n);
+}
+
+/** Der Verlauf über Tage: je System eine Reihe (0 = nichts, sonst Stufe/5),
+    dazu Drang und Geschehen — untereinander, damit man sieht, was
+    zusammenfällt. */
+export function verlauf(z, tage) {
+  const reihe = (f) => tage.map(f);
+  return [
+    ...SYSTEME.map((x) => ({ id: x.id, name: x.name, farbe: GRUPPEN[x.gruppe].farbe, gruppe: x.gruppe,
+      werte: reihe((t) => (z.tagebuch[t]?.[x.id] || 0) / STUFEN) })),
+    { id: "drang", name: "Drang", farbe: "var(--teal)", werte: reihe((t) => Math.min(1, drangAm(z, t) / 3)) },
+    { id: "geschehen", name: "Geschehen", farbe: "var(--clay)", werte: reihe((t) => Math.min(1, habeAm(z, t) / 3)) },
+  ];
 }
 
 /* ---- Das Tagebuch in Zeilen --------------------------------------------------
@@ -571,7 +648,8 @@ export function tagebuchZeilen(z, heute) {
     const e = z.tagebuch[t] || {};
     const es = vonTag(z, t);
     zeilen.push({ tag: t, kopf: tagesKopf(t), heute: t === heute, dabei: dabei(z, t),
-      stimmung: e.stimmung || 0, selbst: (e.selbst || []).map((i) => SELBST[i]), getragen: e.getragen || "",
+      stimmung: e.stimmung || 0, koerper: gruppenWert(z, t, "koerper"), antrieb: gruppenWert(z, t, "antrieb"),
+      selbst: (e.selbst || []).map((i) => SELBST[i]), getragen: e.getragen || "",
       drang: es.filter((x) => x.art === "drang").length, habe: es.filter((x) => x.art === "habe").length });
   }
   return zeilen;
