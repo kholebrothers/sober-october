@@ -196,25 +196,19 @@ function satzZeile(api) {
    Symptomen — und, wenn gestern leer geblieben ist, das Nachtragen. */
 function weiteres(api) {
   const r = el("div", "monat-weiteres");
-  if (!api.ab(3)) {
-    const g0 = api.offen("satz") && api.gesternOffen();
-    if (g0) { const n0 = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g0)); n0.dataset.focus = "nachtragen"; r.append(n0); }
-    const h = reiseHinweis(api);
-    if (h) r.append(h);
-    return r;
-  }
-  if (api.morgenpraxisOffen()) {
+  if (api.ab(3) && api.morgenpraxisOffen()) {
     const d = knopf("", "daemon-hinweis", () => api.werkzeug("daemon"));
     d.dataset.focus = "daemon";
     d.append(el("span", null, "Morgenpraxis: Dämonen zum Frühstück"), el("span", "leise klein", "7 Min."));
     r.append(d);
   }
-  const n = api.eingeschaetzt(), alle = api.systemeAnzahl;
+  /* Der Check-in, immer da: das Gesicht von heute, wenn es eins gibt. */
+  const st = api.stimmungHeute();
   const b = knopf("", "checkin-knopf", () => api.tagEinordnen());
   b.dataset.focus = "einordnen";
-  if (n) b.dataset.teil = "";
-  b.append(el("span", null, "Tages-Check-in"), el("span", "checkin-stand", n ? `${n} von ${alle}` : "Körper · Antrieb"));
-  b.setAttribute("aria-label", `Tages-Check-in: ${n} von ${alle} Systemen eingeschätzt`);
+  if (st) b.dataset.teil = "";
+  b.append(el("span", null, "Wie geht’s dir?"), el("span", "checkin-stand", st ? api.gesicht(st) : "😶"));
+  b.setAttribute("aria-label", st ? `Check-in: Stimmung ${api.stimmungWort(st)}. Öffnen` : "Check-in öffnen");
   r.append(b);
   const g = api.gesternOffen();
   if (g) {
@@ -222,6 +216,8 @@ function weiteres(api) {
     n.dataset.focus = "nachtragen";
     r.append(n);
   }
+  const h = reiseHinweis(api);
+  if (h) r.append(h);
   return r;
 }
 

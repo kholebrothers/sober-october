@@ -121,7 +121,7 @@ const api = {
     }
     const m = aendern(() => schalteDa(z, t));
     gremlin.freut(1, document.querySelector(".da-knopf"));
-    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), ab(z, 3) ? [["Check-in", () => tagEinordnen()], zurueck] : [zurueck]);
+    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [["Wie geht’s dir?", () => tagEinordnen()], zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
   offen: (was) => offen(z, was),
@@ -206,6 +206,8 @@ const api = {
   },
   tagebuchZeilen: () => tagebuchZeilen(z, heute()),
   stimmungWort: (n) => STIMMUNG[n - 1],
+  stimmungHeute: () => z.tagebuch[heute()]?.stimmung || 0,
+  gesicht: (n) => GESICHTER[n - 1],
   /* Gestern leer geblieben, aber es gibt schon etwas vorher: dann darf man
      ihn nachtragen (aus lifetracker, „Noch kurz aufschreiben"). */
   gesternOffen() {
@@ -537,131 +539,184 @@ function oeffneEbene(id) {
   zeigeBogen(k);
 }
 
-/* ---- Wie war der Tag? --------------------------------------------------------
+/* ---- Der Check-in ------------------------------------------------------------
 
-   Das Tagebuch des Tages, drei Ebenen, jede in ihrer Farbe: die Stimmung
-   (fünf Stufen), die Selbst-Markierungen aus lifetracker (höchstens zwei)
-   und ein Satz, was getragen hat. Alles freiwillig, alles bleibt auf dem
-   Gerät. Es gilt, was beim Speichern dasteht. */
-function tagEinordnen(tag, { ausKalender = false, alles = false } = {}) {
+   Minimale Reibung, maximale Freiheit: oben fünf Gesichter für die
+   Stimmung — ein Tippen, und es ist festgehalten. Darunter eine Reihe
+   Symbole; jedes blendet eine weitere Eingabe ein (ein Satz, Schlaf,
+   Bewegung …). Was man einmal eingeblendet hat, ist beim nächsten Mal
+   von selbst offen (`z.checkin`), was an dem Tag schon Werte hat, auch.
+   Alles speichert sofort; es gibt keinen Speichern-Knopf, nur „Fertig".
+   Alles freiwillig, alles bleibt auf dem Gerät. */
+const GESICHTER = ["😣", "🙁", "😐", "🙂", "😄"];
+
+function tagEinordnen(tag, { ausKalender = false } = {}) {
   const t = tag || heute();
   const istHeute = t === heute();
-  const vorher = z.tagebuch[t] || {};
-  const f = el("form", "bogen-inhalt einordnen");
-  /* Körper, Antrieb und Selbst gehören zur Schicht „Nervensystem"; davor
-     ist der Bogen nur der Satz zum Tag (und das Nachtragen). */
-  const tief = ab(z, 3) || alles;
-  f.append(el("p", "rubrik", `${tagesKopf(t)} · ${tief ? "Tages-Check-in" : "Tagebuch"}`),
-    el("h2", null, tief ? (istHeute ? "Wie geht es dir heute?" : "Wie ging es dir an dem Tag?") : "Wie war der Tag?"));
-  if (tief) f.append(el("p", "leise", "Die Tracker sind die Oberfläche, hier geht es um das darunter. Je Reihe ein Tippen; was du auslässt, bleibt leer."));
-  /* Was an dem Tag notiert ist — aus dem Kalender heraus will man das sehen. */
+  const vorher = () => z.tagebuch[t] || {};
+  const k = el("div", "bogen-inhalt checkin");
+  k.append(el("p", "rubrik", `${tagesKopf(t)} · Check-in`), el("h2", null, istHeute ? "Wie geht’s dir?" : "Wie ging’s dir an dem Tag?"));
+
+  /* Speichern, still. Wird der Tag dadurch gezählt, sagt es die Meldung. */
+  const sichereTag = (was) => {
+    const m = aendern(() => schreibeTag(z, t, was));
+    if (m?.heuteNeu) melde(mitMoment("Der Tag zählt.", m));
+  };
+
+  /* Aus dem Kalender: was an dem Tag notiert ist. */
   const notizen = vonTag(z, t).filter((e) => e.art !== "ohne");
   if (ausKalender && notizen.length) {
     const l = el("ul", "tag-notizen");
     for (const e of notizen) l.append(faerbe(el("li", null, `${e.zeit} · ${wasText(api, e)}`), verzichte(z), e.verzicht));
-    f.append(l);
+    k.append(l);
   }
-  /* Nachtragen, dass man dabei war — oder, aus dem Kalender, es wieder
-     zurücknehmen. Aus „Gestern nachtragen" ist es schon angekreuzt. */
-  let da = null;
-  if ((!istHeute && !istDa(z, t)) || ausKalender) {
+  /* Ein vergangener Tag — oder aus dem Kalender: dabei gewesen? */
+  if (!istHeute || ausKalender) {
     const l = el("label", "baustein");
-    da = Object.assign(document.createElement("input"), { type: "checkbox", checked: ausKalender ? istDa(z, t) : !hatEintrag(z, t) });
+    const da = Object.assign(document.createElement("input"), { type: "checkbox", checked: istDa(z, t) });
+    da.addEventListener("change", () => {
+      const m = aendern(() => { if (da.checked !== istDa(z, t)) schalteDa(z, t); });
+      if (m?.heuteNeu) melde(mitMoment("Der Tag zählt.", m));
+    });
     const tx = el("span", "baustein-text");
-    const zaehltSonst = notizen.length || !!z.tagebuch[t];
     tx.append(el("span", null, istHeute ? "Heute bin ich dabei" : "An dem Tag war ich dabei"),
-      el("span", "leise klein", zaehltSonst ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
+      el("span", "leise klein", notizen.length ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
     l.append(da, tx);
-    f.append(l);
+    k.append(l);
   }
 
-  /* Körper und Antrieb: je System eine Reihe, fünf Stufen zwischen zwei
-     Polen. Ein Tippen wählt, ein zweites auf dieselbe Stufe nimmt sie weg. */
-  const gruppen = Object.entries(GRUPPEN).map(([gid, gr]) => {
-    const fs = el("fieldset", "frage ebene-frage systeme");
-    fs.style.setProperty("--c", gr.farbe);
-    fs.append(el("legend", "serif", gr.name));
-    for (const x of SYSTEME.filter((y) => y.gruppe === gid)) {
-      const reihe = el("div", "system");
-      reihe.setAttribute("role", "radiogroup");
-      reihe.setAttribute("aria-label", `${x.name}: von ${x.pole[0]} bis ${x.pole[1]}`);
-      reihe.append(el("span", "system-name", x.name));
-      const stufen = el("span", "system-stufen");
-      for (let n = 1; n <= STUFEN; n++) {
-        const l = el("label", "stufe");
-        const inp = Object.assign(document.createElement("input"), { type: "radio", name: x.id, value: String(n), checked: vorher[x.id] === n });
-        inp.setAttribute("aria-label", `${x.name} ${n} von ${STUFEN}${n === 1 ? `, ${x.pole[0]}` : n === STUFEN ? `, ${x.pole[1]}` : ""}`);
-        inp.dataset.war = inp.checked ? "1" : "";
-        inp.addEventListener("click", () => {
-          if (inp.dataset.war) { inp.checked = false; inp.dataset.war = ""; return; }
-          for (const o of stufen.querySelectorAll("input")) o.dataset.war = "";
-          inp.dataset.war = "1";
-        });
-        l.style.setProperty("--w", `${Math.round(25 + (n / STUFEN) * 75)}%`);
-        l.append(inp, el("span", "stufe-kreis"));
-        stufen.append(l);
-      }
-      const pole = el("span", "system-pole");
-      pole.append(el("span", null, x.pole[0]), el("span", null, x.pole[1]));
-      reihe.append(stufen, pole);
-      fs.append(reihe);
-    }
-    return fs;
-  });
-
-  const selbst = el("fieldset", "frage ebene-frage");
-  selbst.style.setProperty("--c", "var(--lila)");
-  selbst.append(el("legend", "serif", istHeute ? "Was hat sich heute gezeigt?" : "Was hat sich an dem Tag gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
-  const chips = el("span", "chips");
-  SELBST.forEach((wort, i) => {
-    const c = el("label", "chip");
-    c.style.setProperty("--c", "var(--lila)");
-    const inp = Object.assign(document.createElement("input"), { type: "checkbox", name: "selbst", value: String(i), checked: (vorher.selbst || []).includes(i) });
-    c.append(inp, el("span", null, wort));
-    chips.append(c);
-  });
-  /* Höchstens zwei: ist das Maß voll, sind die übrigen still gesperrt. */
-  const sperren = () => {
-    const n = chips.querySelectorAll("input:checked").length;
-    for (const i of chips.querySelectorAll("input")) i.disabled = !i.checked && n >= SELBST_MAX;
-  };
-  chips.addEventListener("change", sperren);
-  sperren();
-  selbst.append(chips);
-
-  const getragen = el("label", "frage ebene-frage");
-  getragen.style.setProperty("--c", "var(--magenta)");
-  const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher.getragen || "", autocomplete: "off", maxLength: 280,
-    placeholder: "Der Kaffee mit Ben, der Spaziergang …" });
-  getragen.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
-
-  f.append(...(tief ? [...gruppen, selbst] : []));
-  if (offen(z, "satz") || vorher.getragen || alles) f.append(getragen);
-  const speichern = () => {
-    const d = new FormData(f);
-    let m = null;
-    bogen.close();
-    m = aendern(() => {
-      schreibeTag(z, t, tief ? {
-        werte: Object.fromEntries(SYSTEME.map((x) => [x.id, Number(d.get(x.id)) || 0])),
-        selbst: d.getAll("selbst").map(Number),
-        getragen: d.get("getragen") || "",
-      } : d.has("getragen") ? { getragen: d.get("getragen") || "" } : {});
-      if (da && da.checked !== istDa(z, t)) schalteDa(z, t);
+  /* Die Stimmung: fünf Gesichter, ein Tippen; dasselbe noch einmal nimmt es weg. */
+  const gesichter = el("div", "gesichter");
+  gesichter.setAttribute("role", "radiogroup");
+  gesichter.setAttribute("aria-label", "Stimmung");
+  const zeigeStimmung = () => gesichter.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-checked", vorher().stimmung === i + 1));
+  GESICHTER.forEach((g, i) => {
+    const b = knopf(g, "gesicht", () => {
+      sichereTag({ werte: { stimmung: vorher().stimmung === i + 1 ? 0 : i + 1 } });
+      spueren(8);
+      zeigeStimmung();
     });
-    const steht = hatEintrag(z, t);
-    const zaehlt = m?.heuteNeu ? " Der Tag zählt." : "";
-    melde(mitMoment(!steht ? (ausKalender ? `${tagesKopf(t)}: nichts eingetragen.` : "Nichts eingetragen.")
-      : !istHeute ? `${tagesKopf(t)} ist nachgetragen.`
-      : tief ? `Check-in gespeichert: ${eingeschaetzt(z, t)} von ${SYSTEME.length}.${zaehlt}`
-      : z.tagebuch[t]?.getragen ? `Im Tagebuch.${zaehlt}`
-      : m?.heuteNeu ? "Du bist dabei. Der Tag zählt." : "Gespeichert.", m));
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-label", `Stimmung: ${STIMMUNG[i]}`);
+    gesichter.append(b);
+  });
+  zeigeStimmung();
+  k.append(gesichter);
+
+  /* Die Symbole, und darunter die eingeblendeten Eingaben. */
+  const symbole = el("div", "checkin-symbole");
+  symbole.setAttribute("aria-label", "Mehr festhalten");
+  const felder = el("div", "checkin-felder");
+  const offenIds = new Set([...z.checkin, ...CHECKIN_MODULE.filter((m) => hatWert(m, vorher())).map((m) => m.id)]);
+  const bauen = {};
+  for (const mod of CHECKIN_MODULE) {
+    const b = knopf("", "checkin-symbol", () => {
+      const an = !offenIds.has(mod.id);
+      if (an) offenIds.add(mod.id); else offenIds.delete(mod.id);
+      aendern(() => { z.checkin = CHECKIN_MODULE.map((m) => m.id).filter((id) => offenIds.has(id)); });
+      zeichneFelder();
+      if (an) felder.querySelector(`[data-modul="${mod.id}"] input`)?.focus({ preventScroll: true });
+    });
+    b.dataset.modul = mod.id;
+    b.append(el("span", "checkin-icon", mod.icon), el("span", "checkin-wort", mod.name));
+    symbole.append(b);
+    bauen[mod.id] = () => modulFeld(mod, t, vorher, sichereTag);
+  }
+  const zeichneFelder = () => {
+    symbole.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", offenIds.has(b.dataset.modul)));
+    felder.replaceChildren(...CHECKIN_MODULE.filter((m) => offenIds.has(m.id)).map((m) => bauen[m.id]()));
   };
+  zeichneFelder();
+  k.append(el("p", "rubrik checkin-mehr", "Mehr festhalten"), symbole, felder);
+
   const unten = el("div", "wahlreihe");
-  unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));
-  f.append(unten);
-  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
-  zeigeBogen(f);
+  unten.append(knopf("Fertig", "gross", () => bogen.close()));
+  k.append(unten, el("p", "leise klein", "Wird sofort gespeichert. Nur auf diesem Gerät."));
+  zeigeBogen(k);
+}
+
+/* Was sich im Check-in einblenden lässt. Jedes Modul ist ein System aus
+   logik.js (fünf Stufen), der Satz zum Tag oder die Selbst-Markierungen. */
+const CHECKIN_MODULE = [
+  { id: "satz", icon: "✏️", name: "Ein Satz" },
+  { id: "schlaf", icon: "🌙", name: "Schlaf" },
+  { id: "bewegung", icon: "🏃", name: "Bewegung" },
+  { id: "ernaehrung", icon: "🥗", name: "Ernährung" },
+  { id: "verdauung", icon: "🌿", name: "Verdauung" },
+  { id: "antrieb", icon: "⚡", name: "Antrieb" },
+  { id: "motivation", icon: "🎯", name: "Motivation" },
+  { id: "lust", icon: "💗", name: "Lust" },
+  { id: "selbst", icon: "✨", name: "Selbst" },
+];
+
+const hatWert = (m, e) => (m.id === "satz" ? !!e.getragen : m.id === "selbst" ? !!e.selbst?.length : !!e[m.id]);
+
+function modulFeld(mod, t, vorher, sichereTag) {
+  const istHeute = t === heute();
+  if (mod.id === "satz") {
+    const l = el("label", "frage ebene-frage");
+    l.dataset.modul = mod.id;
+    l.style.setProperty("--c", "var(--magenta)");
+    const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher().getragen || "", autocomplete: "off", maxLength: 280,
+      placeholder: "Der Kaffee mit Ben, der Spaziergang …", enterKeyHint: "done" });
+    g.addEventListener("change", () => sichereTag({ getragen: g.value }));
+    g.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); g.blur(); } });
+    l.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
+    return l;
+  }
+  if (mod.id === "selbst") {
+    const fs = el("fieldset", "frage ebene-frage");
+    fs.dataset.modul = mod.id;
+    fs.style.setProperty("--c", "var(--lila)");
+    fs.append(el("legend", "serif", istHeute ? "Was hat sich heute gezeigt?" : "Was hat sich an dem Tag gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
+    const chips = el("span", "chips");
+    SELBST.forEach((wort, i) => {
+      const c = el("label", "chip");
+      c.style.setProperty("--c", "var(--lila)");
+      c.append(Object.assign(document.createElement("input"), { type: "checkbox", value: String(i), checked: (vorher().selbst || []).includes(i) }), el("span", null, wort));
+      chips.append(c);
+    });
+    const sperren = () => {
+      const n = chips.querySelectorAll("input:checked").length;
+      for (const i of chips.querySelectorAll("input")) i.disabled = !i.checked && n >= SELBST_MAX;
+    };
+    chips.addEventListener("change", () => {
+      sperren();
+      sichereTag({ selbst: [...chips.querySelectorAll("input:checked")].map((i) => Number(i.value)) });
+    });
+    sperren();
+    fs.append(chips);
+    return fs;
+  }
+  /* Ein System: fünf Stufen zwischen zwei Polen. Ein Tippen wählt, ein
+     zweites auf dieselbe Stufe nimmt sie weg. */
+  const x = SYSTEME.find((y) => y.id === mod.id);
+  const fs = el("div", "frage ebene-frage systeme");
+  fs.dataset.modul = mod.id;
+  fs.style.setProperty("--c", GRUPPEN[x.gruppe].farbe);
+  const reihe = el("div", "system");
+  reihe.setAttribute("role", "radiogroup");
+  reihe.setAttribute("aria-label", `${x.name}: von ${x.pole[0]} bis ${x.pole[1]}`);
+  reihe.append(el("span", "system-name", x.name));
+  const stufen = el("span", "system-stufen");
+  for (let n = 1; n <= STUFEN; n++) {
+    const l = el("label", "stufe");
+    const inp = Object.assign(document.createElement("input"), { type: "radio", name: x.id, value: String(n), checked: vorher()[x.id] === n });
+    inp.setAttribute("aria-label", `${x.name} ${n} von ${STUFEN}${n === 1 ? `, ${x.pole[0]}` : n === STUFEN ? `, ${x.pole[1]}` : ""}`);
+    inp.addEventListener("click", () => {
+      const weg = vorher()[x.id] === n;
+      if (weg) inp.checked = false;
+      sichereTag({ werte: { [x.id]: weg ? 0 : n } });
+    });
+    l.style.setProperty("--w", `${Math.round(25 + (n / STUFEN) * 75)}%`);
+    l.append(inp, el("span", "stufe-kreis"));
+    stufen.append(l);
+  }
+  const pole = el("span", "system-pole");
+  pole.append(el("span", null, x.pole[0]), el("span", null, x.pole[1]));
+  reihe.append(stufen, pole);
+  fs.append(reihe);
+  return fs;
 }
 
 /* ---- Der Leitgedanke ------------------------------------------------------ */
@@ -1063,7 +1118,7 @@ function eintragenMenue() {
       punkt(V[v].drang, "Ein Moment, in dem du gern würdest", () => eintragen(v, "drang"), farbe);
     }
   }
-  punkt("Wie war der Tag?", "Ein Satz, Körper, Antrieb, was sich gezeigt hat", () => tagEinordnen(t, { alles: true }), "var(--magenta)");
+  punkt("Check-in", "Wie geht’s dir? Ein Tippen — und mehr, wenn du magst", () => tagEinordnen(t), "var(--magenta)");
   punkt("Einen anderen Tag", "Im Monat nachtragen oder ansehen", () => monatZeigen(), "var(--leise)");
   punkt("Weiterer Tracker", "Etwas sein lassen oder aufbauen", () => neuerTracker(), "var(--leise)");
   punkt("Leitgedanke", "Ein Satz, der dich begleitet", () => leitgedankeBearbeiten(), "var(--leise)");

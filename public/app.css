@@ -716,3 +716,19 @@ button.monat-tag { padding:0; min-width:0; background:transparent; font-family:i
   border:1px solid var(--linie); border-left:4px solid var(--c, var(--linie-stark)); border-radius:var(--radius-control); background:var(--surface); }
 .eintragen-titel { font:500 16px var(--serif); }
 .eintragen-menue > .text { display:block; margin:8px auto 0; }
+
+/* ---- Der Check-in: Gesichter, Symbole, eingeblendete Felder ----------- */
+.checkin h2 { margin-bottom:4px; }
+.gesichter { display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin:4px 0 8px; }
+.gesicht { aspect-ratio:1; min-height:var(--touch); font-size:30px; line-height:1; border:1.5px solid var(--linie); border-radius:50%;
+  background:var(--paper); display:grid; place-items:center; padding:0; transition:transform .12s ease; filter:grayscale(.35); }
+.gesicht[aria-checked="true"] { border-color:var(--gelb); background:color-mix(in oklab, var(--gelb) 16%, var(--surface)); transform:scale(1.08); filter:none; }
+.checkin-mehr { margin-top:4px !important; }
+.checkin-symbole { display:flex; flex-wrap:wrap; gap:6px; }
+.checkin-symbol { display:inline-flex; align-items:center; gap:6px; min-height:var(--touch); padding:6px 12px 6px 8px; border:1px solid var(--linie-stark);
+  border-radius:99px; background:transparent; font-size:14px; color:var(--leise); }
+.checkin-icon { font-size:18px; line-height:1; }
+.checkin-symbol[aria-pressed="true"] { border-color:var(--ink); color:var(--ink); background:var(--paper); }
+.checkin-felder { display:grid; gap:14px; }
+.checkin-felder:empty { display:none; }
+.checkin-knopf .checkin-stand { font-size:22px; }

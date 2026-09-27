@@ -797,3 +797,10 @@ test("wer schon vor der Reise da war, hat sie hinter sich; wer nie etwas gewähl
   assert.equal(leer.reise, 0);
   assert.equal(leer.tiefe, 1);
 });
+
+test("der Check-in merkt sich, welche Eingaben offen sind — nur bekannte", () => {
+  const z = mit("kaffee");
+  z.checkin = ["satz", "schlaf", "gibtsnicht", "selbst", "schlaf"];
+  assert.deepEqual(aus(JSON.stringify(z)).checkin, ["satz", "schlaf", "selbst"]);
+  assert.deepEqual(neuerZustand().checkin, []);
+});

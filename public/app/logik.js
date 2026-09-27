@@ -334,7 +334,7 @@ export function einrichten(z, wahl) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0,
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0, checkin: [],
     werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {},
     gremlin: { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] } };
 }
@@ -371,6 +371,8 @@ export function aus(text) {
   const warDa = gewaehlt(z).length || (Array.isArray(roh.ereignisse) && roh.ereignisse.length) || (Array.isArray(roh.daTage) && roh.daTage.length);
   z.reise = Number.isInteger(roh.reise) && roh.reise >= 0 && roh.reise <= REISE.length ? roh.reise : warDa ? REISE.length : 0;
   if (!warDa && !Number.isInteger(roh.reise)) z.tiefe = 1;
+  // Welche Eingaben im Check-in von selbst offen sind — nur bekannte.
+  if (Array.isArray(roh.checkin)) z.checkin = [...new Set(roh.checkin.filter((x) => x === "satz" || x === "selbst" || SYSTEME.some((y) => y.id === x)))];
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
   if (roh.gemeinsam && /^p[a-z0-9]{1,16}$/.test(roh.gemeinsam.id) && typeof roh.gemeinsam.name === "string")
     z.gemeinsam = { id: roh.gemeinsam.id, name: roh.gemeinsam.name.slice(0, 24) };
