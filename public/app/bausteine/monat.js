@@ -53,7 +53,11 @@ export function monat(api) {
     : `Oktober: ${m.dabei} von ${m.phase === "im" ? m.tag : 31} Tagen dabei.`);
   s.append(gitter);
 
-  if (m.phase !== "nach") s.append(daKnopf(api, zaehlt), satzZeile(api), weiteres(api));
+  if (m.phase !== "nach") {
+    s.append(daKnopf(api, zaehlt));
+    if (api.offen("satz")) s.append(satzZeile(api));
+    s.append(weiteres(api));
+  }
 
   if (api.aktiv("lauf")) {
     const n = api.serie(), best = api.besterLauf();
@@ -158,8 +162,10 @@ function satzZeile(api) {
 function weiteres(api) {
   const r = el("div", "monat-weiteres");
   if (!api.ab(3)) {
-    const g0 = api.gesternOffen();
+    const g0 = api.offen("satz") && api.gesternOffen();
     if (g0) { const n0 = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g0)); n0.dataset.focus = "nachtragen"; r.append(n0); }
+    const h = reiseHinweis(api);
+    if (h) r.append(h);
     return r;
   }
   if (api.morgenpraxisOffen()) {
@@ -182,4 +188,13 @@ function weiteres(api) {
     r.append(n);
   }
   return r;
+}
+
+/* Was als Nächstes kommt, leise unter dem Knopf: ein Grund, morgen
+   wiederzukommen. Am Ziel der Reise steht hier nichts mehr. */
+function reiseHinweis(api) {
+  const r = api.reise();
+  if (!r.naechste) return null;
+  return el("p", "reise-hinweis leise klein",
+    `${r.fehlen === 1 ? "Noch ein Tag" : `Noch ${r.fehlen} Tage`} dabei, dann öffnet sich: ${r.naechste.titel}`);
 }

@@ -11,6 +11,14 @@ und beliebig viele **eigene Tracker** mit selbst geschriebenem Namen, etwa „Al
 jederzeit dazu, über ⋯ → „Tracker wählen oder hinzufügen“. Die Namen bleiben im Gerät; an kur-core
 gingen nur die Schlüssel (`eigen`, `eigen-…`).
 
+**Die Reise.** Wer neu ist, wählt in der Einrichtung genau einen Kern: etwas, das er sein lässt
+(Kaffee, Kippe, Video oder Eigenes), oder etwas, das er aufbaut (Morgenroutine, Bewegung …). Am
+ersten Tag gibt es nur den Monat, „Heute bin ich dabei“ und diese eine Kachel. Alles Weitere öffnet
+sich mit den Tagen dabei, auf der Fibonacci-Leiter der Etappe (`REISE` in `logik.js`): nach 2 Tagen
+der Satz zum Tag und das Tagebuch, nach 3 „würde gern“, Leitgedanke und Gemeinsam, nach 5 weitere
+Tracker, Lebenszeit und Ansichten, nach 8 Schicht 2 (Formen), nach 13 Schicht 3 (Nervensystem).
+Was offen ist, bleibt offen. Wer schon vor der Reise etwas gewählt hatte, hat sie hinter sich.
+
 **Im Zentrum steht der Monat.** Oben in jeder Ansicht: der Oktober als Kalender und darunter
 ein Knopf, **„Heute bin ich dabei“**. Ein Tippen, und das Feld des Tages füllt sich, die Zahl der
 Tage dabei springt, das Telefon tippt kurz zurück; an den Stufen 5, 8, 13, 21 und 34 leuchtet der

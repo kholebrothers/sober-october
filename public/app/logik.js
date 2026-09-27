@@ -231,7 +231,7 @@ export const BAUSTEINE = [
 
 export function aktiv(z, id) {
   const b = BAUSTEINE.find((x) => x.id === id);
-  if (!b || b.schicht > z.tiefe) return false;
+  if (!b || b.schicht > z.tiefe || !offen(z, id)) return false;
   if (id in z.bausteine) return z.bausteine[id];
   return !!b.standard;
 }
@@ -244,10 +244,69 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
   z.bausteine[id] = !!an;
 }
 
+/* ---- Die Reise ------------------------------------------------------------
+
+   Man fängt mit einem Kern an: einer Sache, die man sein lässt oder
+   aufbaut, dem Monat und „Heute bin ich dabei". Alles Weitere öffnet sich
+   mit den Tagen, an denen man dabei war — auf derselben Fibonacci-Leiter
+   wie die Etappe: 2, 3, 5, 8, 13. Was einmal offen ist, bleibt offen, auch
+   wenn ein Tag wieder zurückgenommen wird. Die Schichten (Formen,
+   Nervensystem) sind selbst Stationen der Reise.
+
+   `oeffnet` nennt Schlüssel: Bausteine (siehe BAUSTEINE) und Teile, die
+   kein Baustein sind. Was in keiner Station steht, ist von Anfang an da. */
+export const REISE = [
+  { ab: 2, titel: "Ein Satz zum Tag", text: "Unter dem Knopf steht jetzt eine Zeile: Was hat dich heute getragen? Daraus wird dein Tagebuch.",
+    oeffnet: ["satz", "tagebuch"] },
+  { ab: 3, titel: "Der Moment davor", text: "Du kannst jetzt auch notieren, wenn du gern würdest — ohne dass etwas passiert. Dazu ein Leitgedanke und, wenn du magst, andere, die mitgehen.",
+    oeffnet: ["drang", "leitgedanke", "gemeinsam"] },
+  { ab: 5, titel: "Mehr als eins", text: "Die erste Etappe ist geschafft. Jetzt kannst du weitere Tracker dazunehmen, sehen, wie viel Lebenszeit frei wird, und die Ansicht wählen.",
+    oeffnet: ["tracker", "lebenszeit", "lauf", "heatmap", "ansicht"] },
+  { ab: 8, titel: "Formen", tiefe: 2, text: "Werkzeuge für den Moment, in dem der Drang kommt, Wenn-dann-Pläne und Routinen in kleinen Schritten.",
+    oeffnet: ["tiefe2", "werkzeuge"] },
+  { ab: 13, titel: "Nervensystem", tiefe: 3, text: "Der Tages-Check-in für Körper und Antrieb, Zusammenhänge über den Monat — und dein Gremlin zeigt sich.",
+    oeffnet: ["tiefe3", "verlauf", "gremlin", "ebenen"] },
+];
+
+const REISE_STATION = new Map(REISE.flatMap((s, i) => s.oeffnet.map((k) => [k, i])));
+
+/** Ist dieser Teil auf der Reise schon erreicht? */
+export const offen = (z, was) => !REISE_STATION.has(was) || REISE_STATION.get(was) < z.reise;
+
+/** An wie vielen Tagen man bisher dabei war — das Maß der Reise. */
+export const reiseTage = (z) => eintragsTage(z).length;
+
+/** Die Reise einen Schritt weiter, wenn die Tage reichen. Gibt die neu
+    erreichten Stationen zurück; die Schicht geht mit, nie zurück. */
+export function reiseWeiter(z) {
+  const n = reiseTage(z), neu = [];
+  while (z.reise < REISE.length && n >= REISE[z.reise].ab) {
+    const s = REISE[z.reise++];
+    if (s.tiefe && z.tiefe < s.tiefe) z.tiefe = s.tiefe;
+    neu.push(s);
+  }
+  return neu;
+}
+
+/** Wo die Reise steht: {tage, naechste, fehlen} — naechste ist null am Ziel. */
+export function reiseStand(z) {
+  const tage = reiseTage(z), naechste = REISE[z.reise] || null;
+  return { tage, naechste, fehlen: naechste ? Math.max(1, naechste.ab - tage) : 0 };
+}
+
+/** Der Kern: die eine Sache, mit der die Reise beginnt. Ersetzt, was
+    gewählt war; Notizen und eigene Tracker bleiben stehen.
+    `wahl` ist {fest: "kaffee"} oder {name, art: "lassen"|"aufbauen", schritte}. */
+export function einrichten(z, wahl) {
+  z.commitment = {};
+  if (wahl.fest && FEST.includes(wahl.fest)) { z.commitment[wahl.fest] = { drang: true }; return wahl.fest; }
+  return fuegeEigenenHinzu(z, wahl.name, { art: wahl.art, schritte: wahl.schritte });
+}
+
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1,
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0,
     werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {},
     gremlin: { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] } };
 }
@@ -280,6 +339,10 @@ export function aus(text) {
     for (const k of ids) if (minuten(roh.zeitVorher[k]) !== null) z.zeitVorher[k] = roh.zeitVorher[k];
   // Ein Stand von vor den Schichten hatte alles: er bleibt auf der tiefsten.
   z.tiefe = [1, 2, 3].includes(roh.tiefe) ? roh.tiefe : 3;
+  // Wer schon vor der Reise da war und etwas gewählt hat, hat sie hinter sich.
+  const warDa = gewaehlt(z).length || (Array.isArray(roh.ereignisse) && roh.ereignisse.length) || (Array.isArray(roh.daTage) && roh.daTage.length);
+  z.reise = Number.isInteger(roh.reise) && roh.reise >= 0 && roh.reise <= REISE.length ? roh.reise : warDa ? REISE.length : 0;
+  if (!warDa && !Number.isInteger(roh.reise)) z.tiefe = 1;
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
   if (roh.gemeinsam && /^p[a-z0-9]{1,16}$/.test(roh.gemeinsam.id) && typeof roh.gemeinsam.name === "string")
     z.gemeinsam = { id: roh.gemeinsam.id, name: roh.gemeinsam.name.slice(0, 24) };

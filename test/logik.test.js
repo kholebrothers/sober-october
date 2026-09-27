@@ -15,6 +15,7 @@ import {
   setzeZeitVorher, freiAm, lebenszeit, dauer,
   gremlinStufe, setzeFuetterungstag, futterHinzu, fuettern, werkzeugBenutzt, istFuetterungstag,
   DAEMON_PHASEN, DAEMON_SEK, daemonStand,
+  REISE, offen, reiseWeiter, reiseStand, einrichten,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -63,6 +64,7 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
 
 test("die App fängt klein an: auf Schicht 1 Leitgedanke, Gemeinsam, Tagebuch und Abendruhe, auf Schicht 3 auch der Verlauf", () => {
   const z = neuerZustand();
+  z.reise = REISE.length;
   assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "lebenszeit", "tagebuch", "abends"]);
   z.tiefe = 3;
   assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "lebenszeit", "tagebuch", "verlauf", "werkzeuge", "gremlin", "abends"]);
@@ -602,6 +604,7 @@ test("drei Schichten: neu fängt man bei 1 an, ein alter Stand hatte alles", () 
   assert.equal(neuerZustand().tiefe, 1);
   assert.equal(aus(JSON.stringify({ v: 1, commitment: { kaffee: { drang: true } } })).tiefe, 3, "wer schon da war, verliert nichts");
   const z = mit("kaffee");
+  z.reise = REISE.length;
   z.tiefe = 2;
   assert.equal(aus(JSON.stringify(z)).tiefe, 2);
   schalteBaustein(z, "verlauf", true);
@@ -720,4 +723,43 @@ test("Dämonen zum Frühstück: sieben Minuten, vier Phasen; der Dämon bleibt i
   assert.ok(!JSON.stringify(fuerKern(z, okt(2))).includes("Chefin"));
   schreibeTag(z, okt(2), { daemon: null });
   assert.equal(z.tagebuch[okt(2)], undefined);
+});
+
+test("die Reise: man fängt mit einem Kern an, der Rest öffnet sich mit den Tagen dabei", () => {
+  const z = neuerZustand();
+  assert.equal(z.reise, 0);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["abends"], "am Anfang nur, was nichts fordert");
+  assert.equal(offen(z, "satz"), false);
+  assert.equal(offen(z, "gibtsnicht"), true, "was keine Station nennt, ist von Anfang an da");
+
+  assert.equal(einrichten(z, { fest: "kippe" }), "kippe");
+  assert.deepEqual(gewaehlt(z), ["kippe"]);
+  const id = einrichten(z, { name: "Morgenroutine", art: "aufbauen", schritte: ["Wasser"] });
+  assert.deepEqual(gewaehlt(z), [id], "der Kern ersetzt, was vorher gewählt war");
+
+  schalteDa(z, okt(1));
+  assert.deepEqual(reiseWeiter(z), []);
+  assert.deepEqual(reiseStand(z), { tage: 1, naechste: REISE[0], fehlen: 1 });
+  schalteDa(z, okt(2));
+  assert.deepEqual(reiseWeiter(z).map((s) => s.titel), ["Ein Satz zum Tag"]);
+  assert.equal(offen(z, "satz"), true);
+  assert.equal(aktiv(z, "tagebuch"), true);
+  assert.equal(aktiv(z, "leitgedanke"), false);
+
+  schalteDa(z, okt(2));
+  assert.equal(offen(z, "satz"), true, "was offen ist, bleibt offen");
+
+  for (let d = 2; d <= 13; d++) if (!istDa(z, okt(d))) schalteDa(z, okt(d));
+  assert.deepEqual(reiseWeiter(z).map((s) => s.ab), [3, 5, 8, 13]);
+  assert.equal(z.tiefe, 3, "die Schichten gehen mit der Reise");
+  assert.equal(aktiv(z, "verlauf"), true);
+  assert.equal(reiseStand(z).naechste, null);
+  assert.equal(aus(JSON.stringify(z)).reise, REISE.length);
+});
+
+test("wer schon vor der Reise da war, hat sie hinter sich; wer nie etwas gewählt hat, fängt an", () => {
+  assert.equal(aus(JSON.stringify({ v: VERSION, commitment: { kaffee: { drang: true } } })).reise, REISE.length);
+  const leer = aus(JSON.stringify({ v: VERSION, commitment: {}, tiefe: 3 }));
+  assert.equal(leer.reise, 0);
+  assert.equal(leer.tiefe, 1);
 });

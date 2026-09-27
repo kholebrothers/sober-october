@@ -666,3 +666,35 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
   border-radius:var(--radius-control); background:color-mix(in oklab, var(--magenta) 6%, transparent); text-align:left; font-size:14px; }
 .tb-punkte .p-daemon { background:var(--magenta); border-radius:2px; }
 @media (prefers-reduced-motion: reduce) { .daemon[data-wechsel] { animation:none; } }
+
+/* ---- Die Einrichtung und die Reise ----------------------------------------
+   Ein Kern zum Anfang: große Karten, eine Spalte, jede mit dem Streifen
+   ihrer Farbe. Die Reise ist eine ruhige Liste, keine Belohnungstafel. */
+[data-v="aufbau"] { --v:var(--moss); }
+.einrichtung h1 { margin:20px 0 8px; max-width:12em; }
+.einrichtung > .leise { margin:0 0 20px; }
+.kern-gruppe { display:grid; gap:8px; margin-bottom:24px; }
+.kern-gruppe .rubrik { margin:0 0 2px; }
+.kern-knopf { display:flex; align-items:center; min-height:56px; padding:12px 16px; text-align:left; font:500 18px var(--serif);
+  border:1px solid var(--linie); border-left:4px solid var(--v); border-radius:var(--radius-control); background:var(--surface); }
+.kern-knopf:active { background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); }
+.kern-gruppe .wahl-neu { margin:0; }
+.einrichtung > .text { display:block; margin:0 auto; min-height:var(--touch); }
+.einrichtung-so { font-family:var(--serif); font-size:18px; line-height:1.5; margin:0 0 24px; }
+.einrichtung .rubrik + .reise-liste { margin-top:8px; }
+.reise-liste { list-style:none; margin:0 0 20px; padding:0; display:grid; gap:0; }
+.reise-liste li { display:grid; grid-template-columns:64px 1fr; gap:12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--linie); }
+.reise-liste li:last-child { border-bottom:0; }
+.reise-tag { font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.reise-titel { font-family:var(--serif); font-size:16px; color:var(--leise); }
+.reise-liste li[data-stand="jetzt"] .reise-titel, .reise-liste li[data-stand="offen"] .reise-titel,
+.reise-liste li[data-stand="naechste"] .reise-titel { color:var(--ink); }
+.reise-liste li[data-stand="offen"] .reise-tag, .reise-liste li[data-stand="jetzt"] .reise-tag { color:var(--moss); font-weight:600; }
+.einrichtung-tipp { display:grid; gap:4px; padding:12px 14px; margin:0 0 20px; border-radius:var(--radius-control);
+  background:color-mix(in oklab, var(--blau) 7%, var(--surface)); font-size:14px; line-height:1.45; }
+.einrichtung-unten { display:grid; gap:8px; }
+.einrichtung-unten .gross { width:100%; min-height:52px; font-size:17px; }
+.einrichtung-unten .text { min-height:var(--touch); }
+.reise-hinweis { align-self:center; text-align:center; margin:2px 0 0; }
+.reise-neu h2 { margin-top:6px; }
+.reise-neu .gross { width:100%; margin-top:8px; }

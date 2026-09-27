@@ -21,10 +21,10 @@ export function render(api) {
     const V = VERZICHTE[v];
     const p = faerbe(el("p"), VERZICHTE, v);
     p.append(el("span", "leise v-name", `${V.name}: `), knopf(V.habe, "text verb", () => api.eintragen(v, "habe")));
-    if (z.commitment[v].drang) p.append(" · ", knopf(V.drang, "text verb", () => api.eintragen(v, "drang")));
+    if (z.commitment[v].drang && api.offen("drang")) p.append(" · ", knopf(V.drang, "text verb", () => api.eintragen(v, "drang")));
     verben.append(p);
   }
-  verben.append(plusTracker(api, "+ weiterer Tracker"));
+  if (api.offen("tracker")) verben.append(plusTracker(api, "+ weiterer Tracker"));
   s.append(verben);
 
   const posten = z.ereignisse.map((e) => ({ tag: e.tag, zeit: e.zeit, e }));

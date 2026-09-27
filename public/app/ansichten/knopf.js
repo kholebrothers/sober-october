@@ -15,7 +15,8 @@ export function render(api) {
   s.append(kopf(api), oben(api));
 
   const kopfzeile = el("div", "notier-kopf");
-  kopfzeile.append(el("h2", "rubrik", "Notieren"), plusTracker(api, "+"));
+  kopfzeile.append(el("h2", "rubrik", "Notieren"));
+  if (api.offen("tracker")) kopfzeile.append(plusTracker(api, "+"));
   s.append(kopfzeile);
 
   const raster = el("div", "kacheln");
@@ -42,7 +43,7 @@ export function render(api) {
     b.setAttribute("aria-label", V.aufbau ? `${V.name}: getan notieren. Heute ${habe}.` : `${V.habe} notieren. Heute ${habe}.`);
     kachel.append(b);
 
-    if (!V.aufbau && z.commitment[v].drang) {
+    if (!V.aufbau && z.commitment[v].drang && api.offen("drang")) {
       const d = knopf(V.drang, "kachel-drang", () => api.eintragen(v, "drang"));
       if (drang) d.append(el("span", "leise", ` · ${drang}×`));
       d.dataset.focus = `drang-${v}`;
