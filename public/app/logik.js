@@ -211,6 +211,8 @@ export const BAUSTEINE = [
     text: "Unter der Etappe: wie viele Tage am Stück, dein längster Lauf und ein Satz zum Tag." },
   { id: "gemeinsam", schicht: 1, gruppe: "Oben", titel: "Gemeinsam", standard: true,
     text: "Mit anderen durch den Oktober: wer heute dabei ist, und jede Reise als Farbe. Geteilt wird nur dein Name, was du sein lässt, und an welchen Tagen du dabei warst." },
+  { id: "lebenszeit", schicht: 1, gruppe: "Oben", titel: "Lebenszeit", standard: true,
+    text: "Wie viel Zeit Kaffee, Kippe, Video vorher gekostet haben — und wie viel jetzt frei wird: für Routinen, oder einfach zweckfrei." },
   { id: "tagebuch", schicht: 1, gruppe: "Unten", titel: "Dein Tagebuch", standard: true,
     text: "Jeder Tag eine Zeile: dein Satz, die Stimmung, was sich gezeigt hat. Fehlt ein Tag, lässt er sich nachtragen." },
   { id: "verlauf", schicht: 3, gruppe: "Unten", titel: "Verlauf und Zusammenhänge", standard: true,
@@ -246,7 +248,7 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 
 export function neuerZustand() {
   return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1,
-    werkzeug: { anker: null, swish: null, plaene: [] } };
+    werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {} };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -272,6 +274,8 @@ export function aus(text) {
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
   z.werkzeug = werkzeugAus(roh.werkzeug);
+  if (roh.zeitVorher && typeof roh.zeitVorher === "object")
+    for (const k of ids) if (minuten(roh.zeitVorher[k]) !== null) z.zeitVorher[k] = roh.zeitVorher[k];
   // Ein Stand von vor den Schichten hatte alles: er bleibt auf der tiefsten.
   z.tiefe = [1, 2, 3].includes(roh.tiefe) ? roh.tiefe : 3;
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
@@ -297,6 +301,12 @@ export function aus(text) {
         if (s.length) t.selbst = s;
       }
       if (typeof e.getragen === "string" && e.getragen.trim()) t.getragen = e.getragen.trim().slice(0, 280);
+      if (e.zeit && typeof e.zeit === "object") {
+        const zt = {};
+        for (const [k, m] of Object.entries(e.zeit)) if (ids.includes(k) && minuten(m) !== null) zt[k] = m;
+        if (Object.keys(zt).length) t.zeit = zt;
+      }
+      if (Array.isArray(e.fuer)) { const f = [...new Set(e.fuer.filter((x) => ZEIT_FUER.some((y) => y.id === x)))]; if (f.length) t.fuer = f; }
       if (Object.keys(t).length) z.tagebuch[tag] = t;
     }
 
@@ -640,7 +650,7 @@ export const SCHICHTEN = [
 
 /** Einen Teil des Tagebuchs setzen; leer (oder 0) heißt weg.
     werte: {schlaf: 1–5, …}; stimmung geht auch direkt (erste Fassung). */
-export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen } = {}) {
+export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer } = {}) {
   const t = { ...(z.tagebuch[tag] || {}) };
   const alle = stimmung !== undefined ? { ...werte, stimmung } : werte;
   for (const [id, n] of Object.entries(alle)) {
@@ -655,11 +665,74 @@ export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen } =
     const g = String(getragen || "").replace(/\s+/g, " ").trim().slice(0, 280);
     if (g) t.getragen = g; else delete t.getragen;
   }
+  if (zeit !== undefined) {
+    const zt = { ...(t.zeit || {}) };
+    for (const [k, m] of Object.entries(zeit)) { if (minuten(m) !== null) zt[k] = m; else delete zt[k]; }
+    if (Object.keys(zt).length) t.zeit = zt; else delete t.zeit;
+  }
+  if (fuer !== undefined) {
+    const f = [...new Set(fuer)].filter((x) => ZEIT_FUER.some((y) => y.id === x));
+    if (f.length) t.fuer = f; else delete t.fuer;
+  }
   if (Object.keys(t).length) z.tagebuch[tag] = t; else delete z.tagebuch[tag];
 }
 
 /** Wie viele Systeme an einem Tag eingeschätzt sind. */
 export const eingeschaetzt = (z, tag) => SYSTEME.filter((x) => z.tagebuch[tag]?.[x.id]).length;
+
+/* ---- Lebenszeit ---------------------------------------------------------------
+
+   Was Kaffee, Kippe, Video an Zeit gekostet haben — und was davon jetzt frei
+   ist. Einmal je Tracker: wie viel am Tag vorher (zeitVorher, Minuten).
+   Dann je Tag, wenn man will: wie viel heute (tagebuch.zeit). Frei geworden
+   ist die Differenz, nie weniger als null. Gezählt werden nur Tage, an
+   denen etwas angegeben ist — ein leerer Tag ist nichts bekannt, nicht
+   „alles gespart". Und wofür die freie Zeit ging: Routinen, oder einfach
+   zweckfrei. */
+export const ZEIT_STUFEN = [0, 15, 30, 60, 90, 120, 180, 240];
+export const ZEIT_FUER = [
+  { id: "routine", name: "Routinen" }, { id: "zweckfrei", name: "zweckfrei" }, { id: "menschen", name: "Menschen" },
+  { id: "draussen", name: "draußen" }, { id: "ruhe", name: "Ruhe" },
+];
+function minuten(m) { return Number.isInteger(m) && m >= 0 && m <= 720 ? m : null; }
+
+export function setzeZeitVorher(z, id, m) {
+  if (minuten(m) === null) delete z.zeitVorher[id]; else z.zeitVorher[id] = m;
+}
+
+/** Was an einem Tag frei geworden ist, in Minuten — oder null, wenn nichts angegeben ist. */
+export function freiAm(z, tag) {
+  const zt = z.tagebuch[tag]?.zeit;
+  if (!zt) return null;
+  let frei = 0, bekannt = false;
+  for (const [id, heute] of Object.entries(zt)) {
+    if (!(id in z.zeitVorher)) continue;
+    bekannt = true;
+    frei += Math.max(0, z.zeitVorher[id] - heute);
+  }
+  return bekannt ? frei : null;
+}
+
+/** Über Tage: {tage, frei, fuer: {id: Tage}} */
+export function lebenszeit(z, tage) {
+  let frei = 0, n = 0;
+  const fuer = {};
+  for (const t of tage) {
+    const f = freiAm(z, t);
+    if (f === null) continue;
+    n++;
+    frei += f;
+    for (const x of z.tagebuch[t]?.fuer || []) fuer[x] = (fuer[x] || 0) + 1;
+  }
+  return { tage: n, frei, fuer };
+}
+
+/** „1 Std. 20 Min." */
+export function dauer(m) {
+  if (!m) return "0 Min.";
+  const h = Math.floor(m / 60), r = m % 60;
+  return h ? (r ? `${h} Std. ${r} Min.` : `${h} Std.`) : `${r} Min.`;
+}
 
 /* ---- Zusammenhänge ---------------------------------------------------------
 

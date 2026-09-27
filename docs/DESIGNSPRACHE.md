@@ -148,6 +148,14 @@ direkt aus der Meldung nach „würde gern“. Übungen, keine Therapie; fachlic
   an der Notiz des Drangs; auf Wunsch wird daraus ein Wenn-dann-Plan.
 - **Wenn-dann:** ein Moment und eine kleine Handlung; die ersten stehen im Drang-Moment gleich oben.
 
+## Lebenszeit
+
+Kaffee, Kippe, Video kosten Zeit. Die Karte „Lebenszeit“ (ab Schicht 1, unter dem Monat) fragt je
+Tracker einmal, wie viel Zeit er vorher am Tag gekostet hat, und dann, wenn man will, wie viel heute.
+Groß steht, was heute frei geworden ist, darunter der Oktober bisher, und die Frage: Wofür war die freie
+Zeit — Routinen, Menschen, draußen, Ruhe, oder einfach zweckfrei. Gezählt werden nur Tage mit Angabe:
+ein leerer Tag ist nichts bekannt, nicht „alles gespart“. Mehr als vorher ist nie weniger als null.
+
 ## Der Gremlin (Schicht 3)
 
 Die Katze der Vier-Wochen-Kur, umgebaut: dieselbe Mechanik aus kur-core (`public/begleiter/`,

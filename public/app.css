@@ -598,3 +598,24 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
   --gremlin-e:var(--gelb); --gremlin-w:var(--surface); --gremlin-b:var(--magenta);
   --gremlin-c:color-mix(in oklab, var(--lila) 70%, var(--surface)); --gremlin-c2:var(--lila);
 }
+
+/* Lebenszeit: groß, was heute frei geworden ist. Grün, weil es wächst. */
+.lebenszeit { display:grid; gap:14px; padding:18px 20px; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); }
+.lz-kopf { display:grid; gap:4px; }
+.lz-kopf .rubrik { margin:0; }
+.lz-gross { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:10px; }
+.lz-zahl { font:600 32px/1.1 var(--sans); color:var(--moss); font-variant-numeric:tabular-nums; display:inline-block; }
+.lz-zahl.hoch { animation:hoch .5s cubic-bezier(.2,1.6,.4,1); }
+.lz-wort { font:500 16px var(--serif); }
+.lz-monat { margin:0; font-size:13px; }
+.lz-reihe { display:grid; gap:6px; padding-left:10px; border-left:3px solid var(--v); }
+.lz-frage { font-family:var(--serif); font-size:15px; }
+.lz-name { display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; font-weight:500; }
+.lz-aendern { margin-left:auto; padding:0 !important; min-height:0 !important; }
+.lz-stufen { display:grid; grid-template-columns:repeat(8, minmax(0, 1fr)); gap:4px; }
+.lz-stufe { min-height:36px; padding:0; border:1px solid var(--linie); border-radius:8px; background:transparent; font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--leise); }
+.lz-stufe[data-vorher] { border-style:dashed; border-color:var(--linie-stark); }
+.lz-stufe[aria-checked="true"] { background:var(--moss); border-color:var(--moss); color:var(--surface); font-weight:600; }
+.lz-fuer { display:grid; gap:6px; }
+.lz-chip { --v:var(--moss); min-height:36px; }
+@media (max-width:360px) { .lz-stufen { grid-template-columns:repeat(4, minmax(0, 1fr)); } }

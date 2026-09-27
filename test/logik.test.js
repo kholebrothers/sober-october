@@ -12,6 +12,7 @@ import {
   SCHICHTEN, STIMMUNG, SELBST, schreibeTag, tagebuchZeilen, SYSTEME, zusammenhaenge, verlauf, eingeschaetzt,
   TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte,
   setzeAnker, setzeSwish, planHinzu, planWeg, PLAENE_MAX,
+  setzeZeitVorher, freiAm, lebenszeit, dauer,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -60,9 +61,9 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
 
 test("die App fängt klein an: auf Schicht 1 Leitgedanke, Gemeinsam, Tagebuch und Abendruhe, auf Schicht 3 auch der Verlauf", () => {
   const z = neuerZustand();
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "lebenszeit", "tagebuch", "abends"]);
   z.tiefe = 3;
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "werkzeuge", "gremlin", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "lebenszeit", "tagebuch", "verlauf", "werkzeuge", "gremlin", "abends"]);
   z.tiefe = 1;
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);
@@ -654,4 +655,21 @@ test("Werkzeuge: Anker, Swish und Wenn-dann bleiben, Unsinn fällt weg", () => {
   planWeg(z, 0);
   assert.equal(z.werkzeug.plaene.length, PLAENE_MAX - 1);
   assert.deepEqual(aus(JSON.stringify({ ...z, werkzeug: { anker: { moment: 5 }, plaene: "x" } })).werkzeug, { anker: null, swish: null, plaene: [] });
+});
+
+test("Lebenszeit: was vorher Zeit kostete, was jetzt frei wird — nur an Tagen mit Angabe", () => {
+  const z = mit("kaffee", "video");
+  setzeZeitVorher(z, "kaffee", 30);
+  setzeZeitVorher(z, "video", 120);
+  schreibeTag(z, okt(1), { zeit: { kaffee: 0, video: 30 }, fuer: ["zweckfrei", "routine", "unsinn"] });
+  schreibeTag(z, okt(2), { zeit: { video: 180 } });
+  assert.equal(freiAm(z, okt(1)), 120, "30 + 90");
+  assert.equal(freiAm(z, okt(2)), 0, "mehr als vorher ist nie weniger als null");
+  assert.equal(freiAm(z, okt(3)), null, "nichts angegeben: nichts bekannt");
+  assert.deepEqual(lebenszeit(z, [okt(1), okt(2), okt(3)]), { tage: 2, frei: 120, fuer: { zweckfrei: 1, routine: 1 } });
+  assert.equal(dauer(80), "1 Std. 20 Min.");
+  assert.equal(dauer(120), "2 Std.");
+  const zurueck = aus(JSON.stringify(z));
+  assert.deepEqual([zurueck.zeitVorher, zurueck.tagebuch], [z.zeitVorher, z.tagebuch]);
+  assert.ok(!JSON.stringify(fuerKern(z, okt(1))).includes("zweckfrei"), "Lebenszeit bleibt im Gerät");
 });

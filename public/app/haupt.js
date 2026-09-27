@@ -17,6 +17,7 @@ import {
   SYSTEME, GRUPPEN, STUFEN, eingeschaetzt, verlauf, zusammenhaenge,
   TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte, ab,
   setzeAnker, setzeSwish, planHinzu, planWeg,
+  ZEIT_STUFEN, ZEIT_FUER, setzeZeitVorher, freiAm, lebenszeit, dauer,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -116,6 +117,30 @@ const api = {
   trackerBearbeiten: (v) => eigenerTracker(v),
   werkzeug: (name) => W[name](),
   werkzeugStand: () => z.werkzeug,
+  dauer,
+  zeitStufen: () => ZEIT_STUFEN,
+  zeitFuer: () => ZEIT_FUER,
+  lebenszeit() {
+    const t = heute(), e = z.tagebuch[t] || {};
+    return { heute: freiAm(z, t), monat: lebenszeit(z, monat(z, t).zellen.filter((c) => c.art === "okt" && c.tag <= t).map((c) => c.tag)),
+      vorher: z.zeitVorher, zeitHeute: e.zeit || {}, fuerHeute: e.fuer || [] };
+  },
+  zeitVorherSetzen(v, m) { aendern(() => setzeZeitVorher(z, v, m)); },
+  zeitHeuteSetzen(v, m) {
+    const vorher = freiAm(z, heute());
+    const mo = aendern(() => schreibeTag(z, heute(), { zeit: { [v]: m } }));
+    const jetzt = freiAm(z, heute());
+    if (jetzt !== null && jetzt !== vorher) {
+      spueren(jetzt > (vorher || 0) ? 14 : 8);
+      document.querySelector(".lz-zahl")?.classList.add("hoch");
+    }
+    melde(mitMoment(jetzt ? `Heute frei geworden: ${dauer(jetzt)}${mo?.heuteNeu ? " Der Tag zählt." : ""}` : "Notiert.", mo));
+  },
+  zeitFuerSchalten(id) {
+    const f = new Set(z.tagebuch[heute()]?.fuer || []);
+    if (f.has(id)) f.delete(id); else f.add(id);
+    aendern(() => schreibeTag(z, heute(), { fuer: [...f] }));
+  },
   schritteGetan: (v) => schritteGetan(z, heute(), v),
   schritt(v, i) {
     const V = verzichte(z)[v];
