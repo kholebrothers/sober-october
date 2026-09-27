@@ -106,6 +106,8 @@ ausgeliefert, wie es im Repo steht.
     server/                    Worker nur für /api/*, API und Schema der Teilnahme (nach kur-core)
     test/                      node --test; kur-core-wertevertrag.js und d1-attrappe.js sind Kopien
 
+Das Konzept, aus allen Wünschen zusammengefasst und mit dem Stand abgeglichen: [docs/KONZEPT.md](docs/KONZEPT.md).
+
 UX-Bewertung und gemeinsame Gestaltungsregeln: [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 
 Woher was stammt: [docs/HERKUNFT.md](docs/HERKUNFT.md).
