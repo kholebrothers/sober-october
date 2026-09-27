@@ -30,7 +30,7 @@ import { werkzeuge } from "./werkzeuge.js";
 import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
-import { faerbe } from "./ansichten/teile.js";
+import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
 
@@ -190,6 +190,12 @@ const api = {
   zusammenhaenge: (tage) => zusammenhaenge(z, tage),
   monatsTage: () => monat(z, heute()).zellen.filter((c) => c.art !== "rand").map((c) => c.tag),
   tagEinordnen: (tag) => tagEinordnen(tag),
+  /* Ein Tag im Kalender angetippt: was an dem Tag steht, und — für heute
+     und vergangene Tage — ob man dabei war. Ein kommender Tag hat noch nichts. */
+  tagAntippen(tag) {
+    if (tag > heute()) { melde(`${tagesKopf(tag)} kommt noch.`); return; }
+    tagEinordnen(tag, { ausKalender: true });
+  },
   getragen: () => z.tagebuch[heute()]?.getragen || "",
   getragenSetzen(text) {
     const m = aendern(() => schreibeTag(z, heute(), { getragen: text }));
@@ -523,7 +529,7 @@ function oeffneEbene(id) {
    (fünf Stufen), die Selbst-Markierungen aus lifetracker (höchstens zwei)
    und ein Satz, was getragen hat. Alles freiwillig, alles bleibt auf dem
    Gerät. Es gilt, was beim Speichern dasteht. */
-function tagEinordnen(tag) {
+function tagEinordnen(tag, { ausKalender = false } = {}) {
   const t = tag || heute();
   const istHeute = t === heute();
   const vorher = z.tagebuch[t] || {};
@@ -534,13 +540,23 @@ function tagEinordnen(tag) {
   f.append(el("p", "rubrik", `${tagesKopf(t)} · ${tief ? "Tages-Check-in" : "Tagebuch"}`),
     el("h2", null, tief ? (istHeute ? "Wie geht es dir heute?" : "Wie ging es dir an dem Tag?") : "Wie war der Tag?"));
   if (tief) f.append(el("p", "leise", "Die Tracker sind die Oberfläche, hier geht es um das darunter. Je Reihe ein Tippen; was du auslässt, bleibt leer."));
-  /* Ein vergangener Tag: nachtragen, dass man dabei war. */
+  /* Was an dem Tag notiert ist — aus dem Kalender heraus will man das sehen. */
+  const notizen = vonTag(z, t).filter((e) => e.art !== "ohne");
+  if (ausKalender && notizen.length) {
+    const l = el("ul", "tag-notizen");
+    for (const e of notizen) l.append(faerbe(el("li", null, `${e.zeit} · ${wasText(api, e)}`), verzichte(z), e.verzicht));
+    f.append(l);
+  }
+  /* Nachtragen, dass man dabei war — oder, aus dem Kalender, es wieder
+     zurücknehmen. Aus „Gestern nachtragen" ist es schon angekreuzt. */
   let da = null;
-  if (!istHeute && !istDa(z, t)) {
+  if ((!istHeute && !istDa(z, t)) || ausKalender) {
     const l = el("label", "baustein");
-    da = Object.assign(document.createElement("input"), { type: "checkbox", checked: !hatEintrag(z, t) });
+    da = Object.assign(document.createElement("input"), { type: "checkbox", checked: ausKalender ? istDa(z, t) : !hatEintrag(z, t) });
     const tx = el("span", "baustein-text");
-    tx.append(el("span", null, "An dem Tag war ich dabei"), el("span", "leise klein", "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
+    const zaehltSonst = notizen.length || !!z.tagebuch[t];
+    tx.append(el("span", null, istHeute ? "Heute bin ich dabei" : "An dem Tag war ich dabei"),
+      el("span", "leise klein", zaehltSonst ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
     l.append(da, tx);
     f.append(l);
   }
@@ -605,7 +621,8 @@ function tagEinordnen(tag) {
     placeholder: "Der Kaffee mit Ben, der Spaziergang …" });
   getragen.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
 
-  f.append(...(tief ? [...gruppen, selbst] : []), getragen);
+  f.append(...(tief ? [...gruppen, selbst] : []));
+  if (offen(z, "satz") || vorher.getragen) f.append(getragen);
   const speichern = () => {
     const d = new FormData(f);
     let m = null;
@@ -615,11 +632,16 @@ function tagEinordnen(tag) {
         werte: Object.fromEntries(SYSTEME.map((x) => [x.id, Number(d.get(x.id)) || 0])),
         selbst: d.getAll("selbst").map(Number),
         getragen: d.get("getragen") || "",
-      } : { getragen: d.get("getragen") || "" });
-      if (da && da.checked && !istDa(z, t)) schalteDa(z, t);
+      } : d.has("getragen") ? { getragen: d.get("getragen") || "" } : {});
+      if (da && da.checked !== istDa(z, t)) schalteDa(z, t);
     });
     const steht = hatEintrag(z, t);
-    melde(mitMoment(!steht ? "Nichts eingetragen." : istHeute && !tief ? `Im Tagebuch.${m?.heuteNeu ? " Der Tag zählt." : ""}` : istHeute ? `Check-in gespeichert: ${eingeschaetzt(z, t)} von ${SYSTEME.length}.${m?.heuteNeu ? " Der Tag zählt." : ""}` : `${tagesKopf(t)} ist nachgetragen.`, m));
+    const zaehlt = m?.heuteNeu ? " Der Tag zählt." : "";
+    melde(mitMoment(!steht ? (ausKalender ? `${tagesKopf(t)}: nichts eingetragen.` : "Nichts eingetragen.")
+      : !istHeute ? `${tagesKopf(t)} ist nachgetragen.`
+      : tief ? `Check-in gespeichert: ${eingeschaetzt(z, t)} von ${SYSTEME.length}.${zaehlt}`
+      : z.tagebuch[t]?.getragen ? `Im Tagebuch.${zaehlt}`
+      : m?.heuteNeu ? "Du bist dabei. Der Tag zählt." : "Gespeichert.", m));
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));

@@ -266,6 +266,7 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .monat-tag { aspect-ratio:1; border-radius:50%; display:grid; place-items:center; font-size:12px; font-variant-numeric:tabular-nums;
   color:var(--leise); border:1.5px solid transparent; transition:background-color .35s ease, color .35s ease; }
 .monat-tag[data-stand="rand"] { visibility:hidden; }
+button.monat-tag { padding:0; min-width:0; background:transparent; font-family:inherit; }
 .monat-tag[data-stand="kommt"] { border-color:var(--linie); color:color-mix(in oklab, var(--leise) 70%, transparent); }
 .monat-tag[data-stand="leer"] { background:var(--hm-leer); }
 .monat-tag[data-stand="offen"] { border:1.5px dashed var(--moss); color:var(--ink); }
@@ -698,3 +699,5 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .reise-hinweis { align-self:center; text-align:center; margin:2px 0 0; }
 .reise-neu h2 { margin-top:6px; }
 .reise-neu .gross { width:100%; margin-top:8px; }
+.tag-notizen { list-style:none; margin:0; padding:0; display:grid; gap:4px; font-size:14px; }
+.tag-notizen li { padding-left:10px; border-left:3px solid var(--v, var(--linie-stark)); }

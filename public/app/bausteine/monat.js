@@ -35,7 +35,7 @@ export function monat(api) {
   const gitter = el("div", "monat-gitter");
   for (const w of WOCHENTAGE) gitter.append(el("span", "monat-wt", w));
   for (const c of m.zellen) {
-    const t = el("span", "monat-tag", c.art === "rand" ? "" : String(c.nr));
+    const t = c.art === "rand" ? el("span", "monat-tag", "") : knopf(String(c.nr), "monat-tag", () => api.tagAntippen(c.tag));
     t.dataset.stand = c.stand;
     t.dataset.art = c.art;
     if (c.heute) t.dataset.heute = "";
@@ -43,11 +43,14 @@ export function monat(api) {
       const w = api.schichtWert(S.id, c.tag);
       if (w > 0) { t.dataset.w = ""; t.style.setProperty("--w", `${Math.round(25 + w * 75)}%`); if (w > 0.6) t.dataset.voll = ""; }
     }
-    if (c.art !== "rand") t.title = `${c.nr}. ${c.art === "okt" ? "Oktober" : "September"}: ${STAND_WORT[c.stand]}`;
+    if (c.art !== "rand") {
+      t.setAttribute("aria-label", `${c.nr}. ${c.art === "okt" ? "Oktober" : "September"}: ${STAND_WORT[c.stand]}`);
+      t.dataset.focus = `tag-${c.tag}`;
+    }
     gitter.append(t);
   }
   if (api.ab(3)) s.append(ebenenWahl(api, schichten, S));
-  gitter.setAttribute("role", "img");
+  gitter.setAttribute("role", "group");
   gitter.setAttribute("aria-label", m.phase === "vor"
     ? `Oktober, noch nicht begonnen. Vorlauf: ${m.vorlauf} ${m.vorlauf === 1 ? "Tag" : "Tage"} dabei.`
     : `Oktober: ${m.dabei} von ${m.phase === "im" ? m.tag : 31} Tagen dabei.`);
