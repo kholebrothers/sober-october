@@ -19,6 +19,7 @@ export function render(api) {
   s.append(kopfzeile);
 
   const raster = el("div", "kacheln");
+  raster.dataset.katze = "weg";
   for (const v of api.gewaehlt()) {
     const V = VERZICHTE[v];
     const es = api.heuteVon(v);

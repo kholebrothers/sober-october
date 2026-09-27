@@ -15,6 +15,7 @@ let alle = false;
 export function tagebuch(api) {
   const zeilen = api.tagebuchZeilen();
   const k = el("section", "karte tagebuch");
+  k.dataset.katze = "weg";
   const kopf = el("div", "karte-kopf");
   const saetze = zeilen.filter((z) => z.getragen).length;
   kopf.append(el("p", "rubrik", "Dein Tagebuch"), el("span", "leise klein", saetze === 1 ? "ein Satz" : `${saetze} Sätze`));

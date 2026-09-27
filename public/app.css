@@ -192,7 +192,7 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 .zitat { display:block; font-family:var(--serif); font-style:italic; color:var(--ink); }
 .zitat.wahl { font-family:var(--sans); font-style:normal; font-size:13px; color:var(--leise); }
 
-#meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:20; }
+#meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:50; }
 #meldung[hidden] { display:none; }
 .melde-knopf { background:none; border:0; padding:4px 0; color:inherit; font-size:14px; font-weight:600; text-decoration:underline; text-underline-offset:3px; opacity:.9; }
 
@@ -588,3 +588,13 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .swish[data-lauf] .swish-ziel { left:14px; bottom:14px; width:calc(100% - 28px); height:calc(100% - 28px); background:var(--teal); font-size:18px; opacity:1; }
 .swish[data-leer] .swish-bild { opacity:0; transition:opacity .25s; }
 @media (prefers-reduced-motion: reduce) { .swish-bild { transition:none; } }
+
+/* Der Gremlin (Schicht 3). Seine Farben liest die Leinwand über ein
+   Messelement (gremlin/index.js); die Blase des Begleiters will --bg. */
+:root {
+  --bg:var(--surface);
+  --gremlin-o:color-mix(in oklab, var(--moss) 30%, var(--ink)); --gremlin-k:var(--ink);
+  --gremlin-f:color-mix(in oklab, var(--moss) 55%, var(--surface)); --gremlin-s:color-mix(in oklab, var(--moss) 80%, var(--ink));
+  --gremlin-e:var(--gelb); --gremlin-w:var(--surface); --gremlin-b:var(--magenta);
+  --gremlin-c:color-mix(in oklab, var(--lila) 70%, var(--surface)); --gremlin-c2:var(--lila);
+}

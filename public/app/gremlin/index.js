@@ -1,0 +1,67 @@
+/* =====================================================================
+   Der Gremlin in der App — Schicht 3, Baustein „Gremlin"
+
+   Die Mechanik ist der Begleiter aus kur-core (public/begleiter/, kopiert),
+   die Figur steht in gremlin.js, die Sätze in saetze.js. Hier nur die Naht:
+   wann er da ist, was er vom Tag weiß, und worauf er reagiert.
+
+   Er erscheint nur, wenn die Tiefe 3 ist und der Baustein an. Er bleibt
+   danach im Speicher; ausgeblendet ist er einfach unsichtbar.
+   ===================================================================== */
+
+import { erzeugeBegleiter } from "../../begleiter/begleiter.js";
+import { GREMLIN } from "./gremlin.js";
+import { GREMLINSAETZE } from "./saetze.js";
+
+/**
+ * @param o {an: () => bool, kontext: () => object|null, buzz: (muster) => void}
+ */
+export function erzeugeGremlin(o) {
+  let b = null;
+
+  /* Die Leinwand versteht keine CSS-Variablen und kein var() in color-mix.
+     Ein unsichtbares Messelement löst jede Farbe auf, wie der Browser sie
+     gerade sieht — hell, dunkel, abends. */
+  let probe = null;
+  const css = (name) => {
+    if (!probe) {
+      probe = document.createElement("span");
+      probe.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;visibility:hidden";
+      document.body.append(probe);
+    }
+    probe.style.color = `var(${name})`;
+    return getComputedStyle(probe).color;
+  };
+
+  function sicher() {
+    if (b || !o.an()) return b;
+    let speicher = null;
+    try { speicher = localStorage; speicher.getItem("x"); } catch { speicher = null; }
+    b = erzeugeBegleiter({
+      silhouette: GREMLIN, texte: GREMLINSAETZE, kontext: () => (o.an() ? o.kontext() : null),
+      speicher, praefix: "sober-october.gremlin.", id: "gremlin",
+      wirt: { css, buzz: o.buzz },
+    });
+    b.start();
+    return b;
+  }
+
+  return {
+    /** Nach jedem Zeichnen: da sein oder nicht. */
+    pruefen() {
+      const an = o.an();
+      if (an) sicher();
+      if (b) b.element.hidden = !an;
+    },
+    /** Ein Eintrag, der den Tag trägt (dabei, getan, ein Satz). */
+    freut(n, quelle) { if (o.an() && sicher()) b.cheer(n, quelle || null); },
+    /** Er sagt etwas aus einem eigenen Topf: drang, geschehen, werkzeug. */
+    sagt(topf) {
+      if (!o.an() || !sicher()) return;
+      const t = b.satz(topf);
+      if (t) b.say(t, 4800);
+    },
+    /** Die Farben neu lesen, wenn sich hell/dunkel oder die Farbwelt ändert. */
+    farbenNeu() { if (b) b.bild.farbenNeu(); },
+  };
+}

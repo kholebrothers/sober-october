@@ -26,6 +26,7 @@ export function monat(api) {
   const S = (api.ab(3) && schichten.find((x) => x.id === schicht)) || schichten[0];
   const s = el("section", "monat");
   s.setAttribute("aria-label", "Dein Oktober");
+  s.dataset.katze = "wand";   // Gelände für den Gremlin (begleiter/welt.js)
   s.dataset.schicht = S.id;
   s.style.setProperty("--schicht", S.farbe);
 

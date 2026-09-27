@@ -1,0 +1,97 @@
+/* =====================================================================
+   Der Begleiter — das Stylesheet zum Modul.
+
+   begleiter.js setzt Klassen und verlässt sich darauf, dass sie jemand
+   bedient: den Körper (cat), den Knopf, die Leinwand, die Sprechblase, die
+   Posen (is-<pose>), die Spiegelung (flip), das Versteck und die kleinen
+   Spielanimationen an dem, womit er spielt. Hier stehen die Regeln dazu —
+   geprüft in test/klassenvertrag.test.js.
+
+   Die Klassennamen sind die der Vier-Wochen-Kur, damit deren Stylesheet
+   beim Umstieg nicht umbenannt werden muss. Wer sie über `klassen` ändert,
+   ändert sie hier mit.
+
+   Farben stehen nicht hier: das Tier holt seine aus den Variablen, die seine
+   Silhouette nennt (--cat-*, --schwein-*, …), die Blase nimmt --ink/--bg.
+
+   Einbinden: <link rel="stylesheet" href="/begleiter/begleiter.css">
+
+   Herkunft: lifetracker/public/style.css, Abschnitt "Die Katze".
+   ===================================================================== */
+
+/* Unter Blättern und Dialogen (46/47), über allem anderen. Die Welt rechnet
+   mit 72 × 56. Der Bezugspunkt liegt unten in der Mitte: er wächst über den
+   Bogen (scale in begleiter.js), und die Füße bleiben auf der Kante. */
+.cat{
+  position:fixed;left:0;top:0;z-index:45;pointer-events:none;
+  width:72px;height:56px;
+  transition:transform .9s cubic-bezier(.33,.9,.35,1);
+  will-change:transform;transform-origin:50% 100%;
+}
+.cat.flip{scale:-1 1}
+/* Nur das gemalte Tier fängt Klicks — geprüft wird pixelgenau in JS. */
+.cat-btn{
+  pointer-events:none;position:relative;display:block;
+  width:72px;height:56px;padding:0;border:0;background:none;overflow:visible;
+  -webkit-tap-highlight-color:transparent;
+}
+.cat-canvas{position:absolute;left:0;bottom:-1px;display:block;image-rendering:pixelated;pointer-events:none}
+
+/* ---- Posen, die den ganzen Körper bewegen -------------------------- */
+/* Schwanz, Augen, Beine stecken im gerechneten Bild; hier nur, was den
+   Körper als Ganzes bewegt. */
+.cat.is-hop .cat-canvas{animation:cat-hop .6s cubic-bezier(.3,1.5,.4,1)}
+.cat.is-purr .cat-canvas{animation:cat-purr .5s ease-in-out 3}
+.cat.is-roll .cat-canvas{animation:cat-roll 1.4s ease-in-out}
+.cat.is-chase .cat-canvas{animation:cat-chase 1.6s linear}
+.cat.is-loaf .cat-canvas{transform:translateY(4px)}
+.cat.is-tailplay .cat-canvas{animation:cat-tailplay 1.05s ease-in-out infinite}
+.cat.is-pounce .cat-canvas{animation:cat-pounce .78s cubic-bezier(.3,1.4,.4,1)}
+.cat.is-knead .cat-canvas{animation:cat-purr .52s ease-in-out infinite}
+.cat.is-belly .cat-canvas{animation:cat-belly .7s cubic-bezier(.3,1.3,.4,1) forwards}
+.cat.is-sleep .cat-canvas{transform:translateY(5px)}
+.cat.is-peek-l .cat-canvas{transform:rotate(9deg)}
+.cat.is-peek-r .cat-canvas{transform:rotate(-9deg)}
+@keyframes cat-hop{0%{transform:translateY(0)}40%{transform:translateY(-16px)}100%{transform:translateY(0)}}
+@keyframes cat-purr{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes cat-roll{0%,100%{transform:rotate(0)}40%,60%{transform:rotate(180deg) translateY(6px)}}
+@keyframes cat-chase{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes cat-tailplay{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+@keyframes cat-pounce{
+  0%{transform:translateY(0) scaleY(1)} 28%{transform:translateY(4px) scaleY(.84)}
+  62%{transform:translateY(-15px) scaleY(1.1)} 100%{transform:translateY(0) scaleY(1)}
+}
+@keyframes cat-belly{0%{transform:rotate(0) translateY(0)}100%{transform:rotate(166deg) translateY(-5px)}}
+
+/* ---- Sprechblase ---------------------------------------------------- */
+.cat-say{
+  position:absolute;left:50%;bottom:56px;transform:translate(-50%,6px);
+  min-width:120px;max-width:min(240px,60vw);
+  background:var(--ink);color:var(--bg);
+  padding:9px 12px;border-radius:12px;
+  font-size:12.5px;line-height:1.35;text-align:center;
+  opacity:0;transition:opacity .24s, transform .24s;pointer-events:none;
+}
+.cat-say.show{opacity:1;transform:translate(-50%,0)}
+.cat-say::after{
+  content:"";position:absolute;left:calc(50% + var(--arrow, 0px));top:100%;margin-left:-5px;
+  border:5px solid transparent;border-top-color:var(--ink);
+}
+
+/* ---- Er und die Seite ----------------------------------------------
+   Er spielt nur mit dem Bild: nichts hier setzt einen Haken. Und er
+   verschwindet nie durch Ausblenden — entweder geht er über den Rand, oder
+   eine Wand legt sich vor ihn. Die Klasse hängt am body, weil ein Renderer
+   das innerHTML ersetzt und eine Klasse am Block nicht überleben würde.
+   Welche Blöcke Wände sind, sagt der Stempel, nicht ein Klassenname. */
+.katz-verdeckt .cat{z-index:0}
+.katz-verdeckt [data-katze~="wand"]{position:relative;z-index:1}
+
+@keyframes katz-tapp{0%{transform:translateX(0)}30%{transform:translateX(3px)}62%{transform:translateX(-2px)}100%{transform:translateX(0)}}
+.katz-tapp{animation:katz-tapp .48s ease-out}
+@keyframes katz-tipp{0%{transform:scale(1)}38%{transform:scale(.84) rotate(-7deg)}100%{transform:scale(1)}}
+.katz-tipp{animation:katz-tipp .48s cubic-bezier(.2,1.5,.4,1)}
+@keyframes katz-reib{0%{transform:rotate(0)}32%{transform:rotate(.45deg)}68%{transform:rotate(-.3deg)}100%{transform:rotate(0)}}
+.katz-reib{animation:katz-reib 1.5s ease-in-out}
+@keyframes katz-schubs{0%{transform:translate(0,0)}34%{transform:translate(4px,-3px) rotate(3deg)}100%{transform:translate(0,0)}}
+.katz-schubs{animation:katz-schubs .56s cubic-bezier(.3,1.4,.4,1)}

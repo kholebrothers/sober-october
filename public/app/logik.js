@@ -221,6 +221,8 @@ export const BAUSTEINE = [
     text: "Ebenen, die sich durch Benutzen öffnen: wie ein Drang verläuft, Routinen, Neues an die Stelle, der Rückblick in Wochen." },
   { id: "werkzeuge", schicht: 2, gruppe: "Unten", titel: "Werkzeuge", standard: true,
     text: "Anker, Swish, Reframing und Wenn-dann-Pläne — kurz, für den Moment, in dem der Drang kommt." },
+  { id: "gremlin", schicht: 3, gruppe: "Unten", titel: "Gremlin", standard: true,
+    text: "Der Begleiter am Rand, nach dem Possibility Management: der Teil, der von Drama lebt. Er sagt laut, was er will — und bekommt eine Aufgabe." },
   { id: "abends", schicht: 1, gruppe: "Darstellung", titel: "Abends ruhiger", standard: true,
     text: "Nach Sonnenuntergang wird die Seite eine Spur ruhiger." },
 ];

@@ -9,6 +9,7 @@ import { el, knopf } from "../ansichten/teile.js";
 export function werkzeugKarte(api) {
   const w = api.werkzeugStand();
   const k = el("section", "karte werkzeuge");
+  k.dataset.katze = "weg";
   const kopf = el("div", "karte-kopf");
   kopf.append(el("p", "rubrik", "Werkzeuge"), el("span", "leise klein", "für den Moment"));
   k.append(kopf);

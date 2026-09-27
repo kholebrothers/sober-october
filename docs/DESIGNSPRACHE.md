@@ -133,7 +133,7 @@ man wählt beim Start, **wie tief** man gehen will; jede Schicht nimmt die vorig
 | --- | --- | --- |
 | 1 · Beobachten | einfaches Tracking | Monat, „Heute bin ich dabei“, Etappe, Tracker (lassen oder aufbauen), Satz zum Tag, Tagebuch |
 | 2 · Formen | Verhalten verändern | Routinen in Schritten, Wenn-dann-Pläne, NLP-Kurzwerkzeuge (Anker, Swish, Reframing) |
-| 3 · Nervensystem | beobachten und verändern | Tages-Check-in (Körper, Antrieb), Ebenen des Monats, Verlauf und Zusammenhänge, Wissen; der Gremlin folgt |
+| 3 · Nervensystem | beobachten und verändern | Tages-Check-in (Körper, Antrieb), Ebenen des Monats, Verlauf und Zusammenhänge, Wissen, der Gremlin |
 
 Wer vor den Schichten schon da war, landet auf Schicht 3 und verliert nichts.
 
@@ -147,6 +147,26 @@ direkt aus der Meldung nach „würde gern“. Übungen, keine Therapie; fachlic
 - **Reframing:** „Welche gute Absicht hat der Drang?“ und drei andere Wege dorthin. Die Antwort hängt
   an der Notiz des Drangs; auf Wunsch wird daraus ein Wenn-dann-Plan.
 - **Wenn-dann:** ein Moment und eine kleine Handlung; die ersten stehen im Drang-Moment gleich oben.
+
+## Der Gremlin (Schicht 3)
+
+Die Katze der Vier-Wochen-Kur, umgebaut: dieselbe Mechanik aus kur-core (`public/begleiter/`,
+unverändert), eine neue Figur — Fledermausohren, leuchtend gelbe Augen, ein Grinsen mit Zähnchen,
+ein lila Schopf, der mit der Zeit wächst. Er läuft am Rand, klettert an den Karten, lässt sich
+streicheln.
+
+Sein Charakter folgt dem Possibility Management, wie wir es verstehen (**Entwurf, zum Gegenlesen**,
+`public/app/gremlin/saetze.js`): Der Gremlin ist der Teil, der von niedrigem Drama lebt —
+Selbstvorwurf, Ausreden, Vergessen. Er ist kein Feind; man wird ihn nicht los, man kann ihn erkennen
+und ihm eine Aufgabe geben. Deshalb sagt er laut, was er will, und macht die Falle damit sichtbar:
+
+- beim Drang: „Ah, der Drang. Den hab ich bestellt. Du musst ihn nicht abholen.“
+- nach einem Konsum: „Jetzt noch ein bisschen Selbstvorwurf? Nein? Schade — das wär mein
+  Lieblingsessen.“
+- nach einem Werkzeug: „Gut. Gib mir die alte Gewohnheit, ich zerleg sie.“
+- wenn der Tag zählt, knurrt er — und sucht sich mit der Zeit einen besseren Job.
+
+Er beschämt nie. Nachts schickt er ins Bett.
 
 ## Bewusst offen
 

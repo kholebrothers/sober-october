@@ -85,6 +85,7 @@ export function werkzeuge(k) {
         k.aendern(() => k.setzeAnker(k.zustand(), moment.value, geste.value));
         k.schliessen();
         k.melde("Dein Anker ist gesetzt. Im Drang-Moment: die Geste, und du bist wieder dort.");
+        k.gemacht?.();
       }), knopf("abbrechen", "text leise", () => k.schliessen())));
     k.zeige(f);
     moment.focus();
@@ -98,7 +99,7 @@ export function werkzeuge(k) {
       el("p", "serif", "Langsam ausatmen. Länger aus als ein."),
       el("p", "serif", `Du warst schon einmal hier: ${a.moment}.`),
       el("p", "leise", "Bleib, solange es gut tut. Der Drang steigt, und er fällt auch wieder."),
-      unten(knopf("gut so", "gross", () => { k.schliessen(); k.melde("Gut so."); }),
+      unten(knopf("gut so", "gross", () => { k.schliessen(); k.melde("Gut so."); k.gemacht?.(); }),
         knopf("neu setzen", "text leise", () => ankerSetzen())));
     k.zeige(f);
   }
@@ -148,7 +149,7 @@ export function werkzeuge(k) {
         }, 800);
       }, dauer);
     });
-    f.append(b, text, unten(los, knopf("fertig", "text leise", () => { k.schliessen(); k.melde("Swish gemacht."); })));
+    f.append(b, text, unten(los, knopf("fertig", "text leise", () => { k.schliessen(); k.melde("Swish gemacht."); if (n) k.gemacht?.(); })));
     k.zeige(f);
   }
 
@@ -178,6 +179,7 @@ export function werkzeuge(k) {
       });
       k.schliessen();
       k.melde(alsPlan ? `Gemerkt: Wenn der Drang nach ${a} kommt, dann ${ws[0]}.` : `Probier einen davon: ${ws[0]}.`);
+      k.gemacht?.();
     };
     f.append(la, chips, lw, unten(knopf("gut", "gross", () => speichern(false)), knopf("als Wenn-dann merken", "text", () => speichern(true)),
       knopf("abbrechen", "text leise", () => k.schliessen())));

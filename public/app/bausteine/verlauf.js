@@ -16,6 +16,7 @@ export function verlauf(api) {
   const reihen = api.verlauf(tage);
   const bis = tage.filter((t) => t <= api.heute()).length;
   const k = el("section", "karte verlauf");
+  k.dataset.katze = "weg";
   const kopf = el("div", "karte-kopf");
   kopf.append(el("p", "rubrik", "Verlauf"), el("span", "leise klein", "unter den Symptomen"));
   k.append(kopf);

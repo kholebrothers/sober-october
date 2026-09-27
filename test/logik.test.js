@@ -62,7 +62,7 @@ test("die App fängt klein an: auf Schicht 1 Leitgedanke, Gemeinsam, Tagebuch un
   const z = neuerZustand();
   assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "abends"]);
   z.tiefe = 3;
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "werkzeuge", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "werkzeuge", "gremlin", "abends"]);
   z.tiefe = 1;
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);

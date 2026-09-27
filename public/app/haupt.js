@@ -23,6 +23,7 @@ import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
 import { holen, senden, erreichbar } from "./netz.js";
 import { werkzeuge } from "./werkzeuge.js";
+import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { faerbe } from "./ansichten/teile.js";
@@ -107,6 +108,7 @@ const api = {
       return;
     }
     const m = aendern(() => schalteDa(z, t));
+    gremlin.freut(1, document.querySelector(".da-knopf"));
     melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [["Wie war der Tag?", () => tagEinordnen()], zurueck]);
   },
   aktiv: (id) => aktiv(z, id),
@@ -121,7 +123,7 @@ const api = {
     const m = aendern(() => { an = schalteSchritt(z, heute(), jetztZeit(), v, i); });
     document.querySelector(`[data-focus="schritt-${v}-${i}"]`)?.classList.add("tipp");
     const fertig = schritteGetan(z, heute(), v).size === V.schritte.length;
-    if (an) spueren(m?.heuteNeu ? 14 : 8);
+    if (an) { spueren(m?.heuteNeu ? 14 : 8); gremlin.freut(vonTag(z, heute()).length, document.querySelector(`[data-focus="schritt-${v}-${i}"]`)); }
     melde(mitMoment(an ? (fertig ? `${V.name}: alle Schritte getan.` : `${V.schritte[i]} — getan.`) + (m?.heuteNeu ? " Der Tag zählt." : "") : "Zurückgenommen.", m));
   },
   schichten: () => SCHICHTEN,
@@ -273,11 +275,31 @@ async function gruppeVerlassen() {
 
 const bogen = $("#bogen");
 
+/* Der Gremlin (Schicht 3): was er vom Tag weiß. `tag` ist, wie lange man
+   schon dabei ist — danach richtet sich, welche Sätze er schon kennt. */
+const gremlin = erzeugeGremlin({
+  an: () => aktiv(z, "gremlin") && gewaehlt(z).length > 0 && !wahlOffen,
+  buzz: (m) => spueren(m || 10),
+  kontext() {
+    const t = heute(), d = new Date(), h = d.getHours();
+    let p = tageszeit(t, h * 60 + d.getMinutes());
+    if (p === "tag" && h < 10) p = "morgen";
+    const tage = [...z.daTage, ...z.ereignisse.map((e) => e.tag), ...Object.keys(z.tagebuch)].filter((x) => x <= t).sort();
+    const seit = tage.length ? Math.round((new Date(t) - new Date(tage[0])) / 864e5) + 1 : 1;
+    return {
+      tag: Math.max(1, seit), st: serie(z, t), n: vonTag(z, t).length + (istDa(z, t) ? 1 : 0) + (z.tagebuch[t] ? 1 : 0),
+      best: besterLauf(z, t), name: z.gemeinsam?.name || "", p, tiefe: p === "nacht" ? Math.min(1, ((h + 2) % 24) / 8) : 0,
+      gesternLeer: !hatEintrag(z, verschiebe(t, -1)), v: "",
+    };
+  },
+});
+
 /* Die Werkzeuge (Schicht 2) bekommen, was sie brauchen, hinein. */
 const W = werkzeuge({
   el: (...a) => el(...a), knopf: (...a) => knopf(...a), zeige: (n) => zeigeBogen(n), schliessen: () => bogen.close(),
   aendern: (f) => aendern(f), melde: (...a) => melde(...a), zustand: () => z,
   setzeAnker, setzeSwish, planHinzu, planWeg, ergaenze,
+  gemacht: () => gremlin.sagt("werkzeug"),
 });
 
 function zeigeBogen(knoten) {
@@ -320,6 +342,9 @@ function eintragen(v, art) {
   });
   document.querySelector(`[data-focus="${art === "getan" ? "habe" : art}-${v}"]`)?.classList.add("tipp");
   if (!m?.heuteNeu) spueren(8);
+  if (art === "drang") gremlin.sagt("drang");
+  else if (art === "habe") gremlin.sagt("geschehen");
+  else gremlin.freut(vonTag(z, heute()).length, document.querySelector(`[data-focus="habe-${v}"]`));
   const text = `${art === "getan" ? `Getan: ${V.name}.` : `Notiert: ${art === "habe" ? V.habe : V.drang}.`}${m?.heuteNeu ? " Der Tag zählt." : ""}`;
   const zurueck = ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }];
   const details = ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)];
@@ -889,6 +914,7 @@ function eigenerTracker(id) {
 
 /* Die Farbwelt hängt am Wurzelelement; die Browserleiste nimmt ihr Papier mit. */
 function farbeSetzen() {
+  if (document.documentElement.dataset.farbe !== z.farbe) gremlin.farbenNeu();
   document.documentElement.dataset.farbe = z.farbe;
   const m = document.querySelector('meta[name="theme-color"][media*="light"]');
   if (m) m.content = FARBWELTEN[z.farbe].papier;
@@ -905,6 +931,7 @@ function zeichne() {
   const schluessel = fokus?.dataset.focus;
   const name = fokus?.getAttribute("aria-label") || fokus?.textContent;
   buehne.replaceChildren(ansicht ? ansicht.render(api) : wahlSeite());
+  gremlin.pruefen();
   if (innerhalb) {
     const ziel = schluessel
       ? [...buehne.querySelectorAll("[data-focus]")].find((e) => e.dataset.focus === schluessel)

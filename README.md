@@ -57,7 +57,8 @@ welche Fragen er beantwortet hat und welche offen sind.
 
 **Drei Schichten, drei Tiefen** (beim Start und unter ⋯ wählbar): 1 · Beobachten — einfaches
 Tracking; 2 · Formen — Routinen in Schritten, Wenn-dann-Pläne und NLP-Kurzwerkzeuge (Anker, Swish, Reframing); 3 · Nervensystem —
-Tages-Check-in, Ebenen, Verlauf. Tracker gibt es zum **Sein-lassen** und zum **Aufbauen** (etwa eine
+Tages-Check-in, Ebenen, Verlauf und der **Gremlin**: der Begleiter aus kur-core als neue Figur, nach dem
+Possibility Management. Tracker gibt es zum **Sein-lassen** und zum **Aufbauen** (etwa eine
 Morgenroutine); wer nichts sein lässt, kann die App genauso nutzen. Siehe
 [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 
@@ -98,6 +99,8 @@ ausgeliefert, wie es im Repo steht.
     public/app/gemeinsam.js    Gruppe: Abgleich mit dem Server und Anzeige — ohne DOM, getestet
     public/app/netz.js         /api/: Abruf mit ETag, Senden
     public/app/werkzeuge.js    Schicht 2: Anker, Swish, Reframing, Wenn-dann
+    public/app/gremlin/        Schicht 3: die Figur, ihre Sätze, die Naht zum Begleiter
+    public/begleiter/          aus kur-core kopiert: der Begleiter (Mechanik)
     server/                    Worker nur für /api/*, API und Schema der Teilnahme (nach kur-core)
     test/                      node --test; kur-core-wertevertrag.js und d1-attrappe.js sind Kopien
 
