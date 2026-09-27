@@ -158,9 +158,11 @@ export const BAUSTEINE = [
   { id: "leitgedanke", gruppe: "Oben", titel: "Leitgedanke", standard: true,
     text: "Ein eigener Satz, der dich begleitet." },
   { id: "lauf", gruppe: "Oben", titel: "Lauf", standard: false,
-    text: "Unter dem Monat: wie viele Tage am Stück, dein längster Lauf und ein Satz zum Tag." },
+    text: "Unter der Etappe: wie viele Tage am Stück, dein längster Lauf und ein Satz zum Tag." },
   { id: "gemeinsam", gruppe: "Oben", titel: "Gemeinsam", standard: true,
     text: "Mit anderen durch den Oktober: wer heute dabei ist, und jede Reise als Farbe. Geteilt wird nur dein Name, was du sein lässt, und an welchen Tagen du dabei warst." },
+  { id: "tagebuch", gruppe: "Unten", titel: "Dein Tagebuch", standard: true,
+    text: "Jeder Tag eine Zeile: dein Satz, die Stimmung, was sich gezeigt hat. Fehlt ein Tag, lässt er sich nachtragen." },
   { id: "heatmap", gruppe: "Unten", titel: "Heatmap", standard: false,
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
   { id: "ebenen", gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
@@ -549,6 +551,30 @@ export function schreibeTag(z, tag, { stimmung, selbst, getragen } = {}) {
     if (g) t.getragen = g; else delete t.getragen;
   }
   if (Object.keys(t).length) z.tagebuch[tag] = t; else delete z.tagebuch[tag];
+}
+
+/* ---- Das Tagebuch in Zeilen --------------------------------------------------
+
+   Aus lifetracker („Deine Sätze"): eine Antwort allein ist eine Notiz,
+   dreißig sind ein Verlauf. Jeder Tag eine Zeile, neu nach alt, von heute
+   bis zum Anfang — dem 1. Oktober, oder früher, wenn schon vorher etwas
+   steht (höchstens 45 Tage). Auch leere Tage stehen da: man sieht, wo einer
+   fehlt, und kann ihn nachtragen. */
+export function tagebuchZeilen(z, heute) {
+  const { start } = oktober(heute);
+  const erster = eintragsTage(z)[0];
+  let von = [start, erster].filter(Boolean).sort()[0];
+  if (von > heute) von = heute;
+  if (tageZwischen(von, heute) > 44) von = verschiebe(heute, -44);
+  const zeilen = [];
+  for (let t = heute; t >= von; t = verschiebe(t, -1)) {
+    const e = z.tagebuch[t] || {};
+    const es = vonTag(z, t);
+    zeilen.push({ tag: t, kopf: tagesKopf(t), heute: t === heute, dabei: dabei(z, t),
+      stimmung: e.stimmung || 0, selbst: (e.selbst || []).map((i) => SELBST[i]), getragen: e.getragen || "",
+      drang: es.filter((x) => x.art === "drang").length, habe: es.filter((x) => x.art === "habe").length });
+  }
+  return zeilen;
 }
 
 /* ---- Der Leitgedanke --------------------------------------------------------

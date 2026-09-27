@@ -17,11 +17,13 @@ Tage dabei springt, das Telefon tippt kurz zurück; an den Stufen 5, 8, 13, 21 u
 Monat auf. Kurz vor dem Oktober zählen die Tage davor als Vorlauf. Ein vergangener Tag ohne Eintrag
 ist ein leises graues Feld: nichts bekannt, kein Urteil.
 
-Unter dem Knopf steht **„Wie war der Tag?“**: ein Tagebuch mit Stimmung (fünf Stufen), den
-Selbst-Markierungen aus lifetracker (höchstens zwei) und dem Satz „Was hat dich heute getragen?“. Es
-bleibt auf dem Gerät. **Farbe heißt Ebene:** Der Monat lässt sich durch jede Ebene lesen — Dabei
-(Grün), Stimmung (Gelb), Selbst (Lila), Getragen (Blau), Drang (Cyan), Geschehen (Orange); siehe
-[docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
+Über dem Kalender die **Etappe** (aus lifetracker): die Kette des laufenden Laufs, eingerastet auf
+der Fibonacci-Leiter 5, 8, 13, 21, 34 — „6 von 8 Tagen“. Unter dem Knopf eine Zeile **„Was hat dich
+heute getragen?“** und, einen Tipp weiter, Stimmung (fünf Stufen) und die Selbst-Markierungen aus
+lifetracker. Ist gestern leer geblieben, lässt er sich nachtragen. Unten steht **Dein Tagebuch**: jeder
+Tag eine Zeile. Das alles bleibt auf dem Gerät. **Farbe heißt Ebene:** Der Monat lässt sich durch jede
+Ebene lesen — Dabei (Grün), Stimmung (Gelb), Selbst (Lila), Getragen (Blau), Drang (Cyan), Geschehen
+(Orange); siehe [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
 
 Darunter die Tracker, je eine Kachel für „habe“ und darunter „würde gern“. **Notieren ist ein
 Tippen:** es notiert sofort und zählt den Tag genauso; die Meldung danach bietet „Details“ (die
@@ -33,7 +35,8 @@ Einen Knopf „heute ohne“ gibt es nicht. Alles Weitere ist ein **Baustein**, 
 |---|---|---|
 | Gemeinsam *(an)* | unter dem Monat | mit anderen durch den Oktober: wer heute dabei ist, jede Reise als Reihe |
 | Leitgedanke *(an)* | oben | ein eigener Satz, anfangs „Bereitschaft genügt.“; gilt ab einem Tag, frühere bleiben |
-| Lauf | im Monat | Tage am Stück, der längste Lauf und ein Satz zum Tag |
+| Lauf | im Monat | Tage am Stück, der längste Lauf und ein Satz zum Tag (die Etappe steht immer da) |
+| Dein Tagebuch *(an)* | unten | jeder Tag eine Zeile: Satz, Stimmung, Selbst; fehlende Tage nachtragen |
 | Heatmap | unten | der Oktober als Kästchen, eine Spalte je Woche, ab der Woche des 1. September |
 | Wissen und Rückblick | unten | Ebenen, die sich durch Benutzen öffnen; der Rückblick in Wochen |
 | Abends ruhiger *(an)* | Darstellung | nach Sonnenuntergang eine Spur ruhiger |

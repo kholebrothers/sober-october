@@ -7,13 +7,13 @@
    Drang ohne Zwischenschritt, die vier Grundgefühle.
    ===================================================================== */
 
-import { heute as heuteTag } from "../kern/datum.js";
+import { heute as heuteTag, verschiebe } from "../kern/datum.js";
 import {
   FRAGEN, EBENEN, ANSICHTEN, FARBWELTEN, BAUSTEINE, aktiv, schalteBaustein, FEST, verzichte, gewaehlt, commitmentSatz, vonTag,
   notiere, schalteAlles, fuegeEigenenHinzu, benenneEigenen, entferneEigenen, hatNotizen, stand, tagesZeile, serie, lauf,
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE, tagessatz, istFrei, schalteFrei, moment,
   istDa, schalteDa, hatEintrag, ergaenze, entferne,
-  tagesKopf, monat, besterLauf, SCHICHTEN, STIMMUNG, SELBST, SELBST_MAX, schreibeTag,
+  tagesKopf, monat, besterLauf, SCHICHTEN, STIMMUNG, SELBST, SELBST_MAX, schreibeTag, tagebuchZeilen,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
@@ -108,8 +108,23 @@ const api = {
   aktiv: (id) => aktiv(z, id),
   schichten: () => SCHICHTEN,
   schichtWert: (id, tag) => SCHICHTEN.find((x) => x.id === id).wert(z, tag),
-  heuteEingeordnet: () => !!z.tagebuch[heute()],
-  tagEinordnen: () => tagEinordnen(),
+  heuteEingeordnet: () => !!(z.tagebuch[heute()]?.stimmung || z.tagebuch[heute()]?.selbst),
+  tagEinordnen: (tag) => tagEinordnen(tag),
+  getragen: () => z.tagebuch[heute()]?.getragen || "",
+  getragenSetzen(text) {
+    const m = aendern(() => schreibeTag(z, heute(), { getragen: text }));
+    melde(mitMoment(z.tagebuch[heute()]?.getragen ? `Im Tagebuch.${m?.heuteNeu ? " Der Tag zählt." : ""}` : "Satz entfernt.", m));
+  },
+  tagebuchZeilen: () => tagebuchZeilen(z, heute()),
+  stimmungWort: (n) => STIMMUNG[n - 1],
+  /* Gestern leer geblieben, aber es gibt schon etwas vorher: dann darf man
+     ihn nachtragen (aus lifetracker, „Noch kurz aufschreiben"). */
+  gesternOffen() {
+    const g = verschiebe(heute(), -1);
+    const imMonat = monat(z, heute()).zellen.some((c) => c.tag === g && c.art !== "rand");
+    const schonDa = [...z.daTage, ...z.ereignisse.map((e) => e.tag), ...Object.keys(z.tagebuch)].some((t) => t < g);
+    return imMonat && schonDa && !hatEintrag(z, g) ? g : null;
+  },
   gruppe: () => gruppeFuerAnzeige(),
   mitgehen,
   binIch(id, name) {
@@ -373,12 +388,23 @@ function oeffneEbene(id) {
    (fünf Stufen), die Selbst-Markierungen aus lifetracker (höchstens zwei)
    und ein Satz, was getragen hat. Alles freiwillig, alles bleibt auf dem
    Gerät. Es gilt, was beim Speichern dasteht. */
-function tagEinordnen() {
-  const t = heute();
+function tagEinordnen(tag) {
+  const t = tag || heute();
+  const istHeute = t === heute();
   const vorher = z.tagebuch[t] || {};
   const f = el("form", "bogen-inhalt einordnen");
-  f.append(el("p", "rubrik", `${tagesKopf(t)} · dein Tagebuch`), el("h2", null, "Wie war der Tag?"),
+  f.append(el("p", "rubrik", `${tagesKopf(t)} · dein Tagebuch`), el("h2", null, istHeute ? "Wie war der Tag?" : "Wie war dieser Tag?"),
     el("p", "leise", "Alles freiwillig und nur auf diesem Gerät. Eine Ebene reicht, keine auch."));
+  /* Ein vergangener Tag: nachtragen, dass man dabei war. */
+  let da = null;
+  if (!istHeute && !istDa(z, t)) {
+    const l = el("label", "baustein");
+    da = Object.assign(document.createElement("input"), { type: "checkbox", checked: !hatEintrag(z, t) });
+    const tx = el("span", "baustein-text");
+    tx.append(el("span", null, "An dem Tag war ich dabei"), el("span", "leise klein", "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
+    l.append(da, tx);
+    f.append(l);
+  }
 
   const stimmung = el("fieldset", "frage ebene-frage");
   stimmung.style.setProperty("--c", "var(--gelb)");
@@ -395,7 +421,7 @@ function tagEinordnen() {
 
   const selbst = el("fieldset", "frage ebene-frage");
   selbst.style.setProperty("--c", "var(--lila)");
-  selbst.append(el("legend", "serif", "Was hat sich heute gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
+  selbst.append(el("legend", "serif", istHeute ? "Was hat sich heute gezeigt?" : "Was hat sich an dem Tag gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
   const chips = el("span", "chips");
   SELBST.forEach((wort, i) => {
     const c = el("label", "chip");
@@ -417,19 +443,23 @@ function tagEinordnen() {
   getragen.style.setProperty("--c", "var(--blau)");
   const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher.getragen || "", autocomplete: "off", maxLength: 280,
     placeholder: "Der Kaffee mit Ben, der Spaziergang …" });
-  getragen.append(el("span", "serif", "Was hat dich heute getragen?"), g);
+  getragen.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
 
   f.append(stimmung, selbst, getragen);
   const speichern = () => {
     const d = new FormData(f);
     let m = null;
     bogen.close();
-    m = aendern(() => schreibeTag(z, t, {
-      stimmung: Number(d.get("stimmung")) || 0,
-      selbst: d.getAll("selbst").map(Number),
-      getragen: d.get("getragen") || "",
-    }));
-    melde(mitMoment(z.tagebuch[t] ? `Eingeordnet.${m?.heuteNeu ? " Der Tag zählt." : ""}` : "Nichts eingeordnet.", m));
+    m = aendern(() => {
+      schreibeTag(z, t, {
+        stimmung: Number(d.get("stimmung")) || 0,
+        selbst: d.getAll("selbst").map(Number),
+        getragen: d.get("getragen") || "",
+      });
+      if (da && da.checked && !istDa(z, t)) schalteDa(z, t);
+    });
+    const steht = hatEintrag(z, t);
+    melde(mitMoment(!steht ? "Nichts eingetragen." : istHeute ? `Eingeordnet.${m?.heuteNeu ? " Der Tag zählt." : ""}` : `${tagesKopf(t)} ist nachgetragen.`, m));
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));

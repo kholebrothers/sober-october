@@ -28,7 +28,7 @@ export function monat(api) {
   s.dataset.schicht = S.id;
   s.style.setProperty("--schicht", S.farbe);
 
-  s.append(kopf(m));
+  s.append(kopf(m), etappe(api));
 
   const gitter = el("div", "monat-gitter");
   for (const w of WOCHENTAGE) gitter.append(el("span", "monat-wt", w));
@@ -51,13 +51,7 @@ export function monat(api) {
     : `Oktober: ${m.dabei} von ${m.phase === "im" ? m.tag : 31} Tagen dabei.`);
   s.append(gitter);
 
-  if (m.phase !== "nach") {
-    s.append(daKnopf(api, zaehlt));
-    const e = api.heuteEingeordnet();
-    const b = knopf(e ? "Der Tag ist eingeordnet · ändern" : "Wie war der Tag?", "text tag-einordnen", () => api.tagEinordnen());
-    b.dataset.focus = "einordnen";
-    s.append(b);
-  }
+  if (m.phase !== "nach") s.append(daKnopf(api, zaehlt), satzZeile(api), weiteres(api));
 
   if (api.aktiv("lauf")) {
     const n = api.serie(), best = api.besterLauf();
@@ -113,4 +107,63 @@ function ebenenWahl(api, schichten, S) {
   }
   w.append(reihe, el("p", "ebenen-text leise", S.text));
   return w;
+}
+
+/* Die Etappe — die Kette aus lifetracker. Sie zeigt den laufenden Lauf,
+   rastet aber auf der Fibonacci-Leiter ein: 5, 8, 13, 21, 34 Tage. Ist
+   eine Etappe voll, beginnt die nächste, länger; die blassen Glieder sind
+   die Tage bis dahin. Ein einzelner leerer Tag bricht sie nicht. Für wen
+   „Fibonacci" nichts heißt, heißt sie einfach Etappe. */
+function etappe(api) {
+  const l = api.lauf();
+  const e = el("div", "etappe");
+  const kette = el("div", "kette");
+  const worte = [];
+  for (const t of l.tage) {
+    const g = el("span", "glied");
+    g.dataset.stand = t.stand;
+    if (t.heute) g.dataset.heute = "";
+    kette.append(g);
+    if (t.stand !== "kommt") worte.push(t.stand === "dabei" || t.stand === "frei" ? "dabei" : t.heute ? "offen" : "leer");
+  }
+  kette.setAttribute("role", "img");
+  kette.setAttribute("aria-label", `Etappe: ${l.dabeiTage} von ${l.fenster} Tagen. ${worte.join(", ")}.`);
+  const text = el("p", "etappe-text");
+  text.append(el("span", "rubrik", "Etappe"), el("span", "etappe-zahl", `${l.dabeiTage} von ${l.fenster} Tagen`));
+  text.title = "Die Etappen wachsen wie die Fibonacci-Folge: 5, 8, 13, 21, 34 Tage. Ein einzelner leerer Tag bricht sie nicht.";
+  e.append(text, kette);
+  return e;
+}
+
+/* Ein Satz zum Tag, gleich unter dem Knopf (aus lifetracker, befinden):
+   „Was hat dich heute getragen?" Eine Zeile, freiwillig; gespeichert wird
+   beim Verlassen des Feldes oder mit der Eingabetaste. */
+function satzZeile(api) {
+  const f = el("form", "satz-zeile");
+  const i = Object.assign(document.createElement("input"), { name: "getragen", value: api.getragen(), autocomplete: "off", maxLength: 280,
+    placeholder: "Was hat dich heute getragen?", enterKeyHint: "done" });
+  i.setAttribute("aria-label", "Was hat dich heute getragen? Ein Satz für dein Tagebuch");
+  i.dataset.focus = "getragen";
+  const sichern = () => { if (i.value.trim() !== api.getragen()) api.getragenSetzen(i.value); };
+  i.addEventListener("change", sichern);
+  f.addEventListener("submit", (e) => { e.preventDefault(); i.blur(); sichern(); });
+  f.append(i);
+  return f;
+}
+
+/* Darunter, leise: Stimmung und Selbst im Bogen — und, wenn gestern leer
+   geblieben ist, das Nachtragen. */
+function weiteres(api) {
+  const r = el("div", "monat-weiteres");
+  const e = api.heuteEingeordnet();
+  const b = knopf(e ? "Stimmung und Selbst · ändern" : "Stimmung und Selbst", "text tag-einordnen", () => api.tagEinordnen());
+  b.dataset.focus = "einordnen";
+  r.append(b);
+  const g = api.gesternOffen();
+  if (g) {
+    const n = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g));
+    n.dataset.focus = "nachtragen";
+    r.append(n);
+  }
+  return r;
 }

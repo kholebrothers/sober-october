@@ -9,7 +9,7 @@ import {
   leitgedankeAm, setzeLeitgedanke, begleitetSeit, LEITGEDANKE,
   BAUSTEINE, aktiv, schalteBaustein,
   istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN, monat,
-  SCHICHTEN, STIMMUNG, SELBST, schreibeTag,
+  SCHICHTEN, STIMMUNG, SELBST, schreibeTag, tagebuchZeilen,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -56,9 +56,9 @@ test("Routinen öffnen sich am dritten Tag mit Notiz, nicht mit der dritten Noti
   assert.ok(neu.some((e) => e.id === "routine"));
 });
 
-test("die App fängt klein an: nur Leitgedanke, Gemeinsam und Abendruhe sind von selbst an", () => {
+test("die App fängt klein an: Leitgedanke, Gemeinsam, Tagebuch und Abendruhe sind von selbst an", () => {
   const z = neuerZustand();
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "abends"]);
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);
   schalteBaustein(z, "gibtsnicht", true);
@@ -533,4 +533,18 @@ test("die Ebenen: jede eine Farbe, jede ein Wert von 0 bis 1", () => {
   assert.equal(new Set(SCHICHTEN.map((s) => s.farbe)).size, SCHICHTEN.length, "keine Farbe doppelt");
   assert.ok(!SCHICHTEN.some((s) => /rot|red/.test(s.farbe)), "kein Rot");
   assert.equal(SELBST.length, 11);
+});
+
+test("das Tagebuch in Zeilen: jeder Tag eine, neu nach alt, leere Tage auch", () => {
+  const z = mit("kaffee");
+  schreibeTag(z, "2026-10-02", { stimmung: 2, selbst: [6], getragen: "Tee statt Kaffee" });
+  schalteDa(z, "2026-10-03");
+  const zeilen = tagebuchZeilen(z, "2026-10-04");
+  assert.deepEqual(zeilen.map((x) => x.tag), ["2026-10-04", "2026-10-03", "2026-10-02", "2026-10-01"]);
+  assert.deepEqual(zeilen.map((x) => x.dabei), [false, true, true, false]);
+  assert.deepEqual([zeilen[2].kopf, zeilen[2].getragen, zeilen[2].stimmung, zeilen[2].selbst], ["Tag 2", "Tee statt Kaffee", 2, ["Selbstfürsorge"]]);
+  assert.equal(zeilen[0].heute, true);
+  schalteDa(z, "2026-09-20");
+  assert.equal(tagebuchZeilen(z, "2026-10-04").at(-1).tag, "2026-09-20", "wer schon im Vorlauf war, sieht ihn");
+  assert.equal(tagebuchZeilen(z, "2026-12-31").length, 45, "höchstens 45 Tage");
 });

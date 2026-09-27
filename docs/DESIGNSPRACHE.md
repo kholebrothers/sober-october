@@ -86,6 +86,24 @@ Offen: Die Tracker tragen noch ihre eigenen Farben (Kaffee Gelb, Kippe Blau, Vid
 Magenta). Sie überschneiden sich mit Stimmung, Getragen und Selbst. Sollen Farben streng nur Ebenen
 heißen, würden die Tracker neutral und die Kacheln orange (Geschehen) bzw. cyan (Drang).
 
+## Jeden Tag ein Check-in, und eine Zeile Tagebuch
+
+- **Mindestens ein Check-in am Tag:** „Heute bin ich dabei“, oder irgendein Eintrag. Ist gestern leer
+  geblieben, steht unter dem Knopf „Gestern nachtragen“ (aus lifetracker, „Noch kurz aufschreiben“).
+  Im Tagebuch lässt sich jeder fehlende Tag antippen und nachtragen.
+- **Im besten Fall eine qualitative Angabe:** Direkt unter dem Knopf steht eine Zeile „Was hat dich
+  heute getragen?“, ohne Dialog, gespeichert beim Verlassen. Stimmung und Selbst stehen einen Tipp
+  weiter im Bogen.
+- **Dein Tagebuch** (Baustein, von selbst an): jeder Tag eine Zeile, neu nach alt, mit den Punkten
+  seiner Ebenen und dem Satz. Auch leere Tage stehen da. Zuerst eine Woche, auf Wunsch alles.
+
+## Die Etappe: Fibonacci als Logik, nicht als Wort
+
+Aus lifetracker: Die Kette zeigt den laufenden Lauf, rastet aber auf der Leiter 5, 8, 13, 21, 34 ein.
+Man sieht nie „12 von 31“, sondern die nächste erreichbare Stufe: „3 von 5 Tagen“, dann „6 von 8“.
+Ein einzelner leerer Tag bricht sie nicht. Ist eine Etappe voll, leuchtet der Monat auf und die
+Meldung sagt einen Satz. Für Neue heißt das einfach **Etappe**; „Fibonacci“ steht nur im Tooltip.
+
 ## Bewusst offen
 
 Ein fehlender Eintrag beweist keine Abstinenz. Die bestehende Logik bezeichnet solche Tage teils als „frei“, während Kreise auch „unbekannt“ bedeuten. Diese fachliche Bedeutung sollte separat entschieden werden; diese Überarbeitung verändert die Zählung nicht.
