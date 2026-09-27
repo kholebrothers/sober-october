@@ -7,9 +7,11 @@ import { el, knopf } from "../ansichten/teile.js";
 import { karte } from "./heatmap.js";
 import { tagebuch } from "./tagebuch.js";
 import { verlauf } from "./verlauf.js";
+import { werkzeugKarte } from "./werkzeuge.js";
 
 export function unten(api, { ebenen = true } = {}) {
   const teile = [];
+  if (api.aktiv("werkzeuge")) teile.push(werkzeugKarte(api));
   if (api.aktiv("tagebuch")) teile.push(tagebuch(api));
   if (api.aktiv("verlauf")) teile.push(verlauf(api));
   if (api.aktiv("heatmap")) teile.push(karte(api));

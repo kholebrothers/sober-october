@@ -219,6 +219,8 @@ export const BAUSTEINE = [
     text: "Dein Oktober als Kästchen, eine Spalte je Woche." },
   { id: "ebenen", schicht: 3, gruppe: "Unten", titel: "Wissen und Rückblick", standard: false,
     text: "Ebenen, die sich durch Benutzen öffnen: wie ein Drang verläuft, Routinen, Neues an die Stelle, der Rückblick in Wochen." },
+  { id: "werkzeuge", schicht: 2, gruppe: "Unten", titel: "Werkzeuge", standard: true,
+    text: "Anker, Swish, Reframing und Wenn-dann-Pläne — kurz, für den Moment, in dem der Drang kommt." },
   { id: "abends", schicht: 1, gruppe: "Darstellung", titel: "Abends ruhiger", standard: true,
     text: "Nach Sonnenuntergang wird die Seite eine Spur ruhiger." },
 ];
@@ -241,7 +243,8 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1 };
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1,
+    werkzeug: { anker: null, swish: null, plaene: [] } };
 }
 
 /** Aus gespeichertem Text. Unlesbares oder Fremdes wird ein leerer Zustand,
@@ -266,6 +269,7 @@ export function aus(text) {
     for (const k of ids)
       if (roh.commitment[k]) z.commitment[k] = { drang: !!roh.commitment[k].drang };
   if (ANSICHTEN[roh.ansicht]) z.ansicht = roh.ansicht;
+  z.werkzeug = werkzeugAus(roh.werkzeug);
   // Ein Stand von vor den Schichten hatte alles: er bleibt auf der tiefsten.
   z.tiefe = [1, 2, 3].includes(roh.tiefe) ? roh.tiefe : 3;
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
@@ -716,6 +720,46 @@ export function tagebuchZeilen(z, heute) {
   }
   return zeilen;
 }
+
+/* ---- Werkzeuge (Schicht 2) --------------------------------------------------
+
+   Kurze Werkzeuge aus dem NLP für den Moment, in dem der Drang kommt, und
+   die Wenn-dann-Pläne (aus lifetracker; eigentlich Psychologie, nicht NLP).
+   Hier steht nur, was sich die App merkt; die Anleitungen stehen in
+   werkzeuge.js. Alles bleibt auf dem Gerät.
+
+     anker  {moment, geste}   der Zustand, der an eine Geste gebunden ist
+     swish  {ausloeser, ziel} die beiden Bilder, in Worten
+     plaene [{wenn, dann}]     höchstens zwölf */
+const KURZTEXT = (t, n = 140) => String(t || "").replace(/\s+/g, " ").trim().slice(0, n);
+export const PLAENE_MAX = 12;
+
+function werkzeugAus(roh) {
+  const w = { anker: null, swish: null, plaene: [] };
+  if (!roh || typeof roh !== "object") return w;
+  const txt = (x, n) => (typeof x === "string" ? KURZTEXT(x, n) : "");
+  if (roh.anker && txt(roh.anker.moment)) w.anker = { moment: txt(roh.anker.moment), geste: txt(roh.anker.geste, 60) || "Daumen und Zeigefinger" };
+  if (roh.swish && txt(roh.swish.ausloeser) && txt(roh.swish.ziel)) w.swish = { ausloeser: txt(roh.swish.ausloeser), ziel: txt(roh.swish.ziel) };
+  if (Array.isArray(roh.plaene))
+    w.plaene = roh.plaene.filter((p) => p && txt(p.wenn) && txt(p.dann)).slice(0, PLAENE_MAX)
+      .map((p) => ({ wenn: txt(p.wenn), dann: txt(p.dann) }));
+  return w;
+}
+
+export function setzeAnker(z, moment, geste) {
+  z.werkzeug.anker = KURZTEXT(moment) ? { moment: KURZTEXT(moment), geste: KURZTEXT(geste, 60) || "Daumen und Zeigefinger" } : null;
+}
+export function setzeSwish(z, ausloeser, ziel) {
+  z.werkzeug.swish = KURZTEXT(ausloeser) && KURZTEXT(ziel) ? { ausloeser: KURZTEXT(ausloeser), ziel: KURZTEXT(ziel) } : null;
+}
+/** Ein Wenn-dann-Plan mehr; gibt false zurück, wenn etwas fehlt oder die Liste voll ist. */
+export function planHinzu(z, wenn, dann) {
+  const p = { wenn: KURZTEXT(wenn).replace(/^wenn\s+/i, ""), dann: KURZTEXT(dann).replace(/^dann\s+/i, "") };
+  if (!p.wenn || !p.dann || z.werkzeug.plaene.length >= PLAENE_MAX) return false;
+  z.werkzeug.plaene.push(p);
+  return true;
+}
+export function planWeg(z, i) { z.werkzeug.plaene.splice(i, 1); }
 
 /* ---- Der Leitgedanke --------------------------------------------------------
 

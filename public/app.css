@@ -558,3 +558,33 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .tiefe-option:has(input:checked) { border-color:var(--c); background:color-mix(in oklab, var(--c) 8%, var(--paper)); }
 .tiefe-option input { accent-color:var(--c); }
 .frage textarea { font:inherit; font-size:16px; padding:10px 12px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; resize:vertical; }
+
+/* Werkzeuge (Schicht 2): jedes in seiner Farbe, als Streifen und Punkt. */
+.werkzeug-reihe { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+.werkzeug-chip { display:flex; align-items:center; gap:8px; min-height:var(--touch); padding:8px 12px; border:1px solid var(--linie);
+  border-left:3px solid var(--c); border-radius:var(--radius-control); background:var(--surface); text-align:left; font-size:14px; }
+.werkzeug-plan { margin:0; font-family:var(--serif); font-style:italic; }
+.werkzeuge > p.klein { color:var(--leise); }
+.werkzeug-liste { display:grid; gap:8px; }
+.werkzeug-knopf { display:grid; gap:2px; width:100%; padding:12px 14px; border:1px solid var(--linie); border-left:4px solid var(--c);
+  border-radius:var(--radius-control); background:var(--paper); text-align:left; }
+.werkzeug-plaene { display:grid; gap:4px; padding:10px 12px; border-radius:var(--radius-control); background:color-mix(in oklab, var(--gelb) 10%, var(--paper)); }
+.werkzeug-plaene .rubrik { margin-bottom:2px; }
+.werkzeug-schritt { display:grid; grid-template-columns:24px 1fr; gap:8px; margin:0; font-family:var(--serif); }
+.werkzeug-nr { width:22px; height:22px; border-radius:50%; display:grid; place-items:center; background:var(--hm-leer); font:600 12px var(--sans); }
+.werkzeug-ruhe { text-align:center; justify-items:center; }
+.werkzeug-gross { font-size:24px !important; }
+.werkzeug-liste-plaene { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.werkzeug-liste-plaene li { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+
+/* Swish: das große helle Auslöserbild, unten links klein das Zielbild. Beim
+   Tippen tauschen sie in --dauer; danach kurz leer. */
+.swish { position:relative; height:220px; border-radius:var(--radius-card); background:var(--ink); overflow:hidden; --dauer:1000ms; }
+.swish-bild { position:absolute; display:grid; place-items:center; padding:14px; text-align:center; font-family:var(--serif); border-radius:14px;
+  transition:all var(--dauer) cubic-bezier(.3,.7,.2,1); }
+.swish-ausloeser { inset:14px; background:var(--surface); color:var(--ink); font-size:18px; opacity:1; }
+.swish-ziel { left:14px; bottom:14px; width:28%; height:26%; background:color-mix(in oklab, var(--teal) 25%, var(--ink)); color:var(--surface); font-size:9px; opacity:.55; overflow:hidden; }
+.swish[data-lauf] .swish-ausloeser { inset:40%; opacity:0; }
+.swish[data-lauf] .swish-ziel { left:14px; bottom:14px; width:calc(100% - 28px); height:calc(100% - 28px); background:var(--teal); font-size:18px; opacity:1; }
+.swish[data-leer] .swish-bild { opacity:0; transition:opacity .25s; }
+@media (prefers-reduced-motion: reduce) { .swish-bild { transition:none; } }

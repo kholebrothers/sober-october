@@ -11,6 +11,7 @@ import {
   istDa, schalteDa, hatEintrag, ergaenze, entferne, FARBWELTEN, monat,
   SCHICHTEN, STIMMUNG, SELBST, schreibeTag, tagebuchZeilen, SYSTEME, zusammenhaenge, verlauf, eingeschaetzt,
   TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte,
+  setzeAnker, setzeSwish, planHinzu, planWeg, PLAENE_MAX,
 } from "../public/app/logik.js";
 import { sonne, tageszeit } from "../public/kern/sonne.js";
 import { normalisiere, leer, TAG, SCHLUESSEL } from "./kur-core-wertevertrag.js";
@@ -61,7 +62,7 @@ test("die App fängt klein an: auf Schicht 1 Leitgedanke, Gemeinsam, Tagebuch un
   const z = neuerZustand();
   assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "abends"]);
   z.tiefe = 3;
-  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "abends"]);
+  assert.deepEqual(BAUSTEINE.filter((b) => aktiv(z, b.id)).map((b) => b.id), ["leitgedanke", "gemeinsam", "tagebuch", "verlauf", "werkzeuge", "abends"]);
   z.tiefe = 1;
   schalteBaustein(z, "heatmap");
   schalteBaustein(z, "leitgedanke", false);
@@ -634,4 +635,23 @@ test("nur aufbauen, ohne Verzicht, geht auch", () => {
   fuegeEigenenHinzu(z, "Bewegung", { art: "aufbauen" });
   assert.equal(commitmentSatz(z), "Im Oktober baue ich Bewegung auf.");
   assert.equal(gewaehlt(z).length, 1);
+});
+
+test("Werkzeuge: Anker, Swish und Wenn-dann bleiben, Unsinn fällt weg", () => {
+  const z = mit("kaffee");
+  setzeAnker(z, "  Am See, morgens, ganz ruhig ", "");
+  setzeSwish(z, "Die Kaffeemaschine im Büro", "Ich, wach und klar, mit Tee");
+  assert.equal(planHinzu(z, "Wenn ich ins Büro komme", "dann trinke ich zuerst ein Glas Wasser"), true);
+  assert.equal(planHinzu(z, "", "irgendwas"), false);
+  assert.deepEqual(z.werkzeug, {
+    anker: { moment: "Am See, morgens, ganz ruhig", geste: "Daumen und Zeigefinger" },
+    swish: { ausloeser: "Die Kaffeemaschine im Büro", ziel: "Ich, wach und klar, mit Tee" },
+    plaene: [{ wenn: "ich ins Büro komme", dann: "trinke ich zuerst ein Glas Wasser" }],
+  });
+  assert.deepEqual(aus(JSON.stringify(z)).werkzeug, z.werkzeug);
+  for (let i = 0; i < PLAENE_MAX + 2; i++) planHinzu(z, `wenn ${i}`, "dann");
+  assert.equal(z.werkzeug.plaene.length, PLAENE_MAX);
+  planWeg(z, 0);
+  assert.equal(z.werkzeug.plaene.length, PLAENE_MAX - 1);
+  assert.deepEqual(aus(JSON.stringify({ ...z, werkzeug: { anker: { moment: 5 }, plaene: "x" } })).werkzeug, { anker: null, swish: null, plaene: [] });
 });

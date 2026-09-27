@@ -56,7 +56,7 @@ Sie stammen aus dem Prototyp auf dem Branch `prototyp-zurueckhaltend`; dort steh
 welche Fragen er beantwortet hat und welche offen sind.
 
 **Drei Schichten, drei Tiefen** (beim Start und unter ⋯ wählbar): 1 · Beobachten — einfaches
-Tracking; 2 · Formen — Routinen in Schritten, später Wenn-dann und NLP-Kurzwerkzeuge; 3 · Nervensystem —
+Tracking; 2 · Formen — Routinen in Schritten, Wenn-dann-Pläne und NLP-Kurzwerkzeuge (Anker, Swish, Reframing); 3 · Nervensystem —
 Tages-Check-in, Ebenen, Verlauf. Tracker gibt es zum **Sein-lassen** und zum **Aufbauen** (etwa eine
 Morgenroutine); wer nichts sein lässt, kann die App genauso nutzen. Siehe
 [docs/DESIGNSPRACHE.md](docs/DESIGNSPRACHE.md).
@@ -97,6 +97,7 @@ ausgeliefert, wie es im Repo steht.
     public/sw.js               Service Worker; SCHALE muss jede Datei nennen (test/pwa.test.js)
     public/app/gemeinsam.js    Gruppe: Abgleich mit dem Server und Anzeige — ohne DOM, getestet
     public/app/netz.js         /api/: Abruf mit ETag, Senden
+    public/app/werkzeuge.js    Schicht 2: Anker, Swish, Reframing, Wenn-dann
     server/                    Worker nur für /api/*, API und Schema der Teilnahme (nach kur-core)
     test/                      node --test; kur-core-wertevertrag.js und d1-attrappe.js sind Kopien
 

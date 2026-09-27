@@ -132,10 +132,21 @@ man wählt beim Start, **wie tief** man gehen will; jede Schicht nimmt die vorig
 | Schicht | Was | Was dazukommt |
 | --- | --- | --- |
 | 1 · Beobachten | einfaches Tracking | Monat, „Heute bin ich dabei“, Etappe, Tracker (lassen oder aufbauen), Satz zum Tag, Tagebuch |
-| 2 · Formen | Verhalten verändern | Routinen in Schritten; Wenn-dann-Pläne und NLP-Kurzwerkzeuge (Anker, Swish, Reframing) folgen |
+| 2 · Formen | Verhalten verändern | Routinen in Schritten, Wenn-dann-Pläne, NLP-Kurzwerkzeuge (Anker, Swish, Reframing) |
 | 3 · Nervensystem | beobachten und verändern | Tages-Check-in (Körper, Antrieb), Ebenen des Monats, Verlauf und Zusammenhänge, Wissen; der Gremlin folgt |
 
 Wer vor den Schichten schon da war, landet auf Schicht 3 und verliert nichts.
+
+**Werkzeuge (Schicht 2)** — für den Moment, in dem der Drang kommt; über die Karte „Werkzeuge“ oder
+direkt aus der Meldung nach „würde gern“. Übungen, keine Therapie; fachlich ungeprüft:
+
+- **Anker:** einen ruhigen, klaren Moment erinnern, am stärksten Punkt eine Geste (Daumen und
+  Zeigefinger), fünf Durchgänge. Abrufen: die Geste, lang ausatmen, der Moment in einem Satz.
+- **Swish:** das Bild kurz vor dem Drang groß und hell, unten links klein das Bild von dir, wie du sein
+  willst — ein Tipp, und sie tauschen; kurz leer; fünfmal, schneller werdend.
+- **Reframing:** „Welche gute Absicht hat der Drang?“ und drei andere Wege dorthin. Die Antwort hängt
+  an der Notiz des Drangs; auf Wunsch wird daraus ein Wenn-dann-Plan.
+- **Wenn-dann:** ein Moment und eine kleine Handlung; die ersten stehen im Drang-Moment gleich oben.
 
 ## Bewusst offen
 

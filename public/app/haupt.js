@@ -16,11 +16,13 @@ import {
   tagesKopf, monat, besterLauf, SCHICHTEN, STIMMUNG, SELBST, SELBST_MAX, schreibeTag, tagebuchZeilen,
   SYSTEME, GRUPPEN, STUFEN, eingeschaetzt, verlauf, zusammenhaenge,
   TIEFEN, AUFBAU_VORSCHLAEGE, schalteSchritt, schritteGetan, setzeSchritte, ab,
+  setzeAnker, setzeSwish, planHinzu, planWeg,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
 import { laden, sichern, loeschen } from "./speicher.js";
 import { ebenenInhalt } from "./ebenen.js";
 import { holen, senden, erreichbar } from "./netz.js";
+import { werkzeuge } from "./werkzeuge.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { faerbe } from "./ansichten/teile.js";
@@ -110,6 +112,8 @@ const api = {
   aktiv: (id) => aktiv(z, id),
   ab: (n) => ab(z, n),
   trackerBearbeiten: (v) => eigenerTracker(v),
+  werkzeug: (name) => W[name](),
+  werkzeugStand: () => z.werkzeug,
   schritteGetan: (v) => schritteGetan(z, heute(), v),
   schritt(v, i) {
     const V = verzichte(z)[v];
@@ -269,6 +273,13 @@ async function gruppeVerlassen() {
 
 const bogen = $("#bogen");
 
+/* Die Werkzeuge (Schicht 2) bekommen, was sie brauchen, hinein. */
+const W = werkzeuge({
+  el: (...a) => el(...a), knopf: (...a) => knopf(...a), zeige: (n) => zeigeBogen(n), schliessen: () => bogen.close(),
+  aendern: (f) => aendern(f), melde: (...a) => melde(...a), zustand: () => z,
+  setzeAnker, setzeSwish, planHinzu, planWeg, ergaenze,
+});
+
 function zeigeBogen(knoten) {
   const titel = knoten.querySelector("h2") || knoten.querySelector(".rubrik");
   if (titel) {
@@ -311,8 +322,10 @@ function eintragen(v, art) {
   if (!m?.heuteNeu) spueren(8);
   const text = `${art === "getan" ? `Getan: ${V.name}.` : `Notiert: ${art === "habe" ? V.habe : V.drang}.`}${m?.heuteNeu ? " Der Tag zählt." : ""}`;
   const zurueck = ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }];
+  const details = ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)];
   melde(mitMoment(ebenenText(neu, text), m), art === "getan" ? [zurueck]
-    : [["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)], zurueck]);
+    : art === "drang" && ab(z, 2) ? [["Werkzeug", () => W.menue(id)], details, zurueck]
+    : [details, zurueck]);
 }
 
 const ebenenText = (neu, text) =>
