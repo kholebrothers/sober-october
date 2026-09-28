@@ -60,7 +60,7 @@ function leiste(api) {
     if (d) b.append(el("span", "tracker-chip-gern", `💭${d}`));
     const zahl = el("span", "tracker-chip-zahl", String(n));
     if (!n) zahl.dataset.null = "";
-    b.append(zahl);
+    b.append(zahl, el("span", "tracker-chip-pfeil", offen === v ? "▴" : "▾"));
     halter.append(b);
     /* Die Optionen liegen über der Seite, am Knopf — nichts darunter rutscht. */
     if (offen === v) {

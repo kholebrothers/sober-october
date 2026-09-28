@@ -1056,3 +1056,7 @@ dialog#bogen.vollbild::backdrop { background:var(--paper); }
 .feed-inhalt { max-height:48dvh; overflow-y:auto; overscroll-behavior:contain; }
 .feed-karte .ebene-inhalt p { font:18px/1.5 var(--serif); margin:0 0 12px; }
 .feed-karte .ebene-inhalt ul { font-size:15px; padding-left:18px; }
+/* Ein kleiner Pfeil sagt: hier öffnen sich Optionen (getrunken / würde gern). */
+.tracker-chip-pfeil { font-size:11px; color:var(--v); margin-left:-2px; }
+/* Die Dev-Uhr der Vorschau verdeckt die Auswahl hinter dem „+" nicht. */
+body:has(.plus-overlay) #dev-uhr { display:none; }
