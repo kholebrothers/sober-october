@@ -39,7 +39,8 @@ export function leiste(api, jetzt) {
   for (const [id, name] of [["heute", "Heute"], ["monat", "Monat"], ["plus", ""], ["tagebuch", "Tagebuch"], ["mehr", "Mehr"]]) {
     /* In der Mitte das „+", wie bei Instagram: festhalten, wie es dir geht. */
     if (id === "plus") {
-      const p = knopf("+", "leiste-plus", () => api.festhalten());
+      const p = knopf("+", "leiste-plus", () => api.festhalten(p));
+      api.plusHalten(p);
       p.setAttribute("aria-label", "Festhalten: Stimmung, Schlaf, Menge, Körper, Antrieb, Selbst");
       n.append(p);
       continue;

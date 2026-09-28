@@ -1,12 +1,12 @@
 /* =====================================================================
    Die Erfassung — der Vollbild-Check-in hinter dem „+" unten
 
-   Wie beim Erstellen in Instagram: ein „+" in der Mitte der Leiste öffnet
-   eine ruhige Vollbild-Seite. Unten ein Wähler für die Art — Stimmung,
-   Schlaf, Menge, Körper, Antrieb, Selbst —, darüber die eine Eingabe,
-   um die es gerade geht. Wischen oder Tippen wechselt die Art. Jede
-   Eingabe ist ein Tippen, alles speichert sofort; ein Häkchen im Wähler
-   zeigt, was schon festgehalten ist.
+   Wie beim Erstellen in Instagram: das „+" in der Mitte der Leiste zeigt
+   zuerst eine Liste — Stimmung, Schlaf, Menge, Körper, Antrieb, Selbst.
+   Wer eine wählt, bekommt die Eingabe als Vollbild; die anderen Arten
+   liegen links und rechts daneben, zum Wischen. Jede Eingabe ist ein
+   Tippen, alles speichert sofort; Punkte oben zeigen, was schon
+   festgehalten ist.
 
    Die Erfassung weiß nichts vom Speicher: `k` bringt den Tag, was an ihm
    steht, und wie man schreibt.
@@ -35,48 +35,87 @@ export function hatWert(art, e) {
   return AMPEL_SYSTEME[art].some((id) => e[id]);
 }
 
-/**
- * Die Vollbild-Seite. `art` ist die gezeigte Art, `wechsle(art)` zeigt eine
- * andere, `fertig()` schließt.
- * @param k {tag, titel, eintrag(), lassen: [{id, name}], schreibe(was)}
- */
-export function komponist(k, art, wechsle, fertig) {
-  const arten = ARTEN.filter((a) => a !== "konsum" || k.lassen.length);
-  if (!arten.includes(art)) art = arten[0];
-  const e = k.eintrag();
-  const w = el("div", "komponist");
-  w.dataset.art = art;
+/** Welche Arten es für diesen Tag gibt (Menge nur, wenn man etwas sein lässt). */
+export const artenFuer = (k) => ARTEN.filter((a) => a !== "konsum" || k.lassen.length);
+export const artInfo = (a) => ART[a];
 
+/**
+ * Die Auswahl hinter dem „+": ein Overlay mit allen Möglichkeiten als
+ * Liste, über der Leiste. Ein Tippen wählt — oder man hält das „+"
+ * gedrückt, zieht auf eine Zeile und lässt los (siehe haupt.js).
+ * @param e der Tagebuch-Eintrag (für die Häkchen)
+ */
+export function auswahl(k, waehle, schliessen) {
+  const e = k.eintrag();
+  const o = el("div", "plus-overlay");
+  o.addEventListener("click", (ev) => { if (ev.target === o) schliessen(); });
+  const l = el("div", "plus-liste");
+  l.setAttribute("role", "menu");
+  l.append(el("p", "rubrik plus-titel", "Was möchtest du festhalten?"));
+  for (const a of artenFuer(k)) {
+    const b = knopf("", "plus-option", () => waehle(a));
+    b.dataset.art = a;
+    b.setAttribute("role", "menuitem");
+    b.append(el("span", "plus-icon", ART[a].icon), el("span", "plus-name", ART[a].name));
+    if (hatWert(a, e)) b.append(el("span", "komponist-da", "✓"));
+    l.append(b);
+  }
+  o.append(l);
+  return o;
+}
+
+/**
+ * Die Eingabe: eine Seite je Art, nebeneinander, zum Wischen — wie
+ * Stories. Oben der Tag, die Punkte und „Fertig". Eine Eingabe zeichnet
+ * nur ihre eigene Seite neu; die Position bleibt, wo sie ist.
+ * @returns {el, auffrischen} — auffrischen() zeichnet die sichtbare Seite neu
+ */
+export function komponist(k, start, fertig) {
+  const arten = artenFuer(k);
+  const w = el("div", "komponist");
   const kopf = el("div", "komponist-kopf");
   const zu = knopf("✕", "komponist-zu", fertig);
   zu.setAttribute("aria-label", "Schließen");
-  kopf.append(zu, el("span", "komponist-tag", k.titel), knopf("Fertig", "komponist-fertig", fertig));
+  const punkte = el("div", "komponist-punkte");
+  punkte.setAttribute("aria-hidden", "true");
+  kopf.append(zu, punkte, knopf("Fertig", "komponist-fertig", fertig));
 
-  const mitte = el("div", "komponist-mitte");
-  mitte.append(el("p", "komponist-icon", ART[art].icon), el("h2", "komponist-frage serif", ART[art].frage), ...INHALT[art](k, e));
-  /* Wischen wechselt die Art, wie zwischen Beitrag, Story und Reel. */
-  let x0 = null;
-  mitte.addEventListener("touchstart", (ev) => { x0 = ev.touches[0].clientX; }, { passive: true });
-  mitte.addEventListener("touchend", (ev) => {
-    if (x0 === null) return;
-    const dx = ev.changedTouches[0].clientX - x0, i = arten.indexOf(art);
-    x0 = null;
-    if (Math.abs(dx) > 60) wechsle(arten[Math.min(arten.length - 1, Math.max(0, i + (dx < 0 ? 1 : -1)))]);
+  const bahn = el("div", "komponist-bahn");
+  const seiten = arten.map((a) => {
+    const s = el("section", "komponist-seite");
+    s.dataset.art = a;
+    s.setAttribute("aria-label", ART[a].name);
+    bahn.append(s);
+    return s;
   });
-
-  const waehler = el("div", "komponist-waehler");
-  waehler.setAttribute("role", "tablist");
-  for (const a of arten) {
-    const b = knopf("", "komponist-art", () => wechsle(a));
-    b.setAttribute("role", "tab");
-    b.setAttribute("aria-selected", a === art);
-    b.append(el("span", null, ART[a].name));
-    if (hatWert(a, e)) b.append(el("span", "komponist-da", "✓"));
-    waehler.append(b);
-  }
-  w.append(kopf, mitte, waehler);
-  requestAnimationFrame(() => waehler.querySelector('[aria-selected="true"]')?.scrollIntoView({ inline: "center", block: "nearest" }));
-  return w;
+  const fuellen = (s) => {
+    const a = s.dataset.art;
+    s.replaceChildren(el("p", "komponist-icon", ART[a].icon), el("h2", "komponist-frage serif", ART[a].frage), ...INHALT[a](k, k.eintrag()));
+  };
+  const markiere = () => {
+    const i = Math.round(bahn.scrollLeft / Math.max(1, bahn.clientWidth));
+    const e = k.eintrag();
+    punkte.replaceChildren(...arten.map((a, j) => {
+      const p = el("i");
+      if (j === i) p.className = "an";
+      if (hatWert(a, e)) p.dataset.da = "";
+      return p;
+    }));
+  };
+  seiten.forEach(fuellen);
+  bahn.addEventListener("scroll", () => requestAnimationFrame(markiere), { passive: true });
+  w.append(kopf, bahn, el("p", "komponist-hinweis leise klein", "Wischen für mehr"));
+  requestAnimationFrame(() => {
+    const i = Math.max(0, arten.indexOf(start));
+    bahn.scrollLeft = i * bahn.clientWidth;
+    markiere();
+  });
+  const auffrischen = () => {
+    const i = Math.round(bahn.scrollLeft / Math.max(1, bahn.clientWidth));
+    if (seiten[i]) fuellen(seiten[i]);
+    markiere();
+  };
+  return { el: w, auffrischen };
 }
 
 /** Der Satz zum Tag — immer da, direkt zum Schreiben. */
