@@ -194,6 +194,9 @@ dialog#bogen::backdrop { background:color-mix(in oklab, var(--ink) 28%, transpar
 
 #meldung { display:flex; align-items:center; flex-wrap:wrap; gap:4px 14px; position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; width:max-content; max-width:calc(100vw - 32px); z-index:50; }
 #meldung[hidden] { display:none; }
+/* Die Meldung liegt über dem, was man gerade antippt: der Text lässt Tippen durch, nur ihre Knöpfe fangen es. */
+#meldung { pointer-events:none; }
+#meldung button { pointer-events:auto; }
 .melde-knopf { background:none; border:0; padding:4px 0; color:inherit; font-size:14px; font-weight:600; text-decoration:underline; text-underline-offset:3px; opacity:.9; }
 
 /* Ansicht Knopf: unter dem Monat je Tracker eine Kachel. Ruhig: Farbe nur
@@ -266,6 +269,7 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 .monat-tag { aspect-ratio:1; border-radius:50%; display:grid; place-items:center; font-size:12px; font-variant-numeric:tabular-nums;
   color:var(--leise); border:1.5px solid transparent; transition:background-color .35s ease, color .35s ease; }
 .monat-tag[data-stand="rand"] { visibility:hidden; }
+button.monat-tag { padding:0; min-width:0; background:transparent; font-family:inherit; }
 .monat-tag[data-stand="kommt"] { border-color:var(--linie); color:color-mix(in oklab, var(--leise) 70%, transparent); }
 .monat-tag[data-stand="leer"] { background:var(--hm-leer); }
 .monat-tag[data-stand="offen"] { border:1.5px dashed var(--moss); color:var(--ink); }
@@ -277,7 +281,7 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
 /* Der Knopf des Tages: groß, rund, einladend. Ist der Tag gezählt, ist er
    voll und trägt ein Häkchen. */
 .da-knopf { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; column-gap:10px; width:100%; min-height:60px; padding:12px 18px;
-  border:1.5px dashed var(--moss); border-radius:99px; background:transparent; color:var(--ink); font:500 18px var(--sans);
+  border:0; border-radius:99px; background:var(--moss); color:var(--surface); font:600 18px var(--sans);
   transition:background-color .3s ease, color .3s ease, transform .12s ease; }
 .da-knopf:active { transform:scale(.97); }
 .da-haken { display:none; font-weight:700; }
@@ -666,3 +670,349 @@ button.leitgedanke { background:none; border:0; padding:4px 0; min-height:var(--
   border-radius:var(--radius-control); background:color-mix(in oklab, var(--magenta) 6%, transparent); text-align:left; font-size:14px; }
 .tb-punkte .p-daemon { background:var(--magenta); border-radius:2px; }
 @media (prefers-reduced-motion: reduce) { .daemon[data-wechsel] { animation:none; } }
+
+/* ---- Die Einrichtung und die Reise ----------------------------------------
+   Ein Kern zum Anfang: große Karten, eine Spalte, jede mit dem Streifen
+   ihrer Farbe. Die Reise ist eine ruhige Liste, keine Belohnungstafel. */
+[data-v="aufbau"] { --v:var(--moss); }
+.einrichtung h1 { margin:20px 0 8px; max-width:12em; }
+.einrichtung > .leise { margin:0 0 20px; }
+.kern-gruppe { display:grid; gap:8px; margin-bottom:24px; }
+.kern-gruppe .rubrik { margin:0 0 2px; }
+.kern-knopf { display:flex; align-items:center; min-height:56px; padding:12px 16px; text-align:left; font:500 18px var(--serif);
+  border:1px solid var(--linie); border-left:4px solid var(--v); border-radius:var(--radius-control); background:var(--surface); }
+.kern-knopf:active { background:color-mix(in oklab, var(--v) var(--hauch), var(--surface)); }
+.kern-gruppe .wahl-neu { margin:0; }
+.einrichtung > .text { display:block; margin:0 auto; min-height:var(--touch); }
+.einrichtung-so { font-family:var(--serif); font-size:18px; line-height:1.5; margin:0 0 24px; }
+.einrichtung .rubrik + .reise-liste { margin-top:8px; }
+.reise-liste { list-style:none; margin:0 0 20px; padding:0; display:grid; gap:0; }
+.reise-liste li { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--linie); }
+.reise-liste li:last-child { border-bottom:0; }
+.reise-tag { font-size:13px; color:var(--leise); text-align:right; max-width:11em; line-height:1.3; }
+.reise-titel { font-family:var(--serif); font-size:16px; color:var(--leise); }
+.reise-liste li[data-stand="jetzt"] .reise-titel, .reise-liste li[data-stand="offen"] .reise-titel,
+.reise-liste li[data-stand="naechste"] .reise-titel { color:var(--ink); }
+.reise-liste li[data-stand="offen"] .reise-tag, .reise-liste li[data-stand="jetzt"] .reise-tag { color:var(--moss); font-weight:600; }
+.einrichtung-tipp-alt { display:grid; gap:4px; padding:12px 14px; margin:0 0 20px; border-radius:var(--radius-control);
+  background:color-mix(in oklab, var(--blau) 7%, var(--surface)); font-size:14px; line-height:1.45; }
+.einrichtung-unten { display:grid; gap:8px; }
+.einrichtung-unten .gross { width:100%; min-height:52px; font-size:17px; }
+.einrichtung-unten .text { min-height:var(--touch); }
+.reise-hinweis { align-self:center; text-align:center; margin:2px 0 0; }
+.reise-neu h2 { margin-top:6px; }
+.reise-neu .gross { width:100%; margin-top:8px; }
+.tag-notizen { list-style:none; margin:0; padding:0; display:grid; gap:4px; font-size:14px; }
+.tag-notizen li { padding-left:10px; border-left:3px solid var(--v, var(--linie-stark)); }
+
+/* ---- Startschirm: das Commitment, die Woche, „+" ---------------------- */
+.monat-commitment { margin:0; font-size:17px; line-height:1.35; }
+.woche-streifen { display:grid; gap:6px; }
+.woche-monat { justify-self:end; color:var(--leise) !important; }
+.monat-blatt { border:0; padding:0; background:none; }
+.kopf-plus { font-size:22px; color:var(--ink) !important; }
+.eintragen-liste { display:grid; gap:8px; }
+.eintragen-punkt { display:grid; gap:2px; min-height:var(--touch); padding:10px 14px; text-align:left;
+  border:1px solid var(--linie); border-left:4px solid var(--c, var(--linie-stark)); border-radius:var(--radius-control); background:var(--surface); }
+.eintragen-titel { font:500 16px var(--serif); }
+.eintragen-menue > .text { display:block; margin:8px auto 0; }
+
+/* ---- Der Check-in: Gesichter, Symbole, eingeblendete Felder ----------- */
+.checkin h2 { margin-bottom:4px; }
+.gesichter { display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin:4px 0 8px; }
+.gesicht { aspect-ratio:1; min-height:var(--touch); font-size:30px; line-height:1; border:1.5px solid var(--linie); border-radius:50%;
+  background:var(--paper); display:grid; place-items:center; padding:0; transition:transform .12s ease; filter:grayscale(.35); }
+.gesicht[aria-checked="true"] { border-color:var(--gelb); background:color-mix(in oklab, var(--gelb) 16%, var(--surface)); transform:scale(1.08); filter:none; }
+.checkin-mehr { margin-top:4px !important; }
+.checkin-symbole { display:flex; flex-wrap:wrap; gap:6px; }
+.checkin-symbol { display:inline-flex; align-items:center; gap:6px; min-height:var(--touch); padding:6px 12px 6px 8px; border:1px solid var(--linie-stark);
+  border-radius:99px; background:transparent; font-size:14px; color:var(--leise); }
+.checkin-icon { font-size:18px; line-height:1; }
+.checkin-symbol[aria-pressed="true"] { border-color:var(--ink); color:var(--ink); background:var(--paper); }
+.checkin-felder { display:grid; gap:14px; }
+.checkin-felder:empty { display:none; }
+.checkin-knopf .checkin-stand { font-size:22px; }
+
+/* ---- Einrichtung: Auswahl mit Fokus ------------------------------------ */
+.kern-zeile { display:flex; align-items:center; gap:8px; padding-right:12px; border:1px solid var(--linie); border-left:4px solid var(--v);
+  border-radius:var(--radius-control); background:var(--surface); }
+.kern-zeile .kern-knopf { flex:1; min-width:0; border:0; background:none; gap:12px; }
+.kern-zeile[data-an="true"] { border-color:color-mix(in oklab, var(--v) 60%, var(--linie)); border-left-color:var(--v); background:color-mix(in oklab, var(--v) 6%, var(--surface)); }
+.kern-zeile[data-fokus] { border-width:2px; border-left-width:6px; border-color:var(--v); background:color-mix(in oklab, var(--v) 12%, var(--surface)); }
+.kern-haken { width:22px; height:22px; flex:none; display:grid; place-items:center; border-radius:6px; border:1.5px solid var(--linie-stark);
+  font:700 14px var(--sans); color:var(--surface); }
+.kern-zeile[data-an="true"] .kern-haken { background:var(--v); border-color:var(--v); }
+.kern-fokus { flex:none; padding:3px 10px; border-radius:99px; background:var(--v); color:var(--surface); font:600 12px var(--sans); letter-spacing:.04em; text-transform:uppercase; }
+.kern-zum-fokus { flex:none; color:var(--leise) !important; }
+.einrichtung-weiter { position:sticky; bottom:0; display:grid; gap:4px; padding:12px 0 max(12px, env(safe-area-inset-bottom));
+  background:linear-gradient(transparent, var(--paper) 30%); }
+.einrichtung-weiter .gross { width:100%; min-height:52px; font-size:17px; }
+.einrichtung-satz { font-size:32px; line-height:1.2; margin:28vh 0 16px !important; }
+.einrichtung-tipp { margin:0 0 24px; }
+
+/* ---- Startschirm: eine Sache zu tun ------------------------------------ */
+.da-stand { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:var(--touch);
+  padding:0 4px 0 16px; border-radius:99px; background:color-mix(in oklab, var(--moss) 12%, var(--surface)); }
+.da-stand-text { font:600 16px var(--sans); color:var(--moss); }
+.heute-gesichter { display:grid; gap:8px; }
+.heute-frage { margin:0; font-size:17px; }
+.heute-gesichter .gesichter { margin:0; }
+.heute-gesichter .woche-monat { justify-self:end; }
+.reise-neu-hinweis { display:grid; gap:2px; text-align:left; padding:12px 14px; border:1px solid color-mix(in oklab, var(--moss) 45%, var(--linie));
+  border-radius:var(--radius-control); background:color-mix(in oklab, var(--moss) 7%, var(--surface)); }
+.reise-neu-titel { font:600 15px var(--sans); color:var(--moss); }
+.reise-ok { justify-self:end; font-size:13px; color:var(--leise); text-decoration:underline; text-underline-offset:3px; }
+
+/* ---- Tracker-Karten: Knöpfe, die wie Knöpfe aussehen -------------------- */
+.tracker-liste { display:grid; gap:12px; margin-top:24px; }
+.tracker { display:grid; gap:10px; padding:14px 16px; border:1px solid var(--linie); border-left:4px solid var(--v); border-radius:var(--radius-card); background:var(--surface); }
+.tracker[data-aufbau] { --v:var(--moss); }
+.tracker[data-fokus] { border-width:1.5px; border-left-width:6px; border-color:color-mix(in oklab, var(--v) 55%, var(--linie)); border-left-color:var(--v); }
+.tracker-kopf { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.tracker-name { font:500 19px var(--serif); }
+.tracker-fokus { padding:2px 9px; border-radius:99px; background:var(--v); color:var(--surface); font:600 11px var(--sans); letter-spacing:.05em; text-transform:uppercase; align-self:center; }
+.tracker-heute { margin-left:auto; font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.tracker-knoepfe { display:flex; flex-wrap:wrap; gap:8px; }
+.tracker-plus { display:inline-flex; align-items:center; gap:8px; min-height:var(--touch); padding:8px 16px 8px 10px; border:1.5px solid var(--v);
+  border-radius:99px; background:color-mix(in oklab, var(--v) 10%, var(--surface)); font:500 15px var(--sans); color:var(--ink); }
+.tracker-plus.leise { border-style:dashed; background:transparent; color:var(--leise); }
+.tracker-plus-zeichen { width:24px; height:24px; display:grid; place-items:center; border-radius:50%; background:var(--v); color:var(--surface); font:600 17px/1 var(--sans); }
+.tracker-plus.leise .tracker-plus-zeichen { background:transparent; color:var(--v); border:1.5px solid var(--v); }
+.tracker-plus:active, .tracker-haken:active { transform:scale(.97); }
+.tracker-haken { display:inline-flex; align-items:center; gap:12px; min-height:var(--touch); padding:8px 16px 8px 10px; border:1.5px solid var(--v);
+  border-radius:99px; background:transparent; font:500 15px var(--sans); color:var(--ink); }
+.tracker-kasten { width:24px; height:24px; display:grid; place-items:center; border-radius:6px; border:1.5px solid var(--v); color:var(--surface); font:700 15px var(--sans); }
+.tracker-haken[aria-pressed="true"] { background:color-mix(in oklab, var(--v) 12%, var(--surface)); }
+.tracker-haken[aria-pressed="true"] .tracker-kasten { background:var(--v); }
+.tracker-letzte { display:flex; flex-wrap:wrap; align-items:center; column-gap:14px; margin:0; font-size:13px; }
+.tracker-letzte .text { min-height:36px; }
+.tracker .routine { margin:0; }
+
+/* ---- Der Tag: leer, dann die Erfassung in der Seite ---------------------
+   Die Ampel ist die einzige Stelle mit Rot. Sie beschreibt, wie sich
+   Schlaf, Körper, Antrieb angefühlt haben — nie ein Verhalten. Der Konsum
+   hat keine Ampel, nur Mengen in Tinte. */
+:root { --ampel-1:#AF3029; --ampel-2:var(--gelb); --ampel-3:var(--moss); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ampel-1:#D14D41; } }
+.heute { display:grid; gap:16px; margin-top:16px; }
+.tag-beginnen { display:grid; justify-items:center; gap:4px; width:100%; padding:28px 16px; border:2px dashed color-mix(in oklab, var(--moss) 60%, var(--linie));
+  border-radius:var(--radius-card); background:transparent; }
+.tag-beginnen-plus { width:56px; height:56px; display:grid; place-items:center; border-radius:50%; background:var(--moss); color:var(--surface); font:300 36px/1 var(--sans); }
+.tag-beginnen-text { font:600 18px var(--sans); color:var(--ink); margin-top:6px; }
+.tag-beginnen:active { transform:scale(.98); }
+.heute-kopf { display:flex; align-items:baseline; gap:12px; }
+.heute-titel { margin:0; font:500 24px var(--serif); }
+.heute-dabei { font:600 14px var(--sans); color:var(--moss); }
+.heute-kopf .text { margin-left:auto; }
+.erfassung { display:grid; gap:12px; }
+.erfassung-feld { display:grid; gap:10px; padding:14px 16px; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); }
+.erfassung-kopf { display:flex; align-items:center; gap:8px; }
+.erfassung-kopf h3 { margin:0; font:500 17px var(--serif); flex:1; }
+.erfassung-icon { font-size:18px; line-height:1; }
+.erfassung-weg { width:36px; height:36px; border:0; background:none; color:var(--leise); font-size:20px; border-radius:50%; }
+.erfassung-frage { margin:0; font-size:13px; color:var(--leise); }
+.erfassung-hinzu { display:grid; gap:8px; }
+.erfassung-hinzu .rubrik { margin:4px 0 0; }
+.erfassung-vorschlaege { display:flex; flex-wrap:wrap; gap:8px; }
+.erfassung-vorschlag { display:inline-flex; align-items:center; gap:8px; min-height:var(--touch); padding:6px 14px 6px 10px;
+  border:1.5px dashed var(--linie-stark); border-radius:99px; background:transparent; font:500 15px var(--sans); color:var(--ink); }
+.erfassung-vorschlag:active { transform:scale(.97); }
+.wahl-segmente { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:4px; padding:3px; border-radius:12px; background:var(--paper); }
+.segment { min-height:40px; padding:6px 4px; border:0; border-radius:9px; background:transparent; font:500 14px var(--sans); color:var(--leise); white-space:nowrap; }
+.segment[aria-checked="true"] { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px #0002; font-weight:600; }
+.ampel-zeile { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ampel-name { font-size:15px; }
+.ampel { display:flex; gap:10px; }
+.ampel-punkt { width:40px; height:40px; border-radius:50%; padding:0; border:2px solid color-mix(in oklab, var(--c) 55%, var(--linie)); background:color-mix(in oklab, var(--c) 10%, var(--surface)); }
+.ampel-punkt[data-ampel="1"] { --c:var(--ampel-1); }
+.ampel-punkt[data-ampel="2"] { --c:var(--ampel-2); }
+.ampel-punkt[data-ampel="3"] { --c:var(--ampel-3); }
+.ampel-punkt[aria-checked="true"] { background:var(--c); border-color:var(--c); box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--c); }
+.konsum-zeile { display:grid; gap:6px; }
+.erfassung-feld input[name="getragen"] { font:inherit; font-size:16px; min-height:var(--touch); padding:10px 12px; border:1px solid var(--linie-stark); border-radius:10px; background:var(--paper); color:var(--ink); width:100%; }
+.selbst-chip[aria-pressed="true"] { border-color:var(--lila); color:var(--ink); background:color-mix(in oklab, var(--lila) 10%, transparent); }
+.selbst-chip:disabled { opacity:.4; }
+.tag-blatt > .gross { width:100%; margin-top:8px; }
+.tag-blatt .erfassung-feld { background:var(--paper); }
+
+/* ---- Die Leiste unten: Heute, Monat, Tagebuch, Mehr --------------------- */
+#buehne[data-seite]:not([data-seite=""]) { padding-bottom:calc(96px + env(safe-area-inset-bottom)); }
+.leiste { position:fixed; left:0; right:0; bottom:0; z-index:40; display:grid; grid-template-columns:repeat(4, 1fr);
+  padding:6px max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-bottom)); border-top:1px solid var(--linie);
+  background:color-mix(in oklab, var(--paper) 88%, transparent); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+.leiste-knopf { display:grid; justify-items:center; gap:2px; min-height:48px; padding:4px 0; border:0; background:none; color:var(--leise); font:500 11px var(--sans); }
+.leiste-knopf svg { width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.leiste-knopf[aria-current="page"] { color:var(--moss); }
+.leiste-knopf[aria-current="page"] svg { stroke-width:2.1; }
+@media (min-width:720px) { .leiste { left:50%; right:auto; width:480px; transform:translateX(-50%); border:1px solid var(--linie); border-bottom:0; border-radius:20px 20px 0 0; } }
+
+/* ---- Seiten ------------------------------------------------------------- */
+.seite { display:grid; gap:16px; }
+.seiten-kopf { display:grid; gap:4px; padding-top:8px; }
+.seiten-titel { margin:0; font-size:30px; font-weight:500; }
+.seiten-zurueck { justify-self:start; color:var(--leise) !important; padding-left:0 !important; }
+.seiten-hilfe { margin:-8px 0 0; }
+.mehr-liste { display:grid; gap:0; border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); overflow:hidden; }
+.mehr-zeile { display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:12px; min-height:60px; padding:10px 16px; text-align:left;
+  border:0; border-bottom:1px solid var(--linie); background:none; }
+.mehr-zeile:last-child { border-bottom:0; }
+.mehr-icon { font-size:22px; text-align:center; }
+.mehr-text { display:grid; gap:1px; min-width:0; }
+.mehr-titel { font:500 16px var(--sans); }
+.mehr-pfeil { color:var(--leise); font-size:20px; }
+.mehr-zeile[data-zu] .mehr-titel { color:var(--leise); }
+.mehr-zeile[data-zu] .mehr-pfeil { font-size:14px; opacity:.7; }
+.zu-karte { display:grid; gap:12px; padding:20px; border:1px dashed var(--linie-stark); border-radius:var(--radius-card); }
+.zu-karte p { margin:0; }
+.seite > .gross { justify-self:stretch; }
+
+/* ---- Erfassung als eine Reihe, ein Feld offen --------------------------- */
+.erfassung-vorschlag[data-da] { border-style:solid; border-color:color-mix(in oklab, var(--moss) 50%, var(--linie)); background:color-mix(in oklab, var(--moss) 6%, var(--surface)); }
+.erfassung-vorschlag[aria-expanded="true"] { border-style:solid; border-color:var(--ink); background:var(--surface); }
+.erfassung-da { color:var(--moss); font-weight:700; }
+/* Die Dev-Uhr (nur Vorschau) sitzt über der Leiste, nicht auf ihr. */
+html body:has(.leiste) #dev-uhr { bottom:calc(78px + env(safe-area-inset-bottom)); }
+
+/* ---- Der Tag: Tracker oben, ein Satz, Mehr in festen Zeilen -------------- */
+.heute-kopf { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.da-pille { display:inline-flex; align-items:center; gap:8px; min-height:var(--touch); padding:4px 14px 4px 6px; border:1.5px solid var(--moss);
+  border-radius:99px; background:transparent; font:600 14px var(--sans); color:var(--moss); }
+.da-pille-kreis { width:26px; height:26px; display:grid; place-items:center; border-radius:50%; border:1.5px solid var(--moss); font-size:14px; }
+.da-pille[aria-pressed="true"] { background:var(--moss); color:var(--surface); }
+.da-pille[aria-pressed="true"] .da-pille-kreis { background:var(--surface); color:var(--moss); border-color:var(--surface); }
+.da-pille:disabled { opacity:1; cursor:default; }
+.heute .tracker-liste { margin-top:0; }
+.tracker { gap:8px; }
+.tracker-name { margin:0; font:500 18px var(--serif); }
+.tracker-knoepfe { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; }
+.tracker-knopf { display:flex; align-items:center; gap:10px; min-height:52px; padding:8px 14px 8px 10px; border:1.5px solid var(--v);
+  border-radius:14px; background:color-mix(in oklab, var(--v) 10%, var(--surface)); font:500 15px var(--sans); color:var(--ink); text-align:left; }
+.tracker-knopf:active { transform:scale(.97); }
+.tracker-zeichen { width:28px; height:28px; flex:none; display:grid; place-items:center; border-radius:50%; background:var(--v); color:var(--surface); font:600 18px/1 var(--sans); }
+.tracker-wort { flex:1; min-width:0; overflow-wrap:anywhere; }
+.tracker-zahl { font:600 18px var(--sans); font-variant-numeric:tabular-nums; }
+.tracker-drang { border-style:dashed; background:transparent; }
+.tracker-drang .tracker-zeichen { background:transparent; color:var(--v); border:1.5px solid var(--v); }
+.tracker-getan .tracker-zeichen { border-radius:8px; background:transparent; border:1.5px solid var(--v); color:var(--surface); }
+.tracker-getan[aria-pressed="true"] .tracker-zeichen { background:var(--v); }
+.tracker-letzte { min-height:36px; }
+.satz-feld textarea { display:block; width:100%; min-height:64px; resize:none; font:16px/1.45 var(--serif); padding:12px 14px; border:1px solid var(--linie-stark);
+  border-left:3px solid var(--magenta); border-radius:var(--radius-control); background:var(--surface); color:var(--ink); }
+.satz-feld textarea::placeholder { color:var(--leise); font-style:italic; }
+.erfassung-titel { margin:4px 0 0 !important; }
+.erfassung-liste { border:1px solid var(--linie); border-radius:var(--radius-card); background:var(--surface); overflow:hidden; }
+.erfassung-zeile { border-bottom:1px solid var(--linie); }
+.erfassung-zeile:last-child { border-bottom:0; }
+.erfassung-kopf { display:grid; grid-template-columns:28px auto 1fr 20px; align-items:center; gap:10px; width:100%; min-height:52px; padding:8px 16px;
+  border:0; background:none; text-align:left; font:500 16px var(--sans); color:var(--ink); }
+.erfassung-wert { justify-self:end; color:var(--leise); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.erfassung-pfeil { color:var(--leise); text-align:center; }
+.erfassung-zeile .erfassung-feld { border:0; border-radius:0; padding:4px 16px 16px; background:none; }
+.heute-weiteres { display:grid; gap:8px; justify-items:center; }
+.heute-weiteres .reise-neu-hinweis { justify-self:stretch; }
+/* Die letzte Notiz bleibt eine Zeile — sonst schöbe sie alles darunter. */
+.tracker-letzte { flex-wrap:nowrap; white-space:nowrap; overflow:hidden; column-gap:10px; }
+.tracker-letzte > .leise { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.tracker-letzte .text { flex:none; min-height:36px; padding:0 !important; }
+.tracker-knopf { gap:8px; padding:8px 12px 8px 8px; }
+.tracker-wort { overflow-wrap:normal; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tracker-wort { white-space:normal; overflow:visible; text-overflow:clip; line-height:1.2; hyphens:none; word-break:normal; }
+
+/* ---- Die Leiste unten mit dem „+" in der Mitte --------------------------- */
+.leiste { grid-template-columns:repeat(5, 1fr); align-items:center; }
+.leiste-plus { justify-self:center; width:52px; height:40px; border:0; border-radius:14px; background:var(--ink); color:var(--paper);
+  font:300 30px/1 var(--sans); display:grid; place-items:center; padding:0 0 3px; }
+.leiste-plus:active { transform:scale(.94); }
+
+/* ---- Die Tracker-Leiste auf Heute ---------------------------------------- */
+.tracker-leiste { display:grid; gap:10px; }
+.tracker-reihe { display:flex; flex-wrap:wrap; gap:8px; }
+.tracker-chip { display:inline-flex; align-items:center; gap:8px; min-height:48px; padding:6px 8px 6px 10px; border:1.5px solid var(--v);
+  border-radius:99px; background:color-mix(in oklab, var(--v) 10%, var(--surface)); font:500 15px var(--sans); color:var(--ink); }
+.tracker-chip:active { transform:scale(.95); }
+.tracker-chip-zeichen { font-size:18px; line-height:1; min-width:20px; text-align:center; font-weight:600; color:var(--v); }
+.tracker-chip-zahl { min-width:28px; height:28px; padding:0 6px; display:grid; place-items:center; border-radius:99px; background:var(--v); color:var(--surface);
+  font:600 15px var(--sans); font-variant-numeric:tabular-nums; }
+.tracker-chip-getan { padding-right:14px; }
+.tracker-chip-haken { width:24px; height:24px; display:grid; place-items:center; border-radius:7px; border:1.5px solid var(--v); color:var(--surface); font:700 14px var(--sans); }
+.tracker-chip-getan[aria-pressed="true"] .tracker-chip-haken { background:var(--v); }
+.tracker-drang-zeile { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.tracker-drang-wort { font-size:13px; color:var(--leise); }
+.tracker-reihe-drang .tracker-chip { min-height:40px; border-style:dashed; background:transparent; padding:4px 6px 4px 8px; }
+.tracker-reihe-drang .tracker-chip-zahl { background:transparent; color:var(--v); border:1.5px solid var(--v); min-width:26px; height:26px; }
+.heute > .tracker-letzte { margin:-4px 0 0; }
+
+/* ---- Der Vollbild-Check-in ------------------------------------------------ */
+dialog#bogen.vollbild { width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; margin:0; border-radius:0; background:var(--paper); }
+dialog#bogen.vollbild::backdrop { background:var(--paper); }
+.komponist { display:grid; grid-template-rows:auto 1fr auto; height:100dvh; max-width:480px; margin:0 auto;
+  padding:max(12px, env(safe-area-inset-top)) 20px max(12px, env(safe-area-inset-bottom)); box-sizing:border-box; }
+.komponist-kopf { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px; }
+.komponist-zu { width:44px; height:44px; border:0; background:none; font-size:22px; color:var(--leise); }
+.komponist-tag { text-align:center; font:600 15px var(--sans); }
+.komponist-fertig { border:0; background:none; font:600 16px var(--sans); color:var(--moss); min-height:44px; padding:0 4px; }
+.komponist-mitte { display:flex; flex-direction:column; justify-content:center; gap:14px; overflow-y:auto; padding:12px 0; }
+.komponist-icon { margin:0; font-size:40px; text-align:center; }
+.komponist-frage { margin:0 0 6px; text-align:center; font-size:24px; font-weight:500; }
+.komponist-waehler { display:flex; gap:6px; overflow-x:auto; scroll-snap-type:x mandatory; padding:10px 40% 4px; scrollbar-width:none;
+  -webkit-mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); }
+.komponist-waehler::-webkit-scrollbar { display:none; }
+.komponist-art { flex:none; scroll-snap-align:center; display:inline-flex; align-items:center; gap:4px; min-height:40px; padding:6px 12px; border:0;
+  border-radius:99px; background:none; font:600 13px var(--sans); letter-spacing:.06em; text-transform:uppercase; color:var(--leise); }
+.komponist-art[aria-selected="true"] { color:var(--ink); background:var(--surface); box-shadow:0 1px 4px #0002; }
+.komponist-da { color:var(--moss); }
+.affekte { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+.affekt { display:grid; justify-items:center; gap:4px; padding:10px 2px 8px; border:1.5px solid var(--linie); border-radius:16px; background:var(--surface); }
+.affekt-emoji { font-size:30px; line-height:1; filter:grayscale(.3); }
+.affekt-name { font:500 12px var(--sans); color:var(--leise); }
+.affekt[aria-pressed="true"] { border-color:var(--gelb); background:color-mix(in oklab, var(--gelb) 14%, var(--surface)); }
+.affekt[aria-pressed="true"] .affekt-emoji { filter:none; transform:scale(1.08); }
+.affekt[aria-pressed="true"] .affekt-name { color:var(--ink); }
+.affekt-quelle { text-align:center; margin:0; }
+.komponist .erfassung-frage { text-align:center; }
+@media (max-width:360px) { .affekte { grid-template-columns:repeat(4, 1fr); } }
+
+/* ---- Heute: die Null-Knöpfe mit Optionen, die Tagesliste ----------------- */
+.heute-titel { margin:0; }
+.tracker-leiste { display:flex; flex-wrap:wrap; gap:8px; }
+.tracker-halter { position:relative; }
+.tracker-chip-zahl[data-null] { background:transparent; color:var(--v); border:1.5px solid var(--v); }
+.tracker-chip-gern { font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.tracker-chip[aria-expanded="true"] { box-shadow:0 0 0 3px color-mix(in oklab, var(--v) 25%, transparent); }
+.tracker-optionen { position:absolute; left:0; top:calc(100% + 6px); z-index:30; display:grid; gap:6px; min-width:200px; padding:8px;
+  border:1px solid var(--linie); border-radius:16px; background:var(--surface); box-shadow:0 12px 32px -10px #0005; }
+.tracker-option { min-height:48px; padding:8px 14px; border:1.5px solid var(--v); border-radius:12px; background:color-mix(in oklab, var(--v) 12%, var(--surface));
+  font:500 16px var(--sans); color:var(--ink); text-align:left; white-space:nowrap; }
+.tracker-option.gern { border-style:dashed; background:transparent; }
+.tracker-halter:last-child .tracker-optionen, .tracker-halter:nth-child(3) .tracker-optionen { left:auto; right:0; }
+.tagesliste { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.tages-item { padding:4px 12px; border:1px solid var(--linie); border-left:4px solid var(--v, var(--moss)); border-radius:var(--radius-control); background:var(--surface); }
+.tages-praxis { --v:var(--magenta); }
+.tages-kopf { display:flex; align-items:center; gap:10px; padding:6px 0 2px; }
+.tages-name { flex:1; font:500 17px var(--serif); }
+.tages-stand { font-size:13px; color:var(--leise); font-variant-numeric:tabular-nums; }
+.tages-schritte { list-style:none; margin:0 0 4px; padding:0 0 0 8px; }
+.tages-haken { display:flex; align-items:center; gap:12px; width:100%; min-height:46px; border:0; background:none; text-align:left; font:16px var(--sans); color:var(--ink); padding:4px 0; }
+.tages-kasten { width:24px; height:24px; flex:none; display:grid; place-items:center; border-radius:7px; border:1.5px solid var(--v, var(--moss)); color:var(--surface); font:700 14px var(--sans); }
+.tages-haken[aria-pressed="true"] .tages-kasten { background:var(--v, var(--moss)); }
+.tages-haken[aria-pressed="true"] .tages-wort { color:var(--leise); text-decoration:line-through; text-decoration-color:color-mix(in oklab, var(--leise) 50%, transparent); }
+.tages-wort { flex:1; }
+.tages-item[data-fertig] { background:color-mix(in oklab, var(--v, var(--moss)) 7%, var(--surface)); }
+
+/* ---- Entdecken: der Feed zum Hochwischen ---------------------------------- */
+.feed { position:relative; height:100dvh; }
+.feed-karten { height:100dvh; overflow-y:auto; scroll-snap-type:y mandatory; overscroll-behavior:contain; scrollbar-width:none; }
+.feed-karten::-webkit-scrollbar { display:none; }
+.feed-karte { height:100dvh; scroll-snap-align:start; scroll-snap-stop:always; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:14px;
+  max-width:480px; margin:0 auto; padding:max(64px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom));
+  background:radial-gradient(120% 60% at 50% 30%, color-mix(in oklab, var(--c) 14%, var(--paper)), var(--paper)); }
+.feed-zeichen { margin:0; font-size:64px; line-height:1; }
+.feed-titel { margin:0; font-size:34px; line-height:1.15; font-weight:500; }
+.feed-text { margin:0; font:19px/1.5 var(--serif); }
+.feed-los { margin-top:12px; min-height:52px; font-size:17px; background:var(--c) !important; color:var(--surface) !important; }
+.feed-karte[data-zu] .feed-titel, .feed-karte[data-zu] .feed-text { color:var(--leise); }
+.feed-zu { position:absolute; top:max(12px, env(safe-area-inset-top)); left:12px; width:44px; height:44px; border:0; border-radius:50%;
+  background:color-mix(in oklab, var(--paper) 80%, transparent); font-size:22px; color:var(--ink); z-index:2; }
+.feed-punkte { position:absolute; right:10px; top:50%; transform:translateY(-50%); display:grid; gap:6px; z-index:2; }
+.feed-punkte i { width:6px; height:6px; border-radius:50%; background:var(--linie-stark); }
+.feed-punkte i.an { background:var(--ink); height:18px; border-radius:3px; }

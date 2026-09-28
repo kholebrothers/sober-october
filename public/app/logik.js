@@ -231,7 +231,7 @@ export const BAUSTEINE = [
 
 export function aktiv(z, id) {
   const b = BAUSTEINE.find((x) => x.id === id);
-  if (!b || b.schicht > z.tiefe) return false;
+  if (!b || b.schicht > z.tiefe || !offen(z, id)) return false;
   if (id in z.bausteine) return z.bausteine[id];
   return !!b.standard;
 }
@@ -244,10 +244,115 @@ export function schalteBaustein(z, id, an = !aktiv(z, id)) {
   z.bausteine[id] = !!an;
 }
 
+/* ---- Die Reise ------------------------------------------------------------
+
+   Man fängt mit einem Kern an: einer Sache, die man sein lässt oder
+   aufbaut, dem Monat und „Heute bin ich dabei". Alles Weitere öffnet sich
+   durch Benutzen, nicht durch Warten: jede Station verlangt, dass man
+   das Vorige wirklich gebraucht hat — den Kern, dann den Satz zum Tag,
+   dann „würde gern" oder den Leitgedanken, dann einen zweiten Tracker,
+   dann ein Werkzeug. Wer das eine nie braucht, kommt mit viel Notieren
+   genauso weiter (`sonst`: so viele Einträge insgesamt).
+
+   `wann` ist die kurze Bedingung für die Liste, `noch(z)` in wenigen
+   Worten, was jetzt noch fehlt — ein Hinweis, keine Aufgabe. `oeffnet` nennt Schlüssel: Bausteine (siehe BAUSTEINE) und
+   Teile, die kein Baustein sind. Was in keiner Station steht, ist von
+   Anfang an da. Was einmal offen ist, bleibt offen. */
+
+/** Wie oft die App benutzt wurde: jedes „dabei", jede Notiz, jeder Tag im Tagebuch. */
+export const nutzung = (z) => z.daTage.length + z.ereignisse.length + Object.keys(z.tagebuch).length;
+
+const saetze = (z) => Object.values(z.tagebuch).filter((t) => t.getragen).length;
+const drangMomente = (z) => z.ereignisse.filter((e) => e.art === "drang").length;
+const benutzteTracker = (z) => new Set(z.ereignisse.filter((e) => e.art !== "ohne").map((e) => e.verzicht)).size;
+const hatLassen = (z) => gewaehlt(z).some((k) => !verzichte(z)[k].aufbau);
+const mal = (n, eins, mehr) => (n === 1 ? `einen ${eins}` : `${n} ${mehr}`);
+
+export const REISE = [
+  { titel: "Ein Satz zum Tag", wann: "3 Einträge", sonst: 3,
+    text: "Eine Zeile für den Tag: Was hat dich heute getragen? Daraus wird dein Tagebuch.",
+    erfuellt: (z) => nutzung(z) >= 3,
+    noch: (z) => { const n = 3 - nutzung(z); return `noch ${n === 1 ? "ein Eintrag" : `${n} Einträge`}`; },
+    oeffnet: ["satz", "tagebuch"] },
+  { titel: "Der Moment davor", wann: "2 Sätze", sonst: 12,
+    text: "Du kannst jetzt auch notieren, wenn du gern würdest — ohne dass etwas passiert. Dazu ein Leitgedanke und, wenn du magst, andere, die mitgehen.",
+    erfuellt: (z) => saetze(z) >= 2,
+    noch: (z) => `noch ${mal(2 - saetze(z), "Satz", "Sätze")} zum Tag`,
+    oeffnet: ["drang", "leitgedanke", "gemeinsam"] },
+  { titel: "Mehr als eins", wann: "Würde gern oder Leitgedanke", sonst: 25,
+    text: "Jetzt kannst du weitere Tracker dazunehmen, sehen, wie viel Lebenszeit frei wird, und die Ansicht wählen.",
+    erfuellt: (z) => drangMomente(z) >= 2 || z.leitgedanken.length > 0 || !!z.gemeinsam,
+    noch: (z) => hatLassen(z) ? `noch ${drangMomente(z) ? "ein" : "zwei"} „würde gern“ oder ein eigener Leitgedanke` : "ein eigener Leitgedanke",
+    oeffnet: ["tracker", "lebenszeit", "lauf", "heatmap", "ansicht"] },
+  { titel: "Formen", tiefe: 2, wann: "Zweiter Tracker oder Lebenszeit", sonst: 40,
+    text: "Werkzeuge für den Moment, in dem der Drang kommt, Wenn-dann-Pläne und Routinen in kleinen Schritten.",
+    erfuellt: (z) => benutzteTracker(z) >= 2 || Object.keys(z.zeitVorher).length > 0,
+    noch: (z) => (hatLassen(z) ? "ein zweiter Tracker oder die Lebenszeit" : "ein zweiter Tracker"),
+    oeffnet: ["tiefe2", "werkzeuge"] },
+  { titel: "Nervensystem", tiefe: 3, wann: "Werkzeug benutzt", sonst: 60,
+    text: "Der Tages-Check-in für Körper und Antrieb, Zusammenhänge über den Monat — und dein Gremlin zeigt sich.",
+    erfuellt: (z) => z.gremlin.werkzeugTage.length >= 2 || z.werkzeug.plaene.length > 0,
+    noch: (z) => (z.gremlin.werkzeugTage.length ? "noch einmal ein Werkzeug" : "ein Werkzeug, an zwei Tagen"),
+    oeffnet: ["tiefe3", "verlauf", "gremlin", "ebenen"] },
+];
+
+const REISE_STATION = new Map(REISE.flatMap((s, i) => s.oeffnet.map((k) => [k, i])));
+
+/** Ist dieser Teil auf der Reise schon erreicht? */
+export const offen = (z, was) => !REISE_STATION.has(was) || REISE_STATION.get(was) < z.reise;
+
+/** Die Station, an der sich ein Teil öffnet — oder null, wenn er immer da ist. */
+export const stationVon = (was) => (REISE_STATION.has(was) ? REISE[REISE_STATION.get(was)] : null);
+
+/** Bewusst schon jetzt öffnen: die Reise bis zu dieser Station, mit allem davor. */
+export function reiseBis(z, was) {
+  if (!REISE_STATION.has(was)) return;
+  const bis = REISE_STATION.get(was) + 1;
+  while (z.reise < bis) {
+    const s = REISE[z.reise++];
+    if (s.tiefe && z.tiefe < s.tiefe) z.tiefe = s.tiefe;
+  }
+}
+
+const erreicht = (z, s) => s.erfuellt(z) || nutzung(z) >= s.sonst;
+
+/** Die Reise weiter, so weit das Benutzen reicht. Gibt die neu erreichten
+    Stationen zurück; die Schicht geht mit, nie zurück. */
+export function reiseWeiter(z) {
+  const neu = [];
+  while (z.reise < REISE.length && erreicht(z, REISE[z.reise])) {
+    z.reiseNeu = z.reise;
+    const s = REISE[z.reise++];
+    if (s.tiefe && z.tiefe < s.tiefe) z.tiefe = s.tiefe;
+    neu.push(s);
+  }
+  return neu;
+}
+
+/** Wo die Reise steht: {naechste, noch} — naechste ist null am Ziel, `noch`
+    sagt, was man tun kann, damit sie sich öffnet. */
+export function reiseStand(z) {
+  const naechste = REISE[z.reise] || null;
+  return { naechste, noch: naechste ? `Als Nächstes: ${naechste.titel} · ${naechste.noch(z)}` : "" };
+}
+
+/** Der Anfang: eine oder mehrere Sachen — wie viele, entscheidet der
+    Mensch. Ersetzt, was gewählt war; Notizen und eigene Tracker bleiben
+    stehen. Eine Wahl ist {fest: "kaffee"} oder {name, art: "lassen"|"aufbauen",
+    schritte}. Gibt die id der ersten zurück. */
+export function einrichten(z, wahlen) {
+  z.commitment = {};
+  const ids = (Array.isArray(wahlen) ? wahlen : [wahlen]).map((w) => {
+    if (w.fest && FEST.includes(w.fest)) { z.commitment[w.fest] = { drang: true }; return w.fest; }
+    return fuegeEigenenHinzu(z, w.name, { art: w.art, schritte: w.schritte });
+  });
+  return ids.find(Boolean) || null;
+}
+
 /* ---- Zustand ----------------------------------------------------------- */
 
 export function neuerZustand() {
-  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1,
+  return { v: VERSION, commitment: {}, eigene: [], ansicht: "knopf", farbe: "papier", ereignisse: [], frei: {}, freieTage: [], daTage: [], leitgedanken: [], bausteine: {}, gemeinsam: null, tagebuch: {}, tiefe: 1, reise: 0, reiseNeu: null, checkin: [],
     werkzeug: { anker: null, swish: null, plaene: [] }, zeitVorher: {},
     gremlin: { tag: null, futter: [], fuetterungen: [], werkzeugTage: [] } };
 }
@@ -280,6 +385,13 @@ export function aus(text) {
     for (const k of ids) if (minuten(roh.zeitVorher[k]) !== null) z.zeitVorher[k] = roh.zeitVorher[k];
   // Ein Stand von vor den Schichten hatte alles: er bleibt auf der tiefsten.
   z.tiefe = [1, 2, 3].includes(roh.tiefe) ? roh.tiefe : 3;
+  // Wer schon vor der Reise da war und etwas gewählt hat, hat sie hinter sich.
+  const warDa = gewaehlt(z).length || (Array.isArray(roh.ereignisse) && roh.ereignisse.length) || (Array.isArray(roh.daTage) && roh.daTage.length);
+  z.reise = Number.isInteger(roh.reise) && roh.reise >= 0 && roh.reise <= REISE.length ? roh.reise : warDa ? REISE.length : 0;
+  if (!warDa && !Number.isInteger(roh.reise)) z.tiefe = 1;
+  if (Number.isInteger(roh.reiseNeu) && roh.reiseNeu >= 0 && roh.reiseNeu < z.reise) z.reiseNeu = roh.reiseNeu;
+  // Welche Eingaben im Check-in von selbst offen sind — nur bekannte.
+  if (Array.isArray(roh.checkin)) z.checkin = [...new Set(roh.checkin.filter((x) => ERFASSUNG.includes(x)))];
   // Wer in der Gruppe mitgeht: nur die id des Servers und der Name.
   if (roh.gemeinsam && /^p[a-z0-9]{1,16}$/.test(roh.gemeinsam.id) && typeof roh.gemeinsam.name === "string")
     z.gemeinsam = { id: roh.gemeinsam.id, name: roh.gemeinsam.name.slice(0, 24) };
@@ -310,6 +422,14 @@ export function aus(text) {
       }
       if (e.daemon && typeof e.daemon === "object" && Number.isInteger(e.daemon.sek) && e.daemon.sek > 0 && e.daemon.sek <= 3600)
         t.daemon = { was: typeof e.daemon.was === "string" ? e.daemon.was.trim().slice(0, 140) : "", sek: e.daemon.sek };
+      if (Array.isArray(e.affekte)) { const a = AFFEKTE.map((x) => x.id).filter((id) => e.affekte.includes(id)); if (a.length) t.affekte = a; }
+      if (Number.isInteger(e.schlafDauer) && e.schlafDauer >= 0 && e.schlafDauer < SCHLAF_DAUER.length) t.schlafDauer = e.schlafDauer;
+      for (const x of SCHLAF_TEILE) if (Number.isInteger(e[x.id]) && e[x.id] >= 1 && e[x.id] <= 3) t[x.id] = e[x.id];
+      if (e.menge && typeof e.menge === "object") {
+        const m = {};
+        for (const [k, i] of Object.entries(e.menge)) if (ids.includes(k) && Number.isInteger(i) && i >= 0 && i < mengen(k).stufen.length) m[k] = i;
+        if (Object.keys(m).length) t.menge = m;
+      }
       if (Array.isArray(e.fuer)) { const f = [...new Set(e.fuer.filter((x) => ZEIT_FUER.some((y) => y.id === x)))]; if (f.length) t.fuer = f; }
       if (Object.keys(t).length) z.tagebuch[tag] = t;
     }
@@ -624,6 +744,55 @@ export const SELBST = ["Selbstvertrauen", "Selbstwirksamkeit", "Selbstwertgefüh
   "Selbstbehauptung", "Selbstbestimmung"];
 export const SELBST_MAX = 2;
 
+/* ---- Die Erfassung des Tages ---------------------------------------------
+
+   Was sich an einem Tag festhalten lässt, in einfachen Kategorien statt
+   Skalen: der Schlaf als Dauer und als Ampel für Einschlafen, Durchschlafen
+   und Aufwachen; der Konsum je Tracker als Menge; Körper und Antrieb als
+   Ampel. Die Ampel (1 rot, 2 gelb, 3 grün) beschreibt, wie sich etwas
+   angefühlt hat — nie ein Verhalten: der Konsum hat keine Ampel.
+
+   Die Ampel für Körper und Antrieb schreibt in die Systeme (1, 3, 5), damit
+   Verlauf und Zusammenhänge sie lesen; der Schlaf ebenso, als Mittel der
+   drei Teile. */
+export const ERFASSUNG = ["stimmung", "schlaf", "konsum", "satz", "koerper", "antrieb", "selbst"];
+
+/* Die Stimmung als Affekte, nach Mark Solms („The Hidden Spring"), der die
+   sieben emotionalen Grundsysteme von Jaak Panksepp übernimmt — SEEKING,
+   RAGE, FEAR, LUST, CARE, PANIC/GRIEF, PLAY —, ergänzt um Wollen und Mögen
+   (wanting und liking, nach Kent Berridge) und Ekel. Man wählt, was da ist,
+   so viele wie da sind; keins ist gut oder schlecht. */
+export const AFFEKTE = [
+  { id: "suchen", name: "Suchen", emoji: "🤩", quelle: "SEEKING — Neugier, Erwartung" },
+  { id: "spiel", name: "Spiel", emoji: "🤪", quelle: "PLAY — Freude, Leichtigkeit" },
+  { id: "fuersorge", name: "Fürsorge", emoji: "🥰", quelle: "CARE — Zuwendung, Wärme" },
+  { id: "lust", name: "Lust", emoji: "🔥", quelle: "LUST — Begehren" },
+  { id: "wut", name: "Wut", emoji: "🤬", quelle: "RAGE — Ärger, Frust" },
+  { id: "angst", name: "Angst", emoji: "😱", quelle: "FEAR — Furcht, Anspannung" },
+  { id: "trauer", name: "Trauer", emoji: "😭", quelle: "PANIC/GRIEF — Verlust, Alleinsein" },
+  { id: "wollen", name: "Wollen", emoji: "🤤", quelle: "wanting — Verlangen, Drang" },
+  { id: "moegen", name: "Mögen", emoji: "😋", quelle: "liking — Genuss, Gefallen" },
+  { id: "ekel", name: "Ekel", emoji: "🤮", quelle: "disgust — Abwehr, Widerwille" },
+];
+export const AMPEL = ["schwer", "geht so", "gut"];
+export const SCHLAF_DAUER = ["4–6 h", "6–8 h", "8 h +"];
+export const SCHLAF_TEILE = [
+  { id: "einschlafen", name: "Einschlafen" },
+  { id: "durchschlafen", name: "Durchschlafen" },
+  { id: "aufwachen", name: "Aufwachen" },
+];
+export const AMPEL_SYSTEME = { koerper: ["bewegung", "ernaehrung", "verdauung"], antrieb: ["antrieb", "motivation", "lust"] };
+const MENGEN = {
+  kaffee: { frage: "Tassen", stufen: ["0", "1–2", "3–4", "5 +"] },
+  kippe: { frage: "Zigaretten", stufen: ["0", "1–5", "6–10", "11–20", "20 +"] },
+  video: { frage: "Stunden", stufen: ["0", "< 1", "1–2", "2–4", "4 +"] },
+};
+/** Wie sich die Menge eines Trackers angeben lässt. */
+export const mengen = (v) => MENGEN[v] || { frage: "", stufen: ["nichts", "wenig", "mittel", "viel"] };
+/** Ampel 1–3 → System 1–5, und zurück. */
+export const ampelAlsWert = (a) => [0, 1, 3, 5][a] || 0;
+export const wertAlsAmpel = (w) => (!w ? 0 : w <= 2 ? 1 : w === 3 ? 2 : 3);
+
 /** Der Mittelwert einer Gruppe an einem Tag, 0 (nichts angegeben) bis 1. */
 export function gruppenWert(z, tag, gruppe) {
   const e = z.tagebuch[tag] || {};
@@ -654,8 +823,29 @@ export const SCHICHTEN = [
 
 /** Einen Teil des Tagebuchs setzen; leer (oder 0) heißt weg.
     werte: {schlaf: 1–5, …}; stimmung geht auch direkt (erste Fassung). */
-export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon } = {}) {
+export function schreibeTag(z, tag, { werte = {}, stimmung, selbst, getragen, zeit, fuer, daemon, schlafDauer, schlafTeile, menge, affekte } = {}) {
   const t = { ...(z.tagebuch[tag] || {}) };
+  if (affekte !== undefined) {
+    const a = AFFEKTE.map((x) => x.id).filter((id) => affekte.includes(id));
+    if (a.length) t.affekte = a; else delete t.affekte;
+  }
+  if (schlafDauer !== undefined) {
+    if (Number.isInteger(schlafDauer) && schlafDauer >= 0 && schlafDauer < SCHLAF_DAUER.length) t.schlafDauer = schlafDauer; else delete t.schlafDauer;
+  }
+  if (schlafTeile !== undefined) {
+    for (const [id, a] of Object.entries(schlafTeile)) {
+      if (!SCHLAF_TEILE.some((x) => x.id === id)) continue;
+      if (Number.isInteger(a) && a >= 1 && a <= 3) t[id] = a; else delete t[id];
+    }
+    // Der Schlaf als System: das Mittel der Teile, auf fünf Stufen.
+    const teile = SCHLAF_TEILE.map((x) => t[x.id]).filter(Boolean);
+    werte = { ...werte, schlaf: teile.length ? Math.round(1 + (teile.reduce((a, b) => a + b, 0) / teile.length - 1) * 2) : 0 };
+  }
+  if (menge !== undefined) {
+    const m = { ...(t.menge || {}) };
+    for (const [k, i] of Object.entries(menge)) { if (Number.isInteger(i) && i >= 0 && i < mengen(k).stufen.length) m[k] = i; else delete m[k]; }
+    if (Object.keys(m).length) t.menge = m; else delete t.menge;
+  }
   const alle = stimmung !== undefined ? { ...werte, stimmung } : werte;
   for (const [id, n] of Object.entries(alle)) {
     if (!SYSTEME.some((x) => x.id === id)) continue;

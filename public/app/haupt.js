@@ -19,6 +19,7 @@ import {
   setzeAnker, setzeSwish, planHinzu, planWeg,
   ZEIT_STUFEN, ZEIT_FUER, setzeZeitVorher, freiAm, lebenszeit, dauer,
   DAEMON_PHASEN, daemonStand,
+  REISE, offen, reiseWeiter, reiseStand, einrichten, stationVon, reiseBis,
   GREMLIN_STUFEN, GREMLIN_FUTTER_VORSCHLAEGE, WOCHENTAGE, gremlinStufe, setzeFuetterungstag, futterHinzu, futterWeg, fuettern, werkzeugBenutzt,
 } from "./logik.js";
 import { tageszeit } from "../kern/sonne.js";
@@ -29,7 +30,10 @@ import { werkzeuge } from "./werkzeuge.js";
 import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
-import { faerbe } from "./ansichten/teile.js";
+import { leiste, monatSeite, tagebuchSeite, mehrSeite, funktionSeite } from "./seiten.js";
+import { komponist, satzFeld } from "./erfassung.js";
+import { feed } from "./feed.js";
+import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
 import * as fadenAnsicht from "./ansichten/faden.js";
 
@@ -37,6 +41,14 @@ const ANSICHT = { knopf: knopfAnsicht, blatt: blattAnsicht, faden: fadenAnsicht 
 
 let z = laden();
 let wahlOffen = !gewaehlt(z).length;
+/* Die Einrichtung: wer neu ist, wählt zuerst, worauf er achtet. `auswahl`
+   ist, was gerade angetippt ist, bevor es mit „Los geht's" gilt. */
+let einrichtungOffen = !gewaehlt(z).length && !offen(z, "tracker");
+let auswahl = [];          // [{schluessel, wahl}] in der Reihenfolge des Antippens
+let bestaetigen = false;
+/* Welche Seite unten gewählt ist (Heute, Monat, Tagebuch, Mehr) und, in
+   „Mehr", welche Funktion offen ist. */
+let seite = "heute", detail = null;
 
 const $ = (s) => document.querySelector(s);
 const heute = () => heuteTag();
@@ -52,6 +64,7 @@ function aendern(f) {
   const stand = () => ({ lauf: lauf(z, heute()), serie: serie(z, heute()) });
   const vor = gewaehlt(z).length ? stand() : null;
   f();
+  if (gewaehlt(z).length) reiseWeiter(z);
   if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
   zeichne();
   planeAbgleich();
@@ -71,8 +84,6 @@ function aendern(f) {
 /* Ein kurzes Tippen zurück, wo das Gerät es kann (Android; iOS schweigt). */
 const spueren = (muster) => { try { navigator.vibrate?.(muster); } catch {} };
 
-/** Eine Meldung, an die der Satz zur Stufe angehängt wird, wenn es einen gibt. */
-const mitMoment = (text, m) => (m?.satz ? (text ? `${text} ${m.satz}` : m.satz) : text);
 
 /* ---- Was die Ansichten benutzen ---------------------------------------- */
 
@@ -97,25 +108,26 @@ const api = {
   leitgedankeBearbeiten,
   istFrei: () => istFrei(z, heute()),
   hatEintrag: () => hatEintrag(z, heute()),
-  /* „Heute bin ich dabei": der Knopf unter dem Monat. Ein zweites Tippen
-     schaltet nicht still zurück — vertippt ist selten, und ein Tag, der
-     einfach wieder verschwindet, fühlt sich schlecht an. Zurück geht es über
-     „Rückgängig" in der Meldung. Steht heute schon eine Notiz, zählt der
-     Tag ohnehin; dann gibt es nichts zu tun, nur das zu sagen. */
+  /* „Heute bin ich dabei": der Knopf auf dem Startschirm. Die Antwort steht
+     an seiner Stelle — er wird zu „✓ Heute dabei", darunter ein leises
+     „zurücknehmen". Keine Meldung, die eingeblendet wird. */
   da() {
     const t = heute();
-    const zurueck = ["Rückgängig", () => { aendern(() => schalteDa(z, t)); melde("Zurückgenommen."); }];
-    if (hatEintrag(z, t)) {
-      spueren(8);
-      if (istDa(z, t) && !vonTag(z, t).length) melde("Heute zählt schon.", [zurueck]);
-      else melde("Heute zählt schon — durch deine Notiz.");
-      return;
-    }
-    const m = aendern(() => schalteDa(z, t));
+    if (hatEintrag(z, t)) { spueren(8); return; }
+    aendern(() => schalteDa(z, t));
     gremlin.freut(1, document.querySelector(".da-knopf"));
-    melde(mitMoment("Du bist dabei. Der Tag zählt.", m), [["Wie war der Tag?", () => tagEinordnen()], zurueck]);
   },
+  daZurueck() { aendern(() => { if (istDa(z, heute())) schalteDa(z, heute()); }); },
+  /* Was an einer Notiz noch geht — an ihrem Platz in der Kachel. */
+  notizWeg(id) { aendern(() => entferne(z, id)); },
+  notizDetails(id) { const e = z.ereignisse.find((x) => x.id === id); if (e) fragen(e.verzicht, e.art, e.art === "habe" ? verzichte(z)[e.verzicht].habe : verzichte(z)[e.verzicht].drang, id); },
+  notizWerkzeug(id) { W.menue(id); },
+
+  reiseNeu: () => (z.reiseNeu !== null ? REISE[z.reiseNeu] : null),
+  reiseGesehen() { aendern(() => { z.reiseNeu = null; }); },
   aktiv: (id) => aktiv(z, id),
+  offen: (was) => offen(z, was),
+  reise: () => reiseStand(z),
   ab: (n) => ab(z, n),
   trackerBearbeiten: (v) => eigenerTracker(v),
   werkzeug: (name) => W[name](),
@@ -138,7 +150,7 @@ const api = {
     return { stufe: s, stufen: GREMLIN_STUFEN, tag: z.gremlin.tag, futter: z.gremlin.futter, wochentage: WOCHENTAGE,
       vorschlaege: GREMLIN_FUTTER_VORSCHLAEGE, fuetterungstag: s.fuetterungstag, heuteGefuettert: !!f, heuteWas: f?.was || "" };
   },
-  gremlinTag(t) { aendern(() => setzeFuetterungstag(z, t)); if (t !== null) melde(`Sein Tag ist der ${WOCHENTAGE[t]}. Bis dahin: Sitz.`); },
+  gremlinTag(t) { aendern(() => setzeFuetterungstag(z, t)); },
   gremlinFutterHinzu(was) { aendern(() => futterHinzu(z, was)); },
   gremlinFutterWeg(i) { aendern(() => futterWeg(z, i)); },
   gremlinFuettern(was) {
@@ -146,7 +158,6 @@ const api = {
     aendern(() => { ok = fuettern(z, heute(), was); });
     if (!ok) return;
     gremlin.sagt("fuetterung");
-    melde(was ? `Gefüttert: ${was}. Bewusst, an seinem Tag.` : "Nicht hungrig. Dann nächste Woche — nicht vorher.");
   },
   zeitHeuteSetzen(v, m) {
     const vorher = freiAm(z, heute());
@@ -156,7 +167,6 @@ const api = {
       spueren(jetzt > (vorher || 0) ? 14 : 8);
       document.querySelector(".lz-zahl")?.classList.add("hoch");
     }
-    melde(mitMoment(jetzt ? `Heute frei geworden: ${dauer(jetzt)}${mo?.heuteNeu ? " Der Tag zählt." : ""}` : "Notiert.", mo));
   },
   zeitFuerSchalten(id) {
     const f = new Set(z.tagebuch[heute()]?.fuer || []);
@@ -169,9 +179,7 @@ const api = {
     let an = false;
     const m = aendern(() => { an = schalteSchritt(z, heute(), jetztZeit(), v, i); });
     document.querySelector(`[data-focus="schritt-${v}-${i}"]`)?.classList.add("tipp");
-    const fertig = schritteGetan(z, heute(), v).size === V.schritte.length;
     if (an) { spueren(m?.heuteNeu ? 14 : 8); gremlin.freut(vonTag(z, heute()).length, document.querySelector(`[data-focus="schritt-${v}-${i}"]`)); }
-    melde(mitMoment(an ? (fertig ? `${V.name}: alle Schritte getan.` : `${V.schritte[i]} — getan.`) + (m?.heuteNeu ? " Der Tag zählt." : "") : "Zurückgenommen.", m));
   },
   schichten: () => SCHICHTEN,
   schichtWert: (id, tag) => SCHICHTEN.find((x) => x.id === id).wert(z, tag),
@@ -181,10 +189,35 @@ const api = {
   zusammenhaenge: (tage) => zusammenhaenge(z, tage),
   monatsTage: () => monat(z, heute()).zellen.filter((c) => c.art !== "rand").map((c) => c.tag),
   tagEinordnen: (tag) => tagEinordnen(tag),
+  /* Ein Tag im Kalender angetippt: was an dem Tag steht, und — für heute
+     und vergangene Tage — ob man dabei war. Ein kommender Tag hat noch nichts. */
+  seite(id, d = null) { seite = id; detail = d; if (bogen.open) bogen.close(); zeichne(); scrollTo(0, 0); },
+  station: (was) => stationVon(was),
+  stationen: () => REISE.map((r, i) => ({ titel: r.titel, wann: r.wann, offen: i < z.reise, naechste: i === z.reise })),
+  reiseBis(was) { aendern(() => reiseBis(z, was)); },
+  trackerWaehlen() { wahlOffen = true; zeichne(); scrollTo(0, 0); },
+  festhalten: () => festhalten(heute()),
+  entdecken(start) {
+    bogen.classList.add("vollbild");
+    bogen.addEventListener("close", () => bogen.classList.remove("vollbild"), { once: true });
+    zeigeBogen(feed(api, () => bogen.close(), start));
+  },
+  satzHeute: () => satzFeld(erfassungFuer(heute(), () => zeichne())),
+  tagAntippen(tag) {
+    if (tag > heute()) return;
+    if (bogen.open) bogen.close();
+    /* Heute antippen heißt: heute bin ich dabei — und noch einmal, nicht mehr.
+       Zählt der Tag schon durch eine Notiz, bleibt er gezählt. */
+    if (tag === heute() && seite === "heute") {
+      if (!hatEintrag(z, tag)) api.da();
+      else if (istDa(z, tag) && !vonTag(z, tag).length && !z.tagebuch[tag]) api.daZurueck();
+      return;
+    }
+    tagEinordnen(tag);
+  },
   getragen: () => z.tagebuch[heute()]?.getragen || "",
   getragenSetzen(text) {
     const m = aendern(() => schreibeTag(z, heute(), { getragen: text }));
-    melde(mitMoment(z.tagebuch[heute()]?.getragen ? `Im Tagebuch.${m?.heuteNeu ? " Der Tag zählt." : ""}` : "Satz entfernt.", m));
   },
   tagebuchZeilen: () => tagebuchZeilen(z, heute()),
   stimmungWort: (n) => STIMMUNG[n - 1],
@@ -200,11 +233,9 @@ const api = {
   mitgehen,
   binIch(id, name) {
     aendern(() => { z.gemeinsam = { id, name }; });
-    melde(`Willkommen zurück, ${name}. Dieses Gerät geht jetzt mit.`);
   },
   alleinBleiben() {
     aendern(() => schalteBaustein(z, "gemeinsam", false));
-    melde("Du gehst allein. In den Einstellungen (⋯) kannst du jederzeit mitgehen.");
   },
   async linkTeilen() {
     const url = location.origin + "/";
@@ -244,7 +275,7 @@ function gruppeFuerAnzeige() {
    Namen, einen Tracker), behält sein Feld. */
 function zeichneLeise() {
   const f = document.activeElement;
-  if (f && f.matches("#buehne input")) return;
+  if (f && f.matches("#buehne input, #buehne textarea")) return;
   zeichne();
 }
 
@@ -299,7 +330,6 @@ async function mitgehen(name) {
   try {
     const p = await senden("/api/einrichtung", { name, commitment: gewaehlt(z) });
     aendern(() => { z.gemeinsam = { id: p.id, name: p.name }; });
-    melde(`Du gehst mit, ${p.name}. Schön, dass du da bist.`);
     await abgleichen();
   } catch (e) {
     melde(GRUPPEN_FEHLER[e.schluessel] || "Das hat nicht geklappt. Versuch es gleich noch einmal.");
@@ -351,7 +381,7 @@ function gremlinNachStufe() {
   if (letzteStufe !== null && s.n !== letzteStufe && aktiv(z, "gremlin")) {
     const text = s.n === 1 ? "Da ist jemand. Dein Gremlin zeigt sich — unten am Rand."
       : s.n > letzteStufe ? `Dein Gremlin: ${s.name}. ${s.text}` : `Dein Gremlin verwildert ein wenig: ${s.name}.`;
-    setTimeout(() => { gremlin.pruefen(); melde(text); }, 2600);
+    setTimeout(() => gremlin.pruefen(), 2600);
   }
   letzteStufe = s.n;
 }
@@ -368,7 +398,6 @@ const W = werkzeuge({
   daemonFertig(was, sek) {
     const m = aendern(() => { schreibeTag(z, heute(), { daemon: { was, sek } }); werkzeugBenutzt(z, heute()); });
     gremlin.sagt("daemon");
-    melde(mitMoment(`Dämon gefrühstückt.${m?.heuteNeu ? " Der Tag zählt." : ""}`, m));
   },
 });
 
@@ -378,6 +407,9 @@ function zeigeBogen(knoten) {
     titel.id = "bogen-titel";
     bogen.setAttribute("aria-labelledby", titel.id);
   } else bogen.removeAttribute("aria-labelledby");
+  /* Vollbild nur für den Check-in und den Feed; ein Werkzeug, das aus dem
+     Feed startet, kommt wieder als Blatt. */
+  if (!knoten.matches(".komponist, .feed")) bogen.classList.remove("vollbild");
   bogen.replaceChildren(knoten);
   if (!bogen.open) bogen.showModal();
 }
@@ -398,33 +430,30 @@ function el(tag, klasse, text) {
   return e;
 }
 
-/* Schnell loggen: ein Tippen notiert sofort, ohne Fragen. Die Meldung
-   danach bietet zweierlei an — die Fragen, wenn man will, und das
-   Zurücknehmen, falls man sich vertippt hat. Beides ist freiwillig; tut man
-   nichts, bleibt der Eintrag, wie er ist. */
+/* Schnell loggen: ein Tippen notiert sofort, ohne Fragen. Die Antwort steht
+   in der Kachel selbst: die Zahl springt, darunter die letzte Notiz mit
+   „Details" und „rückgängig" — an einem festen Platz, nicht eingeblendet. */
 function eintragen(v, art) {
   const V = verzichte(z)[v];
-  if (V.aufbau) art = "getan";
-  let neu = [], id = null;
-  const m = aendern(() => {
-    neu = notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art });
-    id = z.ereignisse.at(-1).id;
-  });
+  if (V.aufbau) {
+    art = "getan";
+    /* Aufbauen ist ein Häkchen am Tag, kein Zähler: ein zweites Tippen
+       nimmt es zurück. Dafür braucht es keine Meldung mit „Rückgängig". */
+    const getan = vonTag(z, heute(), v).filter((e) => e.art === "getan" && !Number.isInteger(e.schritt));
+    if (getan.length) {
+      aendern(() => { for (const e of getan) entferne(z, e.id); });
+      spueren(8);
+      return;
+    }
+  }
+  const m = aendern(() => notiere(z, { tag: heute(), zeit: jetztZeit(), verzicht: v, art }));
   document.querySelector(`[data-focus="${art === "getan" ? "habe" : art}-${v}"]`)?.classList.add("tipp");
   if (!m?.heuteNeu) spueren(8);
   if (art === "drang") gremlin.sagt(gremlinStufe(z, heute()).n >= 4 && !gremlinStufe(z, heute()).fuetterungstag ? "sitz" : "drang");
   else if (art === "habe") gremlin.sagt("geschehen");
   else gremlin.freut(vonTag(z, heute()).length, document.querySelector(`[data-focus="habe-${v}"]`));
-  const text = `${art === "getan" ? `Getan: ${V.name}.` : `Notiert: ${art === "habe" ? V.habe : V.drang}.`}${m?.heuteNeu ? " Der Tag zählt." : ""}`;
-  const zurueck = ["Rückgängig", () => { aendern(() => entferne(z, id)); melde("Zurückgenommen."); }];
-  const details = ["Details", () => fragen(v, art, art === "habe" ? V.habe : V.drang, id)];
-  melde(mitMoment(ebenenText(neu, text), m), art === "getan" ? [zurueck]
-    : art === "drang" && ab(z, 2) ? [["Werkzeug", () => W.menue(id)], details, zurueck]
-    : [details, zurueck]);
 }
 
-const ebenenText = (neu, text) =>
-  aktiv(z, "ebenen") && neu.length ? `${text} Eine Ebene hat sich geöffnet: ${neu.map((e) => e.titel).join(", ")}.` : text;
 
 /* Begleitung, wenn man sie will: erst Raum, dann zurück zu den Fragen.
    Was schon ausgefüllt war, bleibt stehen. */
@@ -489,7 +518,6 @@ function fragen(v, art, titel, id) {
     let neu = [];
     bogen.close();
     aendern(() => { neu = ergaenze(z, id, { antworten, begleitetSek }); });
-    melde(ebenenText(neu, "Details sind dabei."));
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));
@@ -508,111 +536,86 @@ function oeffneEbene(id) {
   zeigeBogen(k);
 }
 
-/* ---- Wie war der Tag? --------------------------------------------------------
+/* ---- Ein Tag im Blatt ------------------------------------------------------------
 
-   Das Tagebuch des Tages, drei Ebenen, jede in ihrer Farbe: die Stimmung
-   (fünf Stufen), die Selbst-Markierungen aus lifetracker (höchstens zwei)
-   und ein Satz, was getragen hat. Alles freiwillig, alles bleibt auf dem
-   Gerät. Es gilt, was beim Speichern dasteht. */
+   Für einen anderen Tag als heute (aus dem Kalender, „Gestern nachtragen")
+   dieselbe Erfassung wie auf dem Startschirm, in einem Blatt: was notiert
+   ist, ob man dabei war, und alles, was sich festhalten lässt. Alles
+   speichert sofort; es gibt nur „Fertig". */
 function tagEinordnen(tag) {
   const t = tag || heute();
-  const istHeute = t === heute();
-  const vorher = z.tagebuch[t] || {};
-  const f = el("form", "bogen-inhalt einordnen");
-  f.append(el("p", "rubrik", `${tagesKopf(t)} · Tages-Check-in`), el("h2", null, istHeute ? "Wie geht es dir heute?" : "Wie ging es dir an dem Tag?"),
-    el("p", "leise", "Kaffee, Kippe, Video sind die Oberfläche. Hier geht es um das darunter. Je Reihe ein Tippen; was du auslässt, bleibt leer. Nur auf diesem Gerät."));
-  /* Ein vergangener Tag: nachtragen, dass man dabei war. */
-  let da = null;
-  if (!istHeute && !istDa(z, t)) {
-    const l = el("label", "baustein");
-    da = Object.assign(document.createElement("input"), { type: "checkbox", checked: !hatEintrag(z, t) });
-    const tx = el("span", "baustein-text");
-    tx.append(el("span", null, "An dem Tag war ich dabei"), el("span", "leise klein", "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
-    l.append(da, tx);
-    f.append(l);
+  if (t === heute()) { zumHeute(); return; }
+  const y = bogen.open ? bogen.scrollTop : 0;
+  const k = el("div", "bogen-inhalt tag-blatt");
+  k.append(el("p", "rubrik", tagesKopf(t)), el("h2", null, "Wie war der Tag?"));
+
+  const notizen = vonTag(z, t).filter((e) => e.art !== "ohne");
+  if (notizen.length) {
+    const l = el("ul", "tag-notizen");
+    for (const e of notizen) l.append(faerbe(el("li", null, `${e.zeit} · ${wasText(api, e)}`), verzichte(z), e.verzicht));
+    k.append(l);
   }
+  const l = el("label", "baustein");
+  const da = Object.assign(document.createElement("input"), { type: "checkbox", checked: istDa(z, t) });
+  da.addEventListener("change", () => { aendern(() => { if (da.checked !== istDa(z, t)) schalteDa(z, t); }); });
+  const tx = el("span", "baustein-text");
+  tx.append(el("span", null, "An dem Tag war ich dabei"),
+    el("span", "leise klein", notizen.length ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
+  l.append(da, tx);
+  const kt = erfassungFuer(t, () => tagEinordnen(t));
+  const mehr = knopf("Stimmung, Schlaf, Menge … festhalten", "text", () => festhalten(t));
+  k.append(l, satzFeld(kt), mehr);
+  k.append(knopf("Fertig", "gross", () => bogen.close()));
+  zeigeBogen(k);
+  bogen.scrollTop = y;
+}
 
-  /* Körper und Antrieb: je System eine Reihe, fünf Stufen zwischen zwei
-     Polen. Ein Tippen wählt, ein zweites auf dieselbe Stufe nimmt sie weg. */
-  const gruppen = Object.entries(GRUPPEN).map(([gid, gr]) => {
-    const fs = el("fieldset", "frage ebene-frage systeme");
-    fs.style.setProperty("--c", gr.farbe);
-    fs.append(el("legend", "serif", gr.name));
-    for (const x of SYSTEME.filter((y) => y.gruppe === gid)) {
-      const reihe = el("div", "system");
-      reihe.setAttribute("role", "radiogroup");
-      reihe.setAttribute("aria-label", `${x.name}: von ${x.pole[0]} bis ${x.pole[1]}`);
-      reihe.append(el("span", "system-name", x.name));
-      const stufen = el("span", "system-stufen");
-      for (let n = 1; n <= STUFEN; n++) {
-        const l = el("label", "stufe");
-        const inp = Object.assign(document.createElement("input"), { type: "radio", name: x.id, value: String(n), checked: vorher[x.id] === n });
-        inp.setAttribute("aria-label", `${x.name} ${n} von ${STUFEN}${n === 1 ? `, ${x.pole[0]}` : n === STUFEN ? `, ${x.pole[1]}` : ""}`);
-        inp.dataset.war = inp.checked ? "1" : "";
-        inp.addEventListener("click", () => {
-          if (inp.dataset.war) { inp.checked = false; inp.dataset.war = ""; return; }
-          for (const o of stufen.querySelectorAll("input")) o.dataset.war = "";
-          inp.dataset.war = "1";
-        });
-        l.style.setProperty("--w", `${Math.round(25 + (n / STUFEN) * 75)}%`);
-        l.append(inp, el("span", "stufe-kreis"));
-        stufen.append(l);
-      }
-      const pole = el("span", "system-pole");
-      pole.append(el("span", null, x.pole[0]), el("span", null, x.pole[1]));
-      reihe.append(stufen, pole);
-      fs.append(reihe);
-    }
-    return fs;
-  });
-
-  const selbst = el("fieldset", "frage ebene-frage");
-  selbst.style.setProperty("--c", "var(--lila)");
-  selbst.append(el("legend", "serif", istHeute ? "Was hat sich heute gezeigt?" : "Was hat sich an dem Tag gezeigt?"), el("p", "leise klein", `Höchstens ${SELBST_MAX === 2 ? "zwei" : SELBST_MAX}.`));
-  const chips = el("span", "chips");
-  SELBST.forEach((wort, i) => {
-    const c = el("label", "chip");
-    c.style.setProperty("--c", "var(--lila)");
-    const inp = Object.assign(document.createElement("input"), { type: "checkbox", name: "selbst", value: String(i), checked: (vorher.selbst || []).includes(i) });
-    c.append(inp, el("span", null, wort));
-    chips.append(c);
-  });
-  /* Höchstens zwei: ist das Maß voll, sind die übrigen still gesperrt. */
-  const sperren = () => {
-    const n = chips.querySelectorAll("input:checked").length;
-    for (const i of chips.querySelectorAll("input")) i.disabled = !i.checked && n >= SELBST_MAX;
+/* Was die Erfassung für einen Tag braucht. `neu` zeichnet sie nach einer
+   Eingabe neu (auf dem Startschirm tut das zeichne() ohnehin). */
+function erfassungFuer(t, neu) {
+  const V = verzichte(z);
+  return {
+    tag: t,
+    heute: t === heute(),
+    eintrag: () => z.tagebuch[t] || {},
+    lassen: gewaehlt(z).filter((v) => !V[v].aufbau).map((v) => ({ id: v, name: V[v].name })),
+    schreibe(was) { aendern(() => schreibeTag(z, t, was)); spueren(8); neu(); },
+    /* Ohne neu zu zeichnen — für das Textfeld, siehe erfassung.js. Was sich
+       dadurch sonst ändert (der Tag zählt), zeigt das nächste Zeichnen. */
+    schreibeLeise(was) {
+      schreibeTag(z, t, was);
+      if (gewaehlt(z).length) reiseWeiter(z);
+      if (!sichern(z)) melde("Auf diesem Gerät lässt sich gerade nichts speichern.");
+      planeAbgleich();
+      setTimeout(zeichneLeise, 400);
+    },
+    neu,
   };
-  chips.addEventListener("change", sperren);
-  sperren();
-  selbst.append(chips);
+}
 
-  const getragen = el("label", "frage ebene-frage");
-  getragen.style.setProperty("--c", "var(--magenta)");
-  const g = Object.assign(document.createElement("input"), { name: "getragen", value: vorher.getragen || "", autocomplete: "off", maxLength: 280,
-    placeholder: "Der Kaffee mit Ben, der Spaziergang …" });
-  getragen.append(el("span", "serif", istHeute ? "Was hat dich heute getragen?" : "Was hat dich an dem Tag getragen?"), g);
-
-  f.append(...gruppen, selbst, getragen);
-  const speichern = () => {
-    const d = new FormData(f);
-    let m = null;
-    bogen.close();
-    m = aendern(() => {
-      schreibeTag(z, t, {
-        werte: Object.fromEntries(SYSTEME.map((x) => [x.id, Number(d.get(x.id)) || 0])),
-        selbst: d.getAll("selbst").map(Number),
-        getragen: d.get("getragen") || "",
-      });
-      if (da && da.checked && !istDa(z, t)) schalteDa(z, t);
-    });
-    const steht = hatEintrag(z, t);
-    melde(mitMoment(!steht ? "Nichts eingetragen." : istHeute ? `Check-in gespeichert: ${eingeschaetzt(z, t)} von ${SYSTEME.length}.${m?.heuteNeu ? " Der Tag zählt." : ""}` : `${tagesKopf(t)} ist nachgetragen.`, m));
+/* Das „+" unten: der Vollbild-Check-in (erfassung.js). Er merkt sich,
+   welche Art zuletzt offen war. */
+let komponistArt = "stimmung";
+function festhalten(t) {
+  const zeige = () => {
+    const k = erfassungFuer(t, zeige);
+    k.titel = t === heute() ? "Heute" : tagesKopf(t);
+    const inhalt = komponist(k, komponistArt, (a) => { komponistArt = a; zeige(); }, () => bogen.close());
+    bogen.classList.add("vollbild");
+    zeigeBogen(inhalt);
   };
-  const unten = el("div", "wahlreihe");
-  unten.append(knopf("speichern", "gross", speichern), knopf("schließen", "text leise", () => bogen.close()));
-  f.append(unten);
-  f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
-  zeigeBogen(f);
+  bogen.addEventListener("close", () => { bogen.classList.remove("vollbild"); zeichne(); }, { once: true });
+  zeige();
+}
+
+/* Heute im Kalender angetippt: zum Tag auf dem Startschirm. Ist man schon
+   dort, bleibt die Seite, wo sie ist — nichts springt. */
+function zumHeute() {
+  if (bogen.open) bogen.close();
+  if (seite === "heute") return;
+  seite = "heute"; detail = null;
+  zeichne();
+  scrollTo(0, 0);
 }
 
 /* ---- Der Leitgedanke ------------------------------------------------------ */
@@ -645,7 +648,6 @@ function leitgedankeBearbeiten() {
     let neu = false;
     aendern(() => { neu = setzeLeitgedanke(z, i.value, heute()); });
     bogen.close();
-    if (neu) melde("Dein Leitgedanke gilt ab heute.");
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("so soll er lauten", "gross", speichern), knopf("bleibt, wie er ist", "text leise", () => bogen.close()));
@@ -661,10 +663,7 @@ function leitgedankeBearbeiten() {
    tut; er wirkt sofort, ohne Speichern-Knopf. */
 function einstellungen() {
   const k = el("div", "bogen-inhalt einstellungen");
-  k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, commitmentSatz(z)),
-    knopf("Tracker wählen oder hinzufügen", "text", () => { bogen.close(); wahlOffen = true; zeichne(); }));
-
-  k.append(tiefeWahl("einst-tiefe"));
+  k.append(el("p", "rubrik", "Einstellungen"), el("h2", null, "Darstellung und Daten"));
 
   const ans = el("fieldset", "frage");
   ans.append(el("legend", "serif", "Ansicht"));
@@ -678,7 +677,7 @@ function einstellungen() {
     reihe.append(l);
   }
   ans.append(reihe);
-  k.append(ans);
+  if (offen(z, "ansicht")) k.append(ans);
 
   const farbe = el("fieldset", "frage");
   farbe.append(el("legend", "serif", "Farbwelt"));
@@ -700,39 +699,22 @@ function einstellungen() {
   farbe.append(wahl, el("p", "leise klein", "Gilt für die helle Darstellung. Im Dunkeln bleibt es beim warmen Braun."));
   k.append(farbe);
 
-  let gruppe = null, feld = null;
-  for (const b of BAUSTEINE.filter((x) => x.schicht <= z.tiefe)) {
-    if (b.gruppe !== gruppe) {
-      gruppe = b.gruppe;
-      feld = el("fieldset", "frage bausteine");
-      feld.append(el("legend", "serif", gruppe === "Darstellung" ? "Darstellung" : `Bausteine · ${gruppe}`));
-      k.append(feld);
-    }
-    const l = el("label", "baustein");
-    const i = Object.assign(document.createElement("input"), { type: "checkbox", checked: aktiv(z, b.id) });
-    i.addEventListener("change", () => {
-      aendern(() => schalteBaustein(z, b.id, i.checked));
-      if (b.id === "abends") tageszeitSetzen();
-      if (b.id === "gemeinsam" && i.checked) aktualisieren();
-      const y = bogen.scrollTop;
-      const index = BAUSTEINE.findIndex((eintrag) => eintrag.id === b.id);
-      einstellungen();
-      bogen.querySelectorAll(".baustein input")[index]?.focus({ preventScroll: true });
-      bogen.scrollTop = y;
+  /* Abends ruhiger: der einzige Schalter, der hier bleibt. Was die App
+     sonst kann, steht unter „Mehr". */
+  const abends = el("label", "baustein");
+  const ai = Object.assign(document.createElement("input"), { type: "checkbox", checked: aktiv(z, "abends") });
+  ai.addEventListener("change", () => { aendern(() => schalteBaustein(z, "abends", ai.checked)); tageszeitSetzen(); });
+  const at = el("span", "baustein-text");
+  at.append(el("span", null, "Abends ruhiger"), el("span", "leise klein", "Nach Sonnenuntergang wird die Seite eine Spur ruhiger."));
+  abends.append(ai, at);
+  k.append(abends);
+
+  if (z.gemeinsam) {
+    const weg = knopf(`Du gehst als ${z.gemeinsam.name} mit. Die Gruppe verlassen`, "text klein", () => {
+      if (!weg.dataset.sicher) { weg.dataset.sicher = "1"; weg.textContent = "Wirklich? Name und Tage werden vom Server gelöscht. Noch einmal tippen."; return; }
+      gruppeVerlassen();
     });
-    const t = el("span", "baustein-text");
-    t.append(el("span", null, b.titel), el("span", "leise klein", b.text));
-    l.append(i, t);
-    feld.append(l);
-    if (b.id === "leitgedanke" && aktiv(z, b.id))
-      feld.append(knopf("Leitgedanken ändern", "text klein baustein-mehr", () => leitgedankeBearbeiten()));
-    if (b.id === "gemeinsam" && z.gemeinsam) {
-      const weg = knopf(`Du gehst als ${z.gemeinsam.name} mit. Die Gruppe verlassen`, "text klein baustein-mehr", () => {
-        if (!weg.dataset.sicher) { weg.dataset.sicher = "1"; weg.textContent = "Wirklich? Name und Tage werden vom Server gelöscht. Noch einmal tippen."; return; }
-        gruppeVerlassen();
-      });
-      feld.append(weg);
-    }
+    k.append(weg);
   }
 
   const daten = el("div", "frage");
@@ -747,8 +729,8 @@ function einstellungen() {
     weg.dataset.sicher = "1";
     weg.textContent = "Wirklich löschen? Noch einmal tippen.";
   });
-  daten.append(weg);
-  k.append(daten, knopf("schließen", "gross leise", () => bogen.close()));
+  daten.append(weg, knopf("Neu anfangen: auswählen, worauf du achtest", "text", () => { bogen.close(); auswahl = []; bestaetigen = false; einrichtungOffen = true; zeichne(); }));
+  k.append(daten, knopf("Fertig", "gross", () => bogen.close()));
   zeigeBogen(k);
 }
 
@@ -766,7 +748,9 @@ function melde(text, aktionen = []) {
   }
   m.hidden = false;
   clearTimeout(meldeTimer);
-  if (!aktionen.length) meldeTimer = setTimeout(() => (m.hidden = true), 5000);
+  /* Keine Meldung wartet darauf, weggeklickt zu werden: eine reine
+     Bestätigung geht nach gut drei Sekunden, eine mit Knöpfen nach acht. */
+  meldeTimer = setTimeout(() => (m.hidden = true), aktionen.length ? 8000 : 3500);
 }
 
 /* ---- Commitment wählen ----------------------------------------------------- */
@@ -801,11 +785,11 @@ function wahlSeite() {
     e.preventDefault();
     let id = null;
     aendern(() => { id = fuegeEigenenHinzu(z, i.value); });
-    if (id) { melde(`${verzichte(z)[id].name} ist dabei.`); $(".wahl-neu input")?.focus(); }
+    if (id) $(".wahl-neu input")?.focus();
   });
   s.append(neu);
 
-  s.append(aufbauWahl(), tiefeWahl("wahl-tiefe"));
+  s.append(aufbauWahl());
 
   const los = knopf("Mit meiner Auswahl starten", "gross", () => { wahlOffen = false; zeichne(); });
   los.disabled = !gewaehlt(z).length;
@@ -870,26 +854,11 @@ function aufbauWahl() {
   const plus = knopf("+", "rund", () => f.requestSubmit());
   plus.setAttribute("aria-label", "Hinzufügen");
   f.append(i, plus);
-  f.addEventListener("submit", (e) => { e.preventDefault(); let id = null; aendern(() => { id = fuegeEigenenHinzu(z, i.value, { art: "aufbauen" }); }); if (id) melde(`${verzichte(z)[id].name} ist dabei.`); });
+  f.addEventListener("submit", (e) => { e.preventDefault(); let id = null; aendern(() => { id = fuegeEigenenHinzu(z, i.value, { art: "aufbauen" }); }); });
   k.append(r, f);
   return k;
 }
 
-/* Wie tief? Drei Karten, eine gewählt; wirkt sofort. */
-function tiefeWahl(klasse) {
-  const fs = el("fieldset", `frage ${klasse}`);
-  fs.append(el("legend", "serif", "Wie tief willst du gehen?"));
-  for (const t of TIEFEN) {
-    const l = el("label", "ansicht-option tiefe-option");
-    const i = Object.assign(document.createElement("input"), { type: "radio", name: `tiefe-${klasse}`, value: String(t.n), checked: z.tiefe === t.n });
-    i.addEventListener("change", () => { aendern(() => { z.tiefe = t.n; }); if (bogen.open) einstellungen(); });
-    l.dataset.tiefe = t.n;
-    l.append(i, el("span", "serif", `${t.n} · ${t.name}`), el("span", "leise klein", t.text));
-    fs.append(l);
-  }
-  fs.append(el("p", "leise klein", "Jede Schicht nimmt die vorigen mit. Du kannst jederzeit wechseln; nichts geht verloren."));
-  return fs;
-}
 
 /* Ein neuer Tracker, aus jeder Ansicht heraus über „+". Er ist gleich
    gewählt; die Knopf-Ansicht springt auf ihn. */
@@ -928,7 +897,6 @@ function neuerTracker() {
     bogen.close();
     api.springeZu = id;
     zeichne();
-    melde(`${verzichte(z)[id].name} ist dabei.`);
   };
   const unten = el("div", "wahlreihe");
   unten.append(knopf("hinzufügen", "gross", hinzu), knopf("abbrechen", "text leise", () => bogen.close()));
@@ -970,7 +938,6 @@ function eigenerTracker(id) {
     const weg = knopf("entfernen", "text leise", () => {
       aendern(() => entferneEigenen(z, id));
       bogen.close();
-      melde(`${V[id].name} ist entfernt.`);
     });
     unten.append(weg);
   }
@@ -979,6 +946,102 @@ function eigenerTracker(id) {
   f.addEventListener("submit", (e) => { e.preventDefault(); speichern(); });
   zeigeBogen(f);
 }
+
+
+/* ---- Die Einrichtung ----------------------------------------------------------
+
+   Wer neu ist, wählt, worauf er im Oktober achtet: etwas, das er sein
+   lässt, oder etwas, das er aufbaut — eins oder mehreres, wie er will.
+   Dann ein Satz und „Los geht's". Alles andere öffnet sich unterwegs
+   (REISE in logik.js). */
+
+const KERN_LASSEN = FEST.map((k) => ({ fest: k }));
+const KERN_AUFBAU = AUFBAU_VORSCHLAEGE.map((v) => ({ name: v.name, art: "aufbauen", schritte: v.schritte }));
+const wahlName = (w) => (w.fest ? verzichte(z)[w.fest].name : w.name);
+const wahlSchluessel = (w) => (w.fest ? w.fest : `${w.art}:${w.name.trim().toLowerCase()}`);
+
+/* Auf dem iPhone speichern Safari und der Home-Bildschirm getrennt. */
+const imIosBrowser = () => /iP(hone|ad|od)/.test(navigator.userAgent) && !navigator.standalone && !matchMedia("(display-mode: standalone)").matches;
+
+function waehle(w) {
+  const k = wahlSchluessel(w);
+  if (auswahl.some((a) => a.schluessel === k)) {
+    auswahl = auswahl.filter((a) => a.schluessel !== k);
+  } else {
+    auswahl.push({ schluessel: k, wahl: w });
+  }
+  zeichne();
+}
+
+function einrichtungSeite() {
+  const s = el("section", "einrichtung");
+  s.append(el("p", "rubrik", `Sober October · ${tagesZeile(heute())}`));
+
+  if (bestaetigen && auswahl.length) {
+    const probe = structuredClone(z);
+    einrichten(probe, auswahl.map((a) => a.wahl));
+    s.append(el("h1", "serif einrichtung-satz", commitmentSatz(probe)));
+    if (imIosBrowser()) s.append(el("p", "leise klein einrichtung-tipp", "Tipp: erst über Teilen → „Zum Home-Bildschirm“ hinzufügen, dann dort starten."));
+    const unten = el("div", "einrichtung-unten");
+    unten.append(
+      knopf("Los geht’s", "gross", () => {
+        const wahlen = auswahl.map((a) => a.wahl);
+        auswahl = []; bestaetigen = false;
+        einrichtungOffen = false; wahlOffen = false;
+        aendern(() => einrichten(z, wahlen));
+        scrollTo(0, 0);
+      }),
+      knopf("zurück", "text leise", () => { bestaetigen = false; zeichne(); }),
+    );
+    s.append(unten);
+    return s;
+  }
+
+  s.append(el("h1", "serif", "Worauf willst du im Oktober achten?"),
+    el("p", "leise", "Eins reicht, mehr geht auch."));
+  const gruppe = (titel, wahlen, art) => {
+    const g = el("div", "kern-gruppe");
+    g.append(el("h2", "rubrik", titel));
+    const alle = [...wahlen, ...auswahl.map((a) => a.wahl).filter((w) => !w.fest && w.art === art && !wahlen.some((x) => wahlSchluessel(x) === wahlSchluessel(w)))];
+    for (const w of alle) {
+      const k = wahlSchluessel(w), an = auswahl.some((a) => a.schluessel === k);
+      const zeile = el("div", "kern-zeile");
+      zeile.dataset.v = w.fest || "aufbau";
+      zeile.dataset.an = an;
+      const b = knopf("", "kern-knopf", () => waehle(w));
+      b.setAttribute("aria-pressed", an);
+      b.dataset.focus = `kern-${k}`;
+      b.append(el("span", "kern-haken", an ? "✓" : ""), el("span", "kern-name", wahlName(w)));
+      zeile.append(b);
+      g.append(zeile);
+    }
+    const f = el("form", "wahl-neu");
+    const i = Object.assign(document.createElement("input"), { name: "kern", autocomplete: "off", maxLength: 60,
+      placeholder: art === "aufbauen" ? "Etwas anderes, z. B. Lesen am Abend" : "Etwas anderes, z. B. Alkohol" });
+    i.setAttribute("aria-label", art === "aufbauen" ? "Etwas anderes aufbauen" : "Etwas anderes sein lassen");
+    const plus = knopf("+", "rund", () => f.requestSubmit());
+    plus.setAttribute("aria-label", "Hinzufügen");
+    f.append(i, plus);
+    f.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!i.value.trim()) { i.focus(); return; }
+      waehle({ name: i.value.trim(), art });
+    });
+    g.append(f);
+    return g;
+  };
+  s.append(gruppe("Sein lassen", KERN_LASSEN, "lassen"), gruppe("Aufbauen", KERN_AUFBAU, "aufbauen"));
+
+  const weiter = el("div", "einrichtung-weiter");
+  const w = knopf(auswahl.length ? "Weiter" : "Wähl etwas aus", "gross", () => { bestaetigen = true; zeichne(); scrollTo(0, 0); });
+  w.disabled = !auswahl.length;
+  weiter.append(w);
+  if (gewaehlt(z).length) weiter.append(knopf("bleibt, wie es ist", "text leise", () => { einrichtungOffen = false; zeichne(); }));
+  s.append(weiter);
+  return s;
+}
+
+
 
 /* ---- Zeichnen -------------------------------------------------------------- */
 
@@ -993,14 +1056,20 @@ function farbeSetzen() {
 function zeichne() {
   farbeSetzen();
   const buehne = $("#buehne");
-  const ansicht = wahlOffen || !gewaehlt(z).length ? null : ANSICHT[z.ansicht] || knopfAnsicht;
-  buehne.dataset.ansicht = ansicht ? z.ansicht : "wahl";
+  const ansicht = einrichtungOffen || wahlOffen || !gewaehlt(z).length ? null : ANSICHT[z.ansicht] || knopfAnsicht;
+  buehne.dataset.ansicht = ansicht ? z.ansicht : einrichtungOffen ? "einrichtung" : "wahl";
   // Gleiche Aktion bleibt nach dem Neuzeichnen per Tastatur erreichbar.
   const fokus = document.activeElement;
   const innerhalb = buehne.contains(fokus);
   const schluessel = fokus?.dataset.focus;
   const name = fokus?.getAttribute("aria-label") || fokus?.textContent;
-  buehne.replaceChildren(ansicht ? ansicht.render(api) : wahlSeite());
+  if (!ansicht) buehne.replaceChildren(einrichtungOffen ? einrichtungSeite() : wahlSeite());
+  else {
+    const inhalt = seite === "monat" ? monatSeite(api) : seite === "tagebuch" ? tagebuchSeite(api)
+      : seite === "mehr" ? (detail ? funktionSeite(api, detail) : mehrSeite(api)) : ansicht.render(api);
+    buehne.replaceChildren(inhalt, leiste(api, seite));
+  }
+  buehne.dataset.seite = ansicht ? seite : "";
   gremlin.pruefen();
   if (letzteStufe === null) letzteStufe = gremlinStufe(z, heute()).n;
   if (innerhalb) {

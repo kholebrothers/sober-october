@@ -20,22 +20,26 @@ const STAND_WORT = { dabei: "dabei", leer: "nichts notiert", offen: "heute, noch
 
 export function monat(api) {
   const m = api.monat();
-  const zaehlt = api.hatEintrag();
-  const schichten = api.schichten();
-  // Die Ebenen des Monats gehören zur Schicht „Nervensystem".
-  const S = (api.ab(3) && schichten.find((x) => x.id === schicht)) || schichten[0];
   const s = el("section", "monat");
-  s.setAttribute("aria-label", "Dein Oktober");
+  s.setAttribute("aria-label", "Dein Commitment");
   s.dataset.katze = "wand";   // Gelände für den Gremlin (begleiter/welt.js)
-  s.dataset.schicht = S.id;
-  s.style.setProperty("--schicht", S.farbe);
+  s.dataset.schicht = "dabei";
 
-  s.append(kopf(m), etappe(api));
+  /* Oben das Commitment: der Satz, die Zahl, die Woche. Den ganzen Monat
+     gibt es auf Antippen. Der Tag selbst steht darunter (heute()). */
+  s.append(el("p", "monat-commitment serif", api.commitmentSatz()), kopf(m), woche(api, m));
 
+  return s;
+}
+
+/* Die Tage als Knöpfe im Raster, gefärbt durch die gewählte Ebene. */
+function tage(api, zellen, S) {
   const gitter = el("div", "monat-gitter");
   for (const w of WOCHENTAGE) gitter.append(el("span", "monat-wt", w));
-  for (const c of m.zellen) {
-    const t = el("span", "monat-tag", c.art === "rand" ? "" : String(c.nr));
+  for (const c of zellen) {
+    const t = c.art === "rand" ? el("span", "monat-tag", "")
+      : c.stand === "kommt" ? el("span", "monat-tag", String(c.nr))
+      : knopf(String(c.nr), "monat-tag", () => api.tagAntippen(c.tag));
     t.dataset.stand = c.stand;
     t.dataset.art = c.art;
     if (c.heute) t.dataset.heute = "";
@@ -43,24 +47,51 @@ export function monat(api) {
       const w = api.schichtWert(S.id, c.tag);
       if (w > 0) { t.dataset.w = ""; t.style.setProperty("--w", `${Math.round(25 + w * 75)}%`); if (w > 0.6) t.dataset.voll = ""; }
     }
-    if (c.art !== "rand") t.title = `${c.nr}. ${c.art === "okt" ? "Oktober" : "September"}: ${STAND_WORT[c.stand]}`;
+    if (c.art !== "rand") {
+      t.setAttribute("aria-label", `${c.nr}. ${c.art === "okt" ? "Oktober" : "September"}: ${STAND_WORT[c.stand]}`);
+      t.dataset.focus = `tag-${c.tag}`;
+    }
     gitter.append(t);
   }
-  if (api.ab(3)) s.append(ebenenWahl(api, schichten, S));
-  gitter.setAttribute("role", "img");
-  gitter.setAttribute("aria-label", m.phase === "vor"
+  gitter.setAttribute("role", "group");
+  return gitter;
+}
+
+/* Die Woche von heute — eine Reihe statt des ganzen Monats. Daneben der
+   Weg zum Monat. */
+function woche(api, m) {
+  const i = Math.max(0, m.zellen.findIndex((c) => c.heute));
+  const start = m.zellen.some((c) => c.heute) ? i - (i % 7) : Math.max(0, m.zellen.length - 7);
+  const w = el("div", "woche-streifen");
+  const g = tage(api, m.zellen.slice(start, start + 7), { id: "dabei" });
+  g.setAttribute("aria-label", "Diese Woche");
+  const mehr = knopf("Ganzer Monat ›", "text klein woche-monat", () => api.seite("monat"));
+  mehr.dataset.focus = "monat-zeigen";
+  w.append(g, mehr);
+  return w;
+}
+
+/* Der ganze Monat: jeder Tag antippbar, die Etappe, ab Schicht 3 durch jede
+   Ebene lesbar. `neu` zeichnet nach einem Wechsel der Ebene neu. */
+export function monatInhalt(api, neu) {
+  const m = api.monat();
+  const schichten = api.schichten();
+  const S = (api.ab(3) && schichten.find((x) => x.id === schicht)) || schichten[0];
+  const s = el("section", "monat monat-blatt");
+  s.dataset.schicht = S.id;
+  s.style.setProperty("--schicht", S.farbe);
+  s.append(kopf(m), etappe(api));
+  if (api.ab(3)) s.append(ebenenWahl(api, schichten, S, neu));
+  const g = tage(api, m.zellen, S);
+  g.setAttribute("aria-label", m.phase === "vor"
     ? `Oktober, noch nicht begonnen. Vorlauf: ${m.vorlauf} ${m.vorlauf === 1 ? "Tag" : "Tage"} dabei.`
     : `Oktober: ${m.dabei} von ${m.phase === "im" ? m.tag : 31} Tagen dabei.`);
-  s.append(gitter);
-
-  if (m.phase !== "nach") s.append(daKnopf(api, zaehlt), satzZeile(api), weiteres(api));
-
+  s.append(g, el("p", "leise klein", "Tipp einen Tag an, um zu sehen, was da steht, oder um etwas nachzutragen."));
   if (api.aktiv("lauf")) {
     const n = api.serie(), best = api.besterLauf();
     const l = el("p", "monat-lauf leise");
     l.append(el("span", null, `${n} ${n === 1 ? "Tag" : "Tage"} am Stück`));
     if (best > n) l.append(el("span", null, `längster Lauf ${best}`));
-    l.append(el("span", "monat-satz", api.tagessatz()));
     s.append(l);
   }
   return s;
@@ -78,19 +109,10 @@ function kopf(m) {
   return k;
 }
 
-function daKnopf(api, zaehlt) {
-  const nurNotiz = zaehlt && !api.istDa();
-  const b = knopf("", "da-knopf", () => api.da());
-  b.dataset.focus = "da";
-  b.setAttribute("aria-pressed", zaehlt);
-  b.append(el("span", "da-haken", "✓"), el("span", "da-wort", zaehlt ? "Heute zählt" : "Heute bin ich dabei"));
-  if (nurNotiz) b.append(el("span", "da-klein", "durch deine Notiz"));
-  return b;
-}
 
 /* Die Ebenen als Reihe kleiner Schalter, jeder mit dem Punkt seiner Farbe.
    Darunter ein Satz, was die gewählte zeigt. */
-function ebenenWahl(api, schichten, S) {
+function ebenenWahl(api, schichten, S, neu) {
   const w = el("div", "ebenen-wahl");
   const reihe = el("div", "ebenen-reihe");
   reihe.setAttribute("role", "radiogroup");
@@ -99,7 +121,7 @@ function ebenenWahl(api, schichten, S) {
     const b = knopf(x.name, "ebene-chip", () => {
       schicht = x.id;
       try { localStorage.setItem(MERK, x.id); } catch {}
-      api.zeichne();
+      neu();
     });
     b.setAttribute("role", "radio");
     b.setAttribute("aria-checked", x.id === S.id);
@@ -137,49 +159,43 @@ function etappe(api) {
   return e;
 }
 
-/* Ein Satz zum Tag, gleich unter dem Knopf (aus lifetracker, befinden):
-   „Was hat dich heute getragen?" Eine Zeile, freiwillig; gespeichert wird
-   beim Verlassen des Feldes oder mit der Eingabetaste. */
-function satzZeile(api) {
-  const f = el("form", "satz-zeile");
-  const i = Object.assign(document.createElement("input"), { name: "getragen", value: api.getragen(), autocomplete: "off", maxLength: 280,
-    placeholder: "Was hat dich heute getragen?", enterKeyHint: "done" });
-  i.setAttribute("aria-label", "Was hat dich heute getragen? Ein Satz für dein Tagebuch");
-  i.dataset.focus = "getragen";
-  const sichern = () => { if (i.value.trim() !== api.getragen()) api.getragenSetzen(i.value); };
-  i.addEventListener("change", sichern);
-  f.addEventListener("submit", (e) => { e.preventDefault(); i.blur(); sichern(); });
-  f.append(i);
-  return f;
-}
 
 /* Darunter der Tages-Check-in: Körper und Antrieb, die Systeme unter den
    Symptomen — und, wenn gestern leer geblieben ist, das Nachtragen. */
 function weiteres(api) {
   const r = el("div", "monat-weiteres");
-  if (!api.ab(3)) {
-    const g0 = api.gesternOffen();
-    if (g0) { const n0 = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g0)); n0.dataset.focus = "nachtragen"; r.append(n0); }
-    return r;
-  }
-  if (api.morgenpraxisOffen()) {
+  if (api.ab(3) && api.morgenpraxisOffen()) {
     const d = knopf("", "daemon-hinweis", () => api.werkzeug("daemon"));
     d.dataset.focus = "daemon";
     d.append(el("span", null, "Morgenpraxis: Dämonen zum Frühstück"), el("span", "leise klein", "7 Min."));
     r.append(d);
   }
-  const n = api.eingeschaetzt(), alle = api.systemeAnzahl;
-  const b = knopf("", "checkin-knopf", () => api.tagEinordnen());
-  b.dataset.focus = "einordnen";
-  if (n) b.dataset.teil = "";
-  b.append(el("span", null, "Tages-Check-in"), el("span", "checkin-stand", n ? `${n} von ${alle}` : "Körper · Antrieb"));
-  b.setAttribute("aria-label", `Tages-Check-in: ${n} von ${alle} Systemen eingeschätzt`);
-  r.append(b);
   const g = api.gesternOffen();
   if (g) {
     const n = knopf("Gestern nachtragen", "text tag-einordnen", () => api.tagEinordnen(g));
     n.dataset.focus = "nachtragen";
     r.append(n);
   }
+  const h = reiseHinweis(api);
+  if (h) r.append(h);
   return r;
 }
+
+/* Was als Nächstes kommt, leise unter dem Knopf — und was man dafür tun
+   kann. Am Ziel der Reise steht hier nichts mehr. */
+function reiseHinweis(api) {
+  /* Eben geöffnet: hier, an diesem festen Platz, bis man es gesehen hat. */
+  const neu = api.reiseNeu();
+  if (neu) {
+    const b = knopf("", "reise-neu-hinweis", () => api.reiseGesehen());
+    b.append(el("span", "reise-neu-titel", `Neu: ${neu.titel}`), el("span", "leise klein", neu.text), el("span", "reise-ok", "gesehen"));
+    b.setAttribute("aria-label", `Neu: ${neu.titel}. ${neu.text} Antippen, wenn gesehen.`);
+    return b;
+  }
+  const r = api.reise();
+  if (!r.naechste) return null;
+  return el("p", "reise-hinweis leise klein", r.noch);
+}
+
+
+

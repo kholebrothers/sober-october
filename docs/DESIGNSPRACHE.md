@@ -28,7 +28,7 @@ Die Haltung ist klar: freiwillig beobachten, schnell notieren, Details nach eige
 - Formen: Bedienelemente 12 px Radius, größere Karten und Dialoge 20 px. Runde Formen für Status und kleine Symbolaktionen.
 - Aktionen: dunkel gefüllter Button schließt einen Schritt ab; Kontur für Alternativen; Textaktionen für Vertiefung. Auswahl ist durch Form/Markierung und Farbe sichtbar.
 - Touch: mindestens 44 × 44 px für Symbolaktionen, mindestens 44 px Höhe für Textaktionen. Sichtbare Fokusmarkierung, reduzierte Bewegung respektieren.
-- Meldungen: unten, damit Marke und Navigation frei bleiben. Meldungen mit Handlungen bleiben stehen, reine Bestätigungen verschwinden nach fünf Sekunden.
+- Meldungen: unten, damit Marke und Navigation frei bleiben. Keine Meldung wartet darauf, weggeklickt zu werden: reine Bestätigungen gehen nach gut drei Sekunden, solche mit Handlungen („Rückgängig“) nach acht. Was sich durch ein zweites Tippen zurücknehmen lässt (ein Häkchen beim Aufbauen), braucht kein „Rückgängig“.
 - Tracker: je eine Kachel im Raster; lange Namen brechen um, statt kleiner zu werden.
 
 ## Der Monat im Zentrum (27. September 2026)

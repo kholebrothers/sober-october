@@ -4,8 +4,7 @@
 
 import { el, knopf } from "../ansichten/teile.js";
 import { monat } from "./monat.js";
-import { gemeinsam } from "./gemeinsam.js";
-import { lebenszeitKarte } from "./lebenszeit.js";
+import { heute } from "./heute.js";
 
 export function oben(api) {
   const h = el("div", "oben");
@@ -16,8 +15,7 @@ export function oben(api) {
     h.append(b);
   }
   h.append(monat(api));
-  if (api.aktiv("lebenszeit")) { const l = lebenszeitKarte(api); if (l) h.append(l); }
-  const g = gemeinsam(api);
-  if (g) h.append(g);
+  const t = heute(api);
+  if (t) h.append(t);
   return h;
 }

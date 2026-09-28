@@ -4,7 +4,7 @@
    die eingeschalteten Bausteine. */
 
 import { el, knopf, kopf, wasText, faerbe, plusTracker } from "./teile.js";
-import { oben, unten } from "../bausteine/index.js";
+import { oben } from "../bausteine/index.js";
 
 export function render(api) {
   const { zustand: z, VERZICHTE } = api;
@@ -12,7 +12,6 @@ export function render(api) {
   s.append(kopf(api));
   const o = oben(api);
   if (o) s.append(o);
-  s.append(el("h1", "serif", api.commitmentSatz()));
 
   for (const v of api.gewaehlt()) {
     const V = VERZICHTE[v];
@@ -25,17 +24,11 @@ export function render(api) {
     if (es.some((e) => e.art === "drang")) kreis.dataset.drang = "";
     const mitte = el("div");
     mitte.append(el("strong", "v-name", V.name));
-    const aktionen = el("div", "blatt-aktionen");
-    aktionen.append(knopf(V.habe, "text", () => api.eintragen(v, "habe")));
-    if (z.commitment[v].drang) aktionen.append(knopf("würde gern", "text", () => api.eintragen(v, "drang")));
     const liste = el("ul", "blatt-liste");
     for (const e of es.filter((e) => e.art !== "ohne")) liste.append(el("li", null, `${e.zeit} · ${wasText(api, e)}`));
-    mitte.append(aktionen, liste);
+    mitte.append(liste);
     zeile.append(kreis, mitte);
     s.append(zeile);
   }
-  s.append(plusTracker(api, "+ weiterer Tracker"));
-  const u = unten(api);
-  if (u) s.append(u);
   return s;
 }

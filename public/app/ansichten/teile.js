@@ -23,18 +23,17 @@ export function faerbe(e, V, v) {
   return e;
 }
 
-/** Die Kopfzeile: links der Tag, rechts optional etwas, dann „Einstellungen". */
+/** Die Kopfzeile: die Marke und der Tag. Alles Weitere steht unten unter „Mehr". */
 export function kopf(api, rechts) {
   const k = el("header", "kopf");
   const marke = el("div", "kopf-marke");
   marke.append(el("span", "markenname", "Sober October"), el("span", "rubrik", api.tagesZeile()));
   k.append(marke);
-  const r = el("span", "kopf-rechts");
-  if (rechts) r.append(rechts);
-  const e = knopf("⋯", "rund klein", () => api.einstellungen());
-  e.setAttribute("aria-label", "Einstellungen");
-  r.append(e);
-  k.append(r);
+  if (rechts) {
+    const r = el("span", "kopf-rechts");
+    r.append(rechts);
+    k.append(r);
+  }
   return k;
 }
 

@@ -6,7 +6,7 @@
 
 import { AUSWAHL, tagesKopf } from "../logik.js";
 import { el, knopf, kopf, wasText, faerbe, plusTracker } from "./teile.js";
-import { oben, unten } from "../bausteine/index.js";
+import { oben } from "../bausteine/index.js";
 
 export function render(api) {
   const { zustand: z, VERZICHTE, EBENEN } = api;
@@ -14,18 +14,7 @@ export function render(api) {
   s.append(kopf(api));
   const o = oben(api);
   if (o) s.append(o);
-  s.append(el("h1", "serif", api.commitmentSatz()));
 
-  const verben = el("div", "verben");
-  for (const v of api.gewaehlt()) {
-    const V = VERZICHTE[v];
-    const p = faerbe(el("p"), VERZICHTE, v);
-    p.append(el("span", "leise v-name", `${V.name}: `), knopf(V.habe, "text verb", () => api.eintragen(v, "habe")));
-    if (z.commitment[v].drang) p.append(" · ", knopf(V.drang, "text verb", () => api.eintragen(v, "drang")));
-    verben.append(p);
-  }
-  verben.append(plusTracker(api, "+ weiterer Tracker"));
-  s.append(verben);
 
   const posten = z.ereignisse.map((e) => ({ tag: e.tag, zeit: e.zeit, e }));
   if (api.aktiv("ebenen"))
@@ -55,7 +44,5 @@ export function render(api) {
   }
   if (!posten.length) faden.append(el("li", "leise", "Noch nichts. Der Tag steht da."));
   s.append(faden);
-  const u = unten(api, { ebenen: false });
-  if (u) s.append(u);
   return s;
 }

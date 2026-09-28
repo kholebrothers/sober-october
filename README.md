@@ -11,6 +11,25 @@ und beliebig viele **eigene Tracker** mit selbst geschriebenem Namen, etwa „Al
 jederzeit dazu, über ⋯ → „Tracker wählen oder hinzufügen“. Die Namen bleiben im Gerät; an kur-core
 gingen nur die Schlüssel (`eigen`, `eigen-…`).
 
+**Die Reise.** Wer neu ist, wählt in der Einrichtung genau einen Kern: etwas, das er sein lässt
+(Kaffee, Kippe, Video oder Eigenes), oder etwas, das er aufbaut (Morgenroutine, Bewegung …). Am
+ersten Tag gibt es nur den Monat, „Heute bin ich dabei“ und diese eine Kachel. Alles Weitere öffnet
+sich **durch Benutzen, nicht durch Warten** (`REISE` in `logik.js`): drei Einträge öffnen den Satz zum
+Tag und das Tagebuch; zwei Sätze öffnen „würde gern“, Leitgedanke und Gemeinsam; zwei Würde-gern-Momente
+oder ein eigener Leitgedanke öffnen weitere Tracker, Lebenszeit und Ansichten; ein zweiter benutzter
+Tracker (oder die Lebenszeit) öffnet Schicht 2; ein Werkzeug, zweimal benutzt, öffnet Schicht 3. Wer
+etwas davon nie braucht, kommt mit viel Notieren genauso weiter. Unter dem Knopf steht, was als
+Nächstes zu tun ist. Was offen ist, bleibt offen. Wer schon vor der Reise etwas gewählt hatte, hat sie hinter sich.
+
+**Der Tag.** Unten eine Leiste: Heute, Monat, „+“, Tagebuch, Mehr. Auf Heute oben das Commitment
+(der Satz, die Zahl, die Woche), darunter die Tracker als eine Leiste von Knöpfen mit ihrer Zahl
+(getan / würde gern / aufgebaut), eine feste Zeile für die letzte Notiz und ein Textfeld für den Tag.
+Das „+“ in der Mitte öffnet, wie beim Erstellen in Instagram, einen Vollbild-Check-in mit einem
+Wähler unten (`public/app/erfassung.js`): Stimmung als Affekte nach Mark Solms und Jaak Panksepp
+(Suchen, Spiel, Fürsorge, Lust, Wut, Angst, Trauer, dazu Wollen, Mögen, Ekel), Schlaf (Dauer und
+Ampel), Menge am Tag, Körper und Antrieb als Ampel, Selbst. Die Ampel ist die einzige Stelle mit
+Rot; sie beschreibt ein Gefühl, nie ein Verhalten. Alles Weitere steht unter „Mehr“.
+
 **Im Zentrum steht der Monat.** Oben in jeder Ansicht: der Oktober als Kalender und darunter
 ein Knopf, **„Heute bin ich dabei“**. Ein Tippen, und das Feld des Tages füllt sich, die Zahl der
 Tage dabei springt, das Telefon tippt kurz zurück; an den Stufen 5, 8, 13, 21 und 34 leuchtet der
