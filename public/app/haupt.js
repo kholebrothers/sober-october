@@ -31,7 +31,7 @@ import { erzeugeGremlin } from "./gremlin/index.js";
 import { abgleich, gruppe, binDabei, namenListe } from "./gemeinsam.js";
 import * as knopfAnsicht from "./ansichten/knopf.js";
 import { leiste, monatSeite, tagebuchSeite, mehrSeite, funktionSeite } from "./seiten.js";
-import { komponist, satzFeld } from "./erfassung.js";
+import { komponist, auswahl as plusListe, satzFeld } from "./erfassung.js";
 import { feed } from "./feed.js";
 import { faerbe, wasText } from "./ansichten/teile.js";
 import * as blattAnsicht from "./ansichten/blatt.js";
@@ -196,7 +196,12 @@ const api = {
   stationen: () => REISE.map((r, i) => ({ titel: r.titel, wann: r.wann, offen: i < z.reise, naechste: i === z.reise })),
   reiseBis(was) { aendern(() => reiseBis(z, was)); },
   trackerWaehlen() { wahlOffen = true; zeichne(); scrollTo(0, 0); },
-  festhalten: () => festhalten(heute()),
+  festhalten: (knopf) => {
+    if (knopf?.dataset.gehalten) { delete knopf.dataset.gehalten; return; }
+    if (plusOverlay) { plusOverlay.remove(); plusOverlay = null; return; }
+    plusAuswahl();
+  },
+  plusHalten,
   entdecken(start) {
     bogen.classList.add("vollbild");
     bogen.addEventListener("close", () => bogen.classList.remove("vollbild"), { once: true });
@@ -251,6 +256,11 @@ const api = {
   neuerTracker: () => neuerTracker(),
   springeZu: null,
   oeffneEbene,
+  /* Der Text einer Ebene für den Feed; einmal gezeigt, gilt sie als gesehen. */
+  ebenenText(id) {
+    if (z.frei[id] && !z.frei[id].gesehen) { z.frei[id].gesehen = true; sichern(z); }
+    return ebenenInhalt(id, z, heute());
+  },
   einstellungen,
   zeichne: () => zeichne(),
 };
@@ -563,7 +573,7 @@ function tagEinordnen(tag) {
     el("span", "leise klein", notizen.length ? "Der Tag zählt schon durch deine Notiz." : "Er zählt dann wie jeder andere — für dich und in der Gruppe."));
   l.append(da, tx);
   const kt = erfassungFuer(t, () => tagEinordnen(t));
-  const mehr = knopf("Stimmung, Schlaf, Menge … festhalten", "text", () => festhalten(t));
+  const mehr = knopf("Stimmung, Schlaf, Menge … festhalten", "text", () => { bogen.close(); plusAuswahl(t); });
   k.append(l, satzFeld(kt), mehr);
   k.append(knopf("Fertig", "gross", () => bogen.close()));
   zeigeBogen(k);
@@ -593,19 +603,49 @@ function erfassungFuer(t, neu) {
   };
 }
 
-/* Das „+" unten: der Vollbild-Check-in (erfassung.js). Er merkt sich,
-   welche Art zuletzt offen war. */
-let komponistArt = "stimmung";
-function festhalten(t) {
-  const zeige = () => {
-    const k = erfassungFuer(t, zeige);
-    k.titel = t === heute() ? "Heute" : tagesKopf(t);
-    const inhalt = komponist(k, komponistArt, (a) => { komponistArt = a; zeige(); }, () => bogen.close());
-    bogen.classList.add("vollbild");
-    zeigeBogen(inhalt);
-  };
+/* Das „+" unten. Zuerst die Auswahl als Overlay über der Seite, dann die
+   gewählte Art als Vollbild (erfassung.js). Hält man das „+" gedrückt,
+   steht die Auswahl sofort da; über eine Zeile ziehen und loslassen wählt
+   sie — wie ein Kontextmenü. */
+let plusOverlay = null;
+function plusAuswahl(t = heute()) {
+  if (plusOverlay) return plusOverlay;
+  const k = erfassungFuer(t, () => {});
+  const zu = () => { plusOverlay?.remove(); plusOverlay = null; };
+  plusOverlay = plusListe(k, (a) => { zu(); festhalten(t, a); }, zu);
+  document.body.append(plusOverlay);
+  return plusOverlay;
+}
+
+function plusHalten(knopf) {
+  let halten = null, gehalten = false;
+  const zeile = (ev) => document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.(".plus-option");
+  knopf.addEventListener("pointerdown", (ev) => {
+    gehalten = false;
+    halten = setTimeout(() => { gehalten = true; plusAuswahl(); spueren(10); }, 320);
+    knopf.setPointerCapture?.(ev.pointerId);
+  });
+  knopf.addEventListener("pointermove", (ev) => {
+    if (!gehalten) return;
+    document.querySelectorAll(".plus-option").forEach((o) => o.classList.toggle("unter", o === zeile(ev)));
+  });
+  knopf.addEventListener("pointerup", (ev) => {
+    clearTimeout(halten);
+    if (!gehalten) return;
+    const z = zeile(ev);
+    if (z) z.click();
+    knopf.dataset.gehalten = "1";   // der folgende click soll nicht noch einmal öffnen
+  });
+  knopf.addEventListener("pointercancel", () => clearTimeout(halten));
+}
+
+function festhalten(t, art = "stimmung") {
+  const k = erfassungFuer(t, () => ansicht?.auffrischen());
+  k.titel = t === heute() ? "Heute" : tagesKopf(t);
+  const ansicht = komponist(k, art, () => bogen.close());
+  bogen.classList.add("vollbild");
   bogen.addEventListener("close", () => { bogen.classList.remove("vollbild"); zeichne(); }, { once: true });
-  zeige();
+  zeigeBogen(ansicht.el);
 }
 
 /* Heute im Kalender angetippt: zum Tag auf dem Startschirm. Ist man schon
